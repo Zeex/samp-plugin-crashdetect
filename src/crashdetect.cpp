@@ -405,7 +405,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	::instances[amx].reset();
 	::instances.erase(amx);
 	return AMX_ERR_NONE;
 }
