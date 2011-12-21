@@ -127,6 +127,8 @@ file(WRITE "src/version.h"
 message(STATUS "You're going to build crashdetect v${VERSION_MAJOR}.${VERSION_MINOR}")
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
+install(FILES README.md DESTINATION ".")
+
 if(MSVC)
 	set(PDB_NAME "crashdetect.pdb")
 	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
