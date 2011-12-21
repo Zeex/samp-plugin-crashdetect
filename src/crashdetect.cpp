@@ -35,7 +35,7 @@
 
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
-#include "amxname.h"
+#include "amxpathfinder.h"
 #include "crash.h"
 #include "crashdetect.h"
 #include "jump-x86.h"
@@ -133,8 +133,12 @@ Crashdetect::Crashdetect(AMX *amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 {
 	// Try to determine .amx file name.
-	amxFileName_ = FindAmxFilePath(amx_);
-	if (!amxFileName_.empty()) {
+	AMXPathFinder pathFinder;
+	pathFinder.AddSearchPath("gamemodes/");
+	pathFinder.AddSearchPath("filterscripts/");
+	amxFileName_ = pathFinder.FindAMX(amx);
+
+	if (!amxFileName_.empty()) {		
 		uint16_t flags;
 		amx_Flags(amx_, &flags);
 		if ((flags & AMX_FLAG_DEBUG) != 0) {

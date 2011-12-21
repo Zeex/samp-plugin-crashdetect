@@ -71,8 +71,8 @@ add_library(crashdetect MODULE
 	src/amxcallstack.h
 	src/amxdebuginfo.cpp
 	src/amxdebuginfo.h
-	src/amxname.cpp
-	src/amxname.h
+	src/amxpathfinder.cpp
+	src/amxpathfinder.h
 	src/crash.cpp
 	src/crash.h
 	src/crashdetect.cpp
