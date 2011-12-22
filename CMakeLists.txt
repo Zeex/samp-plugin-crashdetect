@@ -2,13 +2,11 @@ cmake_minimum_required(VERSION 2.8.6)
 
 project(crashdetect)
 
-set(VERSION_MAJOR 3)
-set(VERSION_MINOR 7)
-
 list(APPEND CMAKE_MODULE_PATH ${crashdetect_SOURCE_DIR}/cmake/Modules)
 
 include(CheckIncludeFile)
 include(CheckIncludeFileCXX)
+include(GetGitRevisionDescription)
 
 function(check_include_and_define include_file define)
 	check_include_file(${include_file} HAVE_${include_file})
@@ -111,20 +109,46 @@ endif()
 
 target_link_Libraries(crashdetect ${Boost_LIBRARIES})
 
+set(version_tag_regex "v([0-9]+)\\.([0-9]+)\\.([0-9]+)-?([0-9]*)-?g?([a-f0-9]*)")
+
+git_describe(description --match v[0-9]*.[0-9]*.[0-9]*)
+if(description MATCHES ${version_tag_regex})
+	string(REGEX REPLACE ${version_tag_regex} 
+		"\\1;\\2;\\3;\\4;\\5" version_components ${description})
+	list(GET version_components 0 version_major)
+	list(GET version_components 1 version_minor)
+	list(GET version_components 2 version_patch)
+	list(GET version_components 3 version_commit)
+	if(version_commit STREQUAL "")
+		set(version_commit 0)
+		set(dotted_version ${version_major}.${version_minor}.${version_patch})
+	else()
+		set(dotted_version ${version_major}.${version_minor}.${version_patch}.${version_commit})
+	endif()
+else()
+	message(WARNING "Couldn't obtain version info")
+	set(version_major  0)
+	set(version_minor  0)
+	set(version_patch  0)
+	set(version_commit 0)
+	set(dotted_version "0.0.0")
+endif()
+
 file(WRITE "src/version.h" 
 "/* This file is auto-generated, do not edit */
+#ifndef SAMP_PROFILER_VERSION_H
+#define SAMP_PROFILER_VERSION_H
 
-#ifndef VERSION_H
-#define VERSION_H
+#define VERSION_MAJOR ${version_major}
+#define VERSION_MINOR ${version_minor}
+#define VERSION_PATCH ${version_patch}
+#define VERSION_COMMIT ${version_commit}
+#define VERSION_STRING \"${dotted_version}\"
 
-#define VERSION_MAJOR ${VERSION_MAJOR}
-#define VERSION_MINOR ${VERSION_MINOR}
-#define VERSION_STRING \"${VERSION_MAJOR}.${VERSION_MINOR}\"
-
-#endif // !VERSION_H
+#endif
 ")
 
-message(STATUS "You're going to build crashdetect v${VERSION_MAJOR}.${VERSION_MINOR}")
+message(STATUS "You're going to build crashdetect v${dotted_version}")
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
 install(FILES README.md DESTINATION ".")
@@ -136,10 +160,10 @@ if(MSVC)
 endif()
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
 if(WIN32)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION_MAJOR}.${VERSION_MINOR}-win32")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${dotted_version}-win32")
 	set(CPACK_GENERATOR ZIP)
 elseif(UNIX)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION_MAJOR}.${VERSION_MINOR}-linux")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${dotted_version}-linux")
 	set(CPACK_GENERATOR TGZ)
 endif()
 include(CPack)
