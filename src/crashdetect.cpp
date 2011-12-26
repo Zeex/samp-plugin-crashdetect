@@ -69,7 +69,10 @@ static void *GetJMPAbsoluteAddress(unsigned char *jmp) {
 	return 0;
 }
 
-static std::string GetDllName(void *symbol) {
+static std::string GetModuleNameBySymbol(void *symbol) {	
+	if (symbol == 0) {
+		return std::string();
+	}
 	char module[FILENAME_MAX] = "";
 	#ifdef WIN32
 		MEMORY_BASIC_INFORMATION mbi;
@@ -80,25 +83,42 @@ static std::string GetDllName(void *symbol) {
 		dladdr(symbol, &info);
 		strcpy(module, info.dli_fname);
 	#endif
-	return boost::filesystem::basename(module);
+	return boost::filesystem::path(module).filename().string();
 }
 
-static const char *GetNativeName(AMX *amx, cell index) {
+static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(
 		hdr->natives + reinterpret_cast<int32_t>(amx->base));
 	AMX_FUNCSTUBNT *libraries = reinterpret_cast<AMX_FUNCSTUBNT*>(
 		hdr->libraries + reinterpret_cast<int32_t>(amx->base));
-
 	int numNatives = (hdr->libraries - hdr->natives) / hdr->defsize;
 
 	if (index < 0 || index >= numNatives) {
-		return "<unknown>";
+		return false;
 	}
 
-	return reinterpret_cast<char*>(natives[index].nameofs +
+	info.func = reinterpret_cast<AMX_NATIVE>(natives[index].address);
+	info.name = reinterpret_cast<char*>(natives[index].nameofs +
 		reinterpret_cast<int32_t>(hdr));
+	return true;
+}
+
+static inline const char *GetNativeName(AMX *amx, cell index) {
+	AMX_NATIVE_INFO info;
+	if (!GetNativeInfo(amx, index, info)) {
+		return "<unknown>";
+	}
+	return info.name;
+}
+
+static AMX_NATIVE GetNativeAddress(AMX *amx, cell index) {
+	AMX_NATIVE_INFO info;
+	if (!GetNativeInfo(amx, index, info)) {
+		return 0;
+	}
+	return info.func;
 }
 
 void Crashdetect::ReportCrash() {
@@ -296,16 +316,17 @@ void Crashdetect::PrintCallStack() const {
 	logprintf("Call stack (most recent call first):");	
 
 	if (!nativeCallStack_.empty()) {
-		assert(amx_ == nativeCallStack_.top().GetAmx());
+		cell index = nativeCallStack_.top().GetIndex();
+		std::string module = GetModuleNameBySymbol(GetNativeAddress(amx_, index));
 		if (debugInfo_.IsLoaded()) {
 			logprintf("  File '%s', line %ld", 
-				debugInfo_.GetFileName(amx_->cip).c_str(),
-				debugInfo_.GetLineNumber(amx_->cip));
-			logprintf("    native %s()", 
-				GetNativeName(nativeCallStack_.top().GetAmx(), nativeCallStack_.top().GetIndex()));
+					debugInfo_.GetFileName(amx_->cip).c_str(),
+					debugInfo_.GetLineNumber(amx_->cip));
+			logprintf("    native %s() from %s", 
+					GetNativeName(amx_, index), module.c_str());
 		} else {
-			logprintf("  0x%08X => native %s()", amx_->cip - sizeof(cell), 
-				GetNativeName(nativeCallStack_.top().GetAmx(), nativeCallStack_.top().GetIndex()));
+			logprintf("  0x%08X => native %s() from %s", amx_->cip - sizeof(cell), 
+					GetNativeName(amx_, index), module.c_str());
 		}
 	}
 
@@ -381,7 +402,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	void *amx_Exec_ptr = ((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
 	void *funAddr = GetJMPAbsoluteAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
 	if (funAddr != 0) {
-		std::string module = GetDllName(funAddr);
+		std::string module = GetModuleNameBySymbol(funAddr);
 		if (!module.empty() && module != "samp-server" && module != "samp03svr") {
 			logprintf("  crashdetect must be loaded before %s", module.c_str());
 			return false;
