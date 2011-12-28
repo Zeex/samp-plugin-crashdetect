@@ -317,7 +317,8 @@ void Crashdetect::PrintCallStack() const {
 
 	if (!nativeCallStack_.empty()) {
 		cell index = nativeCallStack_.top().GetIndex();
-		std::string module = GetModuleNameBySymbol(GetNativeAddress(amx_, index));
+		AMX_NATIVE native = GetNativeAddress(amx_, index);
+		std::string module = GetModuleNameBySymbol((void*)native);
 		if (debugInfo_.IsLoaded()) {
 			logprintf("  File '%s', line %ld", 
 					debugInfo_.GetFileName(amx_->cip).c_str(),
