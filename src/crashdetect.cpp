@@ -48,12 +48,23 @@
 typedef void (*logprintf_t)(const char *fmt, ...);	
 static logprintf_t logprintf;
 
-static boost::unordered_map<AMX*, boost::shared_ptr<Crashdetect> > instances;
+static std::map<AMX*, boost::shared_ptr<Crashdetect> > instances;
+
+static Crashdetect *GetCrashdetectInstance(AMX *amx) {
+	std::map<AMX*, boost::shared_ptr<Crashdetect> >::iterator 
+			iterator = ::instances.find(amx);
+	if (iterator == ::instances.end()) {
+		Crashdetect *inst = new Crashdetect(amx);
+		::instances.insert(std::make_pair(amx, boost::shared_ptr<Crashdetect>(inst)));
+		return inst;
+	} 
+	return iterator->second.get();
+}
 
 // Gets called before amx_Exec() on error but before AMX stack/heap is reset
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
-		instances[amx]->HandleRuntimeError(index, error);
+		GetCrashdetectInstance(amx)->HandleRuntimeError(index, error);
 	}
 	return AMX_ERR_NONE;
 }
@@ -124,7 +135,7 @@ static AMX_NATIVE GetNativeAddress(AMX *amx, cell index) {
 void Crashdetect::ReportCrash() {
 	// Check if the last native call succeeded
 	if (!nativeCallStack_.empty()) {
-		instances[nativeCallStack_.top().GetAmx()]->HandleCrash();
+		GetCrashdetectInstance(nativeCallStack_.top().GetAmx())->HandleCrash();
 	} else {
 		// Server/plugin internal error, we don't know the reason
 		logprintf("The server has crashed due to an unknown error");
@@ -132,15 +143,15 @@ void Crashdetect::ReportCrash() {
 }
 
 static int AMXAPI AmxDebug(AMX *amx) {
-	return ::instances[amx]->AmxDebug();
+	return GetCrashdetectInstance(amx)->AmxDebug();
 }
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return ::instances[amx]->AmxCallback(index, result, params);
+	return GetCrashdetectInstance(amx)->AmxCallback(index, result, params);
 }
 
 static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
-	return ::instances[amx]->AmxExec(retval, index);
+	return GetCrashdetectInstance(amx)->AmxExec(retval, index);
 }
 
 std::stack<Crashdetect::CSEntry> Crashdetect::publicCallStack_;
