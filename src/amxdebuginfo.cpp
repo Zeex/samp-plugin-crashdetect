@@ -41,9 +41,10 @@ cell AMXDebugInfo::Symbol::GetValue(AMX *amx) const {
 	// The address is relative to either the code segment (cod), the data segment
 	// (dat) or to the frame of the current function whose address is in the frm
 	// pseudo-register.	
-	if (address > hdr->cod) {
+	if (address > static_cast<ucell>(hdr->cod)) {
 		return *reinterpret_cast<cell*>(code + address);
-	} else if (address > hdr->dat && address < hdr->cod) {
+	} else if (address > static_cast<ucell>(hdr->dat) 
+			&& address < static_cast<ucell>(hdr->cod)) {
 		return *reinterpret_cast<cell*>(data + address);
 	} else {
 		return *reinterpret_cast<cell*>(data + amx->frm + address);
@@ -88,7 +89,7 @@ void AMXDebugInfo::Free() {
 	amxdbgPtr_.reset();
 }
 
-AMXDebugInfo::Line AMXDebugInfo::GetLine(cell address) const {
+AMXDebugInfo::Line AMXDebugInfo::GetLine(ucell address) const {
 	Line line;
 	LineTable lines = GetLines();
 	LineTable::const_iterator it = lines.begin();
@@ -103,7 +104,7 @@ AMXDebugInfo::Line AMXDebugInfo::GetLine(cell address) const {
 	return line;
 }
 
-AMXDebugInfo::File AMXDebugInfo::GetFile(cell address) const {
+AMXDebugInfo::File AMXDebugInfo::GetFile(ucell address) const {
 	File file;
 	FileTable files = GetFiles();
 	FileTable::const_iterator it = files.begin();
@@ -121,7 +122,7 @@ static bool IsBuggedForward(const AMX_DBG_SYMBOL *symbol) {
 	return (symbol->name[0] == '@' && symbol->codestart == 0x8 && symbol->codeend == 0x928);
 }
 
-AMXDebugInfo::Symbol AMXDebugInfo::GetFunction(cell address) const {
+AMXDebugInfo::Symbol AMXDebugInfo::GetFunction(ucell address) const {
 	Symbol function;
 	SymbolTable symbols = GetSymbols();
 	for (SymbolTable::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
@@ -149,7 +150,7 @@ AMXDebugInfo::Tag AMXDebugInfo::GetTag(int tagID) const {
 	return tag;
 }
 
-int32_t AMXDebugInfo::GetLineNumber(cell address) const {
+int32_t AMXDebugInfo::GetLineNumber(ucell address) const {
 	Line line = GetLine(address);
 	if (line) {
 		return line.GetNumber();
@@ -157,7 +158,7 @@ int32_t AMXDebugInfo::GetLineNumber(cell address) const {
 	return 0;
 }
 
-std::string AMXDebugInfo::GetFileName(cell address) const {
+std::string AMXDebugInfo::GetFileName(ucell address) const {
 	std::string name;
 	File file = GetFile(address);
 	if (file) {
@@ -166,7 +167,7 @@ std::string AMXDebugInfo::GetFileName(cell address) const {
 	return name;
 }
 
-std::string AMXDebugInfo::GetFunctionName(cell address) const {
+std::string AMXDebugInfo::GetFunctionName(ucell address) const {
 	std::string name;
 	Symbol function = GetFunction(address);
 	if (function) {
@@ -175,7 +176,7 @@ std::string AMXDebugInfo::GetFunctionName(cell address) const {
 	return name;
 }
 
-std::string AMXDebugInfo::GetTagName(cell address) const {
+std::string AMXDebugInfo::GetTagName(ucell address) const {
 	std::string name;
 	Tag tag = GetTag(address);
 	if (tag) {

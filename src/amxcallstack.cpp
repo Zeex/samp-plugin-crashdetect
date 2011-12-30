@@ -33,14 +33,14 @@ static bool IsFunctionArgument(const AMXDebugInfo::Symbol &symbol, ucell functio
 
 class IsArgumentOf : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
 public:
-	IsArgumentOf(cell function) : function_(function) {}
+	IsArgumentOf(ucell function) : function_(function) {}
 
 	bool operator()(const AMXDebugInfo::Symbol &symbol) const {
 		return symbol.IsLocal() && symbol.GetCodeStartAddress() == function_;
 	}
 
 private:
-	cell function_;
+	ucell function_;
 };
 
 static inline bool CompareArguments(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {
@@ -49,14 +49,14 @@ static inline bool CompareArguments(const AMXDebugInfo::Symbol &left, const AMXD
 
 class IsFunctionAt : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
 public:
-	IsFunctionAt(cell address) : address_(address) {}
+	IsFunctionAt(ucell address) : address_(address) {}
 
 	bool operator()(const AMXDebugInfo::Symbol &symbol) const {
 		return symbol.IsFunction() && symbol.GetAddress() == address_;
 	}
 
 private:
-	cell address_;
+	ucell address_;
 };
 
 static inline const char *GetPublicFunctionName(AMX *amx, ucell address) {
@@ -78,7 +78,7 @@ static inline bool IsPublicFunction(AMX *amx, ucell address) {
 	return GetPublicFunctionName(amx, address) != 0;
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, cell frameAddress, const AMXDebugInfo &debugInfo)
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, const AMXDebugInfo &debugInfo)
 	: isPublic_(false)
 	, frameAddress_(frameAddress)
 	, callAddress_(0)
@@ -87,18 +87,18 @@ AMXStackFrame::AMXStackFrame(AMX *amx, cell frameAddress, const AMXDebugInfo &de
 	if (IsOnStack(frameAddress_, amx)) {
 		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
-		cell data = reinterpret_cast<cell>(amx->base + hdr->dat);
-		cell code = reinterpret_cast<cell>(amx->base) + hdr->cod;
+		ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
+		ucell code = reinterpret_cast<ucell>(amx->base) + hdr->cod;
 
-		callAddress_ = *(reinterpret_cast<cell*>(data + frameAddress_) + 1) - 2*sizeof(cell);
-		functionAddress_ = *reinterpret_cast<cell*>(callAddress_ + sizeof(cell) + code) - code;
+		callAddress_ = *(reinterpret_cast<ucell*>(data + frameAddress_) + 1) - 2*sizeof(cell);
+		functionAddress_ = *reinterpret_cast<ucell*>(callAddress_ + sizeof(cell) + code) - code;
 
 		Init(amx, debugInfo);
 	}	
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, cell frameAddress, cell callAddress, 
-		cell functionAddress, const AMXDebugInfo &debugInfo)
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, ucell callAddress, 
+		ucell functionAddress, const AMXDebugInfo &debugInfo)
 	: isPublic_(false)
 	, frameAddress_(frameAddress)
 	, callAddress_(callAddress)
@@ -183,7 +183,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 				if (arg->IsArray() || arg->IsArrayRef()) {
 					// Get array dimensions 
 					std::vector<AMXDebugInfo::SymbolDim> dims = arg->GetDims();
-					for (int i = 0; i < dims.size(); ++i) {
+					for (std::size_t i = 0; i < dims.size(); ++i) {
 						if (dims[i].GetSize() == 0) {
 							argStream << "[]";
 						} else {
@@ -219,25 +219,25 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 
 AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	cell data = reinterpret_cast<cell>(amx->base + hdr->dat);
+	ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
 
-	for (cell frm = amx->frm; frm > amx->stk;) {
+	for (ucell frm = static_cast<ucell>(amx->frm); frm > static_cast<ucell>(amx->stk);) {
 		AMXStackFrame frame(amx, frm, debugInfo);
 		if (!frame) {
 			// Invalid frame address
 			return;
 		}
 		frames_.push_back(AMXStackFrame(amx, frm, debugInfo));
-		frm = *reinterpret_cast<cell*>(data + frm);
+		frm = *reinterpret_cast<ucell*>(data + frm);
 	} 
 
 	// Correct entry point address (it's not on the stack)
 	if (debugInfo.IsLoaded()) {		
 		if (frames_.size() > 1) {
-			cell epAddr = debugInfo.GetFunctionStartAddress(frames_[frames_.size() - 2].GetCallAddress());
+			ucell epAddr = debugInfo.GetFunctionStartAddress(frames_[frames_.size() - 2].GetCallAddress());
 			frames_.back() = AMXStackFrame(amx, frames_.back().GetFrameAddress(), 0, epAddr, debugInfo);
 		} else if (frames_.size() != 0) {
-			cell epAddr = debugInfo.GetFunctionStartAddress(amx->cip);
+			ucell epAddr = debugInfo.GetFunctionStartAddress(amx->cip);
 			frames_.back() = AMXStackFrame(amx, frames_.back().GetFrameAddress(), 0, epAddr, debugInfo);
 		}
 	} else {

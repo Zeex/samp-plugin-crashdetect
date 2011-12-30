@@ -37,9 +37,9 @@ private:
 
 class AMXStackFrame {
 public:
-	AMXStackFrame(AMX *amx, cell frameAddress, 
+	AMXStackFrame(AMX *amx, ucell frameAddress, 
 			const AMXDebugInfo &debugInfo = AMXDebugInfo());
-	AMXStackFrame(AMX *amx, cell frameAddress, cell callAddress, cell functionAddress, 
+	AMXStackFrame(AMX *amx, ucell frameAddress, ucell callAddress, ucell functionAddress, 
 			const AMXDebugInfo &debugInfo = AMXDebugInfo());
 
 	// Returns true if the called function is public.
@@ -74,19 +74,19 @@ private:
 	bool isPublic_;
 
 	// The address of this stack frame.
-	cell frameAddress_;
+	ucell frameAddress_;
 
 	// Address of the CALL instruction (relative to COD).
-	cell callAddress_;
+	ucell callAddress_;
 
 	// Address of the function itself.
-	cell functionAddress_;
+	ucell functionAddress_;
 
 	// A name of the source file from which the funciton is called.
 	std::string fileName_;
 
 	// A 1-based number of the line at which the function is called.
-	int32_t lineNumber_;
+	uint32_t lineNumber_;
 
 	std::string functionName_;
 	std::string functionResultTag_;

@@ -217,15 +217,15 @@ public:
 	bool IsLoaded() const;
 	void Free();
 
-	Line   GetLine(cell address) const;
-	File   GetFile(cell address) const;
-	Symbol GetFunction(cell address) const;
+	Line   GetLine(ucell address) const;
+	File   GetFile(ucell address) const;
+	Symbol GetFunction(ucell address) const;
 	Tag    GetTag(int tagID) const;	
 
-	int32_t     GetLineNumber(cell addrss) const;
-	std::string GetFileName(cell address) const;
-	std::string GetFunctionName(cell address) const;
-	std::string GetTagName(cell address) const;
+	int32_t     GetLineNumber(ucell addrss) const;
+	std::string GetFileName(ucell address) const;
+	std::string GetFunctionName(ucell address) const;
+	std::string GetTagName(ucell address) const;
 
 	ucell GetFunctionAddress(const std::string &functionName, const std::string &fileName) const;
 	ucell GetFunctionStartAddress(ucell address) const;

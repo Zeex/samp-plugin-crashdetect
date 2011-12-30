@@ -98,6 +98,7 @@ if(WIN32)
 	add_definitions(-DWIN32 -D_WIN32)
 	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/crashdetect.def")
 	if(MSVC)
+		add_definitions(-D_CRT_SECURE_NO_WARNINGS) # Shut up security warnings
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " /DEF:${DEF_FILE}")
 	elseif(MINGW)
