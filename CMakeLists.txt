@@ -89,10 +89,9 @@ if(UNIX OR MINGW)
 		COMPILE_FLAGS " -m32 -Wno-attributes")
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
 		LINK_FLAGS " -m32 -Wl,--no-undefined -ldl")
-endif()
-
-if(UNIX)
-	add_definitions(-DLINUX)
+	if(UNIX)
+		add_definitions(-DLINUX)
+	endif()
 endif()
 
 if(WIN32)
@@ -109,61 +108,59 @@ endif()
 
 target_link_Libraries(crashdetect ${Boost_LIBRARIES})
 
-set(version_tag_regex "v([0-9]+)\\.([0-9]+)\\.([0-9]+)-?([0-9]*)-?g?([a-f0-9]*)")
-
-git_describe(description --match v[0-9]*.[0-9]*.[0-9]*)
-if(description MATCHES ${version_tag_regex})
-	string(REGEX REPLACE ${version_tag_regex} 
-		"\\1;\\2;\\3;\\4;\\5" version_components ${description})
-	list(GET version_components 0 version_major)
-	list(GET version_components 1 version_minor)
-	list(GET version_components 2 version_patch)
-	list(GET version_components 3 version_commit)
-	if(version_commit STREQUAL "")
-		set(version_commit 0)
-		set(dotted_version ${version_major}.${version_minor}.${version_patch})
-	else()
-		set(dotted_version ${version_major}.${version_minor}.${version_patch}.${version_commit})
+find_package(Git)
+if(GIT_FOUND)
+	# Get latest version tag from Git history
+	git_describe(description --match v[0-9]*.[0-9]*.[0-9]*)
+	string(REPLACE "-" "." description ${description})
+	string(REGEX REPLACE "\\.g[0-9a-f]+$" "" description ${description})
+	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
+	if(version MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$") # has no commit number
+		set(version "${version}.0")
 	endif()
-else()
-	message(WARNING "Couldn't obtain version info")
-	set(version_major  0)
-	set(version_minor  0)
-	set(version_patch  0)
-	set(version_commit 0)
-	set(dotted_version "0.0.0")
+	if(NOT version MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")
+		set(version "")
+	endif()
 endif()
 
+if(version STREQUAL "")
+	# Read version from VERSION.txt (updated on each release)
+	message(STATUS "Failed to get version from Git, will read VERSION.txt")
+	file(READ "${crashdetect_SOURCE_DIR}/VERSION.txt" version)
+	string(STRIP ${version} version)
+	if(NOT version MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")
+		message(FATAL_ERROR "Invalid version")
+	endif()
+endif()
+
+
+# Comma-separated version for RC
+string(REPLACE "." "," version_rc ${version})
+
+# Generate version.h to be included from source files
 file(WRITE "src/version.h" 
 "/* This file is auto-generated, do not edit */
-#ifndef SAMP_PROFILER_VERSION_H
-#define SAMP_PROFILER_VERSION_H
-
-#define VERSION_MAJOR ${version_major}
-#define VERSION_MINOR ${version_minor}
-#define VERSION_PATCH ${version_patch}
-#define VERSION_COMMIT ${version_commit}
-#define VERSION_STRING \"${dotted_version}\"
-
-#endif
+#define CRASHDETECT_VERSION \"${version}\"
+#define CRASHDETECT_VERSION_RC ${version_rc}
 ")
 
-message(STATUS "You're going to build crashdetect v${dotted_version}")
+message(STATUS "You're going to build crashdetect v${version}")
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
 install(FILES README.md DESTINATION ".")
 
 if(MSVC)
+	# Copy the .pdb file 
 	set(PDB_NAME "crashdetect.pdb")
 	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
 	install(FILES ${PDB_PATH} DESTINATION ".")
 endif()
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
 if(WIN32)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${dotted_version}-win32")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-win32")
 	set(CPACK_GENERATOR ZIP)
 elseif(UNIX)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${dotted_version}-linux")
+	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-linux")
 	set(CPACK_GENERATOR TGZ)
 endif()
 include(CPack)

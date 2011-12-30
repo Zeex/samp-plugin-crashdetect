@@ -426,7 +426,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	Crash::SetHandler(Crashdetect::ReportCrash);
 	Crash::EnableMiniDump(true);
 
-	logprintf("  crashdetect v"VERSION_STRING" is OK.");
+	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
 	return true;
 }
 
