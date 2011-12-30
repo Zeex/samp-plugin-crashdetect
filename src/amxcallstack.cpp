@@ -223,11 +223,11 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo) {
 
 	for (ucell frm = static_cast<ucell>(amx->frm); frm > static_cast<ucell>(amx->stk);) {
 		AMXStackFrame frame(amx, frm, debugInfo);
+		frames_.push_back(frame);
 		if (!frame) {
 			// Invalid frame address
 			return;
 		}
-		frames_.push_back(AMXStackFrame(amx, frm, debugInfo));
 		frm = *reinterpret_cast<ucell*>(data + frm);
 	} 
 
