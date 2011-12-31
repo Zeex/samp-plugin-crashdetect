@@ -38,6 +38,7 @@
 #include "amxpathfinder.h"
 #include "crash.h"
 #include "crashdetect.h"
+#include "ctrl-c.h"
 #include "jump-x86.h"
 #include "plugincommon.h"
 #include "version.h"
@@ -139,6 +140,15 @@ void Crashdetect::ReportCrash() {
 	} else {
 		// Server/plugin internal error, we don't know the reason
 		logprintf("The server has crashed due to an unknown error");
+	}
+}
+
+void Crashdetect::KeyboardInterrupt() {
+	logprintf("Keyboard interrupt");
+	if (!publicCallStack_.empty()) {
+		AMX *amx = publicCallStack_.top().GetAmx();
+		GetCrashdetectInstance(amx)->PrintCallStack();
+		abort();
 	}
 }
 
@@ -425,6 +435,9 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	// Set crash handler
 	Crash::SetHandler(Crashdetect::ReportCrash);
 	Crash::EnableMiniDump(true);
+
+	// Set Ctrl-C signal handler
+	ControlC::SetHandler(Crashdetect::KeyboardInterrupt);
 
 	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
 	return true;

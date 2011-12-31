@@ -25,6 +25,7 @@
 class Crashdetect {
 public:	
 	static void ReportCrash();
+	static void KeyboardInterrupt();
 
 	explicit Crashdetect(AMX *amx);
 
