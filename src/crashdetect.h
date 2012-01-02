@@ -50,25 +50,34 @@ private:
 	AMX_CALLBACK prevCallback_;
 	AMX_DEBUG    prevDebugHook_;	
 
-	class CSEntry {
+	class NativePublicCall {
 	public:
-		CSEntry(AMX *amx, cell index)
-			: amx_(amx), index_(index)
-		{}
+		enum Type {
+			NATIVE,
+			PUBLIC
+		};
 
-		AMX *GetAmx() const 
+		NativePublicCall(Type type, AMX *amx, cell index, ucell frm)
+			: type_(type), amx_(amx), index_(index), frm_(frm) {}
+
+		Type type() const 
+			{ return type_; }
+		AMX *amx() const 
 			{ return amx_; }
-
-		cell GetIndex() const 
+		cell index() const 
 			{ return index_; }
+		ucell frm() const 
+			{ return frm_; }
+
 	private:
+		Type type_;
 		AMX *amx_;
+		ucell frm_;
 		cell index_;
 	};
 
-	// Active public/native calls
-	static std::stack<CSEntry> publicCallStack_;
-	static std::stack<CSEntry> nativeCallStack_;
+	// Native/public calls
+	static std::stack<NativePublicCall> npCalls_;
 
 	// Set to true on Runtime Error (to prevent double-reporting)
 	static bool errorCaught_;

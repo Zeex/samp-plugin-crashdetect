@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -102,9 +103,9 @@ static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		hdr->natives + reinterpret_cast<int32_t>(amx->base));
+		hdr->natives + amx->base);
 	AMX_FUNCSTUBNT *libraries = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		hdr->libraries + reinterpret_cast<int32_t>(amx->base));
+		hdr->libraries + amx->base);
 	int numNatives = (hdr->libraries - hdr->natives) / hdr->defsize;
 
 	if (index < 0 || index >= numNatives) {
@@ -120,7 +121,7 @@ static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
 static inline const char *GetNativeName(AMX *amx, cell index) {
 	AMX_NATIVE_INFO info;
 	if (!GetNativeInfo(amx, index, info)) {
-		return "<unknown>";
+		return "<unknown native>";
 	}
 	return info.name;
 }
@@ -133,25 +134,27 @@ static AMX_NATIVE GetNativeAddress(AMX *amx, cell index) {
 	return info.func;
 }
 
+static ucell GetPublicAddress(AMX *amx, cell index) {
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(
+		reinterpret_cast<AMX_HEADER*>(amx->base)->publics + amx->base);
+	return publics[index].address;
+}
+
 void Crashdetect::ReportCrash() {
-	// Check if the last native call succeeded
-	if (!nativeCallStack_.empty()) {
-		GetCrashdetectInstance(nativeCallStack_.top().GetAmx())->HandleCrash();
+	// Check if the last native/public call succeeded
+	if (!npCalls_.empty()) {
+		AMX *amx = npCalls_.top().amx();
+		GetCrashdetectInstance(amx)->HandleCrash();
 	} else {
-		// OK, let's see whether we are amx_Exec'ing something
-		if (!publicCallStack_.empty()) {
-			GetCrashdetectInstance(publicCallStack_.top().GetAmx())->HandleCrash();
-		} else {
-			// Server/plugin internal error (in another thread?)
-			logprintf("The server has crashed due to an unknown error");
-		}
+		// Server/plugin internal error (in another thread?)
+		logprintf("The server has crashed due to an unknown error");
 	}
 }
 
 void Crashdetect::KeyboardInterrupt() {
 	logprintf("Keyboard interrupt");
-	if (!publicCallStack_.empty()) {
-		AMX *amx = publicCallStack_.top().GetAmx();
+	if (!npCalls_.empty()) {
+		AMX *amx = npCalls_.top().amx();
 		GetCrashdetectInstance(amx)->PrintCallStack();
 		abort();
 	}
@@ -169,9 +172,8 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 	return GetCrashdetectInstance(amx)->AmxExec(retval, index);
 }
 
-std::stack<Crashdetect::CSEntry> Crashdetect::publicCallStack_;
-std::stack<Crashdetect::CSEntry> Crashdetect::nativeCallStack_;
-
+// static
+std::stack<Crashdetect::NativePublicCall> Crashdetect::npCalls_;
 bool Crashdetect::errorCaught_ = false;
 
 Crashdetect::Crashdetect(AMX *amx) 
@@ -208,7 +210,8 @@ int Crashdetect::AmxDebug() {
 }
 
 int Crashdetect::AmxExec(cell *retval, int index) {
-	publicCallStack_.push(CSEntry(amx_, index));
+	npCalls_.push(NativePublicCall(
+		NativePublicCall::PUBLIC, amx_, index, amx_->frm));
 
 	int retcode = ::amx_Exec(amx_, retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
@@ -217,21 +220,19 @@ int Crashdetect::AmxExec(cell *retval, int index) {
 		errorCaught_ = false;
 	}
 
-	assert(publicCallStack_.top().GetAmx() == amx_);
-	assert(publicCallStack_.top().GetIndex() == index);
-	publicCallStack_.pop();	
-
+	npCalls_.pop();	
 	return retcode;
 }
 
 int Crashdetect::AmxCallback(cell index, cell *result, cell *params) {
-	nativeCallStack_.push(CSEntry(amx_, index));
+	npCalls_.push(NativePublicCall(
+		NativePublicCall::NATIVE, amx_, index, amx_->frm));
 
 	// Reset error
 	amx_->error = AMX_ERR_NONE;
 
 	// Call any previously set callback (amx_Callback by default)
-	prevCallback_(amx_, index, result, params);	
+	int retcode = prevCallback_(amx_, index, result, params);	
 
 	// Check if the AMX_ERR_NATIVE error is set
 	if (amx_->error == AMX_ERR_NATIVE) {
@@ -241,11 +242,8 @@ int Crashdetect::AmxCallback(cell index, cell *result, cell *params) {
 	// Reset error again
 	amx_->error = AMX_ERR_NONE;
 
-	assert(nativeCallStack_.top().GetAmx() == amx_);
-	assert(nativeCallStack_.top().GetIndex() == index);
-	nativeCallStack_.pop();	
-
-	return AMX_ERR_NONE;
+	npCalls_.pop();
+	return retcode;
 }
 
 void Crashdetect::HandleNativeError(int index) {
@@ -341,79 +339,93 @@ void Crashdetect::HandleCrash() {
 void Crashdetect::PrintCallStack() const {
 	logprintf("Call stack (most recent call first):");	
 
-	if (!nativeCallStack_.empty()) {
-		cell index = nativeCallStack_.top().GetIndex();
-		AMX_NATIVE native = GetNativeAddress(amx_, index);
-		std::string module = GetModuleNameBySymbol((void*)native);
-		if (debugInfo_.IsLoaded()) {
-			logprintf("  File '%s', line %ld", 
-					debugInfo_.GetFileName(amx_->cip).c_str(),
-					debugInfo_.GetLineNumber(amx_->cip));
-			logprintf("    native %s() from %s", 
-					GetNativeName(amx_, index), module.c_str());
-		} else {
-			logprintf("  0x%08X => native %s() from %s", amx_->cip - sizeof(cell), 
-					GetNativeName(amx_, index), module.c_str());
-		}
-	}
+	std::stack<NativePublicCall> npCallStack = npCalls_;
+	ucell frm = static_cast<ucell>(amx_->frm);
 
-	AMXCallStack callStack(amx_, debugInfo_);
-
-	std::vector<AMXStackFrame> frames = callStack.GetFrames();
-	if (frames.size() == 0) {
-		logprintf("  Stack corrupted!");
-		return;
-	}
-	
-	for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
-			iterator != frames.end(); ++iterator) 
-	{	
-		const AMXStackFrame &frame = *iterator;
-
-		if (debugInfo_.IsLoaded()) {
-			std::string function = frame.GetFunctionName();
-			if (!frame.OK() && function.empty()) {
-				logprintf("  Stack corrupted!");
-				break;
-			}
-			if (frame.GetCallAddress() != 0) {
-				if (!frame.OK()) {
-					logprintf("  Stack corrupted!");
-					break;
-				}
-				logprintf("  File '%s', line %d", frame.GetSourceFileName().c_str(), frame.GetLineNumber());;
+	while (!npCallStack.empty()) {
+		NativePublicCall call = npCallStack.top();
+		if (call.type() == NativePublicCall::NATIVE) {
+			std::string module = GetModuleNameBySymbol(
+					(void*)GetNativeAddress(amx_, call.index()));
+			if (debugInfo_.IsLoaded()) {
+				logprintf("  File '%s', line %ld", 
+						debugInfo_.GetFileName(amx_->cip).c_str(),
+						debugInfo_.GetLineNumber(amx_->cip));
+				logprintf("    native %s() from %s", 
+						GetNativeName(amx_, call.index()), module.c_str());
 			} else {
-				// Entry point
-				logprintf("  File '%s'", frame.GetSourceFileName().c_str());;
+				logprintf("  0x%08X => native %s() from %s", amx_->cip - sizeof(cell), 
+						GetNativeName(amx_, call.index()), module.c_str());
 			}
-			logprintf("    %s", frame.GetFunctionPrototype().c_str());				
+		} else if (call.type() == NativePublicCall::PUBLIC) {
+			AMXCallStack callStack(amx_, debugInfo_, frm);
+			std::vector<AMXStackFrame> frames = callStack.GetFrames();
+			if (frames.size() == 0) {
+				logprintf("  Stack corrupted!");
+				return;
+			}
+			for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
+					iterator != frames.end(); ++iterator) 
+			{	
+				const AMXStackFrame &frame = *iterator;
+				if (debugInfo_.IsLoaded()) {
+					std::string function = frame.GetFunctionName();
+					if (!frame.OK() && function.empty()) {
+						logprintf("  Stack corrupted!");
+						break;
+					}
+					if (frame.GetCallAddress() != 0) {
+						if (!frame.OK()) {
+							logprintf("  Stack corrupted!");
+							break;
+						}
+						logprintf("  File '%s', line %d", frame.GetSourceFileName().c_str(), frame.GetLineNumber());;
+						logprintf("    %s", frame.GetFunctionPrototype().c_str());
+					} else {
+						// Entry point
+						logprintf("  File '%s'", frame.GetSourceFileName().c_str());
+						if (call.index() == AMX_EXEC_MAIN)
+							logprintf("    main()");
+						else if (call.index() >= 0) {
+							AMXStackFrame epFrame = AMXStackFrame(amx_, frm, 0, 
+									GetPublicAddress(amx_, call.index()), debugInfo_);
+							logprintf("    %s", epFrame.GetFunctionPrototype().c_str());
+						} else {
+							logprintf("    <unknown public>");
+						}
+					}					
+				} else {
+					if (frame.GetCallAddress() != 0) {
+						if (!frame.OK()) {
+							logprintf("  Stack corrupted!");
+							break;
+						}
+						if (frame.IsPublic()) {
+							logprintf("  0x%08X => public %s()", 
+								frame.GetCallAddress(), frame.GetFunctionName().c_str());
+						} else {
+							logprintf("  0x%08X => 0x%08x()", 
+								frame.GetCallAddress(), frame.GetFunctionAddress());
+						}
+					} else {		
+						// Entry point
+						char name[32];
+						if (amx_GetPublic(amx_, call.index(), name) == AMX_ERR_NONE) {
+							logprintf("  0x???????? => public %s()", name);
+						} else if (call.index() == AMX_EXEC_MAIN) {
+							logprintf("  0x???????? => main()");
+						} else {
+							logprintf("  0x???????? => 0x????????()");				
+						}
+						break;
+					}
+				}
+			}
 		} else {
-			if (frame.GetCallAddress() != 0) {
-				if (!frame.OK()) {
-					logprintf("  Stack corrupted!");
-					break;
-				}
-				if (frame.IsPublic()) {
-					logprintf("  0x%08X => public %s()", 
-						frame.GetCallAddress(), frame.GetFunctionName().c_str());
-				} else {
-					logprintf("  0x%08X => 0x%08x()", 
-						frame.GetCallAddress(), frame.GetFunctionAddress());
-				}
-			} else {				
-				char name[32];
-				if (!publicCallStack_.empty() 
-						&& amx_GetPublic(amx_, publicCallStack_.top().GetIndex(), name) == AMX_ERR_NONE) {
-					logprintf("  0x???????? => public %s()", name);
-				} else if (!publicCallStack_.empty()
-						&& publicCallStack_.top().GetIndex() == AMX_EXEC_MAIN) {
-					logprintf("  0x???????? => main()");
-				} else {
-					logprintf("  0x???????? => 0x????????()");				
-				}
-				break;
-			}
+			assert(0 && "Invalid call.type()");
 		}
+		frm = call.frm();
+		npCallStack.pop();
 	}
 }
 
