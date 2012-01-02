@@ -344,21 +344,22 @@ void Crashdetect::PrintCallStack() const {
 
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();
-		if (call.type() == NativePublicCall::NATIVE) {
+		AMXDebugInfo debugInfo = GetCrashdetectInstance(call.amx())->debugInfo_;
+		if (call.type() == NativePublicCall::NATIVE) {			
 			std::string module = GetModuleNameBySymbol(
-					(void*)GetNativeAddress(amx_, call.index()));
-			if (debugInfo_.IsLoaded()) {
+					(void*)GetNativeAddress(call.amx(), call.index()));
+			if (debugInfo.IsLoaded()) {
 				logprintf("  File '%s', line %ld", 
-						debugInfo_.GetFileName(amx_->cip).c_str(),
-						debugInfo_.GetLineNumber(amx_->cip));
+						debugInfo.GetFileName(call.amx()->cip).c_str(),
+						debugInfo.GetLineNumber(call.amx()->cip));
 				logprintf("    native %s() from %s", 
-						GetNativeName(amx_, call.index()), module.c_str());
+						GetNativeName(call.amx(), call.index()), module.c_str());
 			} else {
-				logprintf("  0x%08X => native %s() from %s", amx_->cip - sizeof(cell), 
-						GetNativeName(amx_, call.index()), module.c_str());
+				logprintf("  0x%08X => native %s() from %s", call.amx()->cip - sizeof(cell), 
+						GetNativeName(call.amx(), call.index()), module.c_str());
 			}
 		} else if (call.type() == NativePublicCall::PUBLIC) {
-			AMXCallStack callStack(amx_, debugInfo_, frm);
+			AMXCallStack callStack(call.amx(), debugInfo, frm);
 			std::vector<AMXStackFrame> frames = callStack.GetFrames();
 			if (frames.size() == 0) {
 				logprintf("  Stack corrupted!");
@@ -368,7 +369,7 @@ void Crashdetect::PrintCallStack() const {
 					iterator != frames.end(); ++iterator) 
 			{	
 				const AMXStackFrame &frame = *iterator;
-				if (debugInfo_.IsLoaded()) {
+				if (debugInfo.IsLoaded()) {
 					std::string function = frame.GetFunctionName();
 					if (!frame.OK() && function.empty()) {
 						logprintf("  Stack corrupted!");
@@ -387,8 +388,8 @@ void Crashdetect::PrintCallStack() const {
 						if (call.index() == AMX_EXEC_MAIN)
 							logprintf("    main()");
 						else if (call.index() >= 0) {
-							AMXStackFrame epFrame = AMXStackFrame(amx_, frm, 0, 
-									GetPublicAddress(amx_, call.index()), debugInfo_);
+							AMXStackFrame epFrame = AMXStackFrame(call.amx(), frm, 0, 
+									GetPublicAddress(call.amx(), call.index()), debugInfo_);
 							logprintf("    %s", epFrame.GetFunctionPrototype().c_str());
 						} else {
 							logprintf("    <unknown public>");
@@ -410,7 +411,7 @@ void Crashdetect::PrintCallStack() const {
 					} else {		
 						// Entry point
 						char name[32];
-						if (amx_GetPublic(amx_, call.index(), name) == AMX_ERR_NONE) {
+						if (amx_GetPublic(call.amx(), call.index(), name) == AMX_ERR_NONE) {
 							logprintf("  0x???????? => public %s()", name);
 						} else if (call.index() == AMX_EXEC_MAIN) {
 							logprintf("  0x???????? => main()");
