@@ -138,8 +138,13 @@ void Crashdetect::ReportCrash() {
 	if (!nativeCallStack_.empty()) {
 		GetCrashdetectInstance(nativeCallStack_.top().GetAmx())->HandleCrash();
 	} else {
-		// Server/plugin internal error, we don't know the reason
-		logprintf("The server has crashed due to an unknown error");
+		// OK, let's see whether we are amx_Exec'ing something
+		if (!publicCallStack_.empty()) {
+			GetCrashdetectInstance(publicCallStack_.top().GetAmx())->HandleCrash();
+		} else {
+			// Server/plugin internal error (in another thread?)
+			logprintf("The server has crashed due to an unknown error");
+		}
 	}
 }
 
