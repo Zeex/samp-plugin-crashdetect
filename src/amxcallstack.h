@@ -26,12 +26,12 @@ class AMXStackFrame;
 
 class AMXCallStack {
 public:
-	AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo);
+	AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame = 0);
 
 	// Get list of stack frames
 	std::vector<AMXStackFrame> GetFrames() const { return frames_; }
 
-private:
+private:	
 	std::vector<AMXStackFrame> frames_;
 };
 

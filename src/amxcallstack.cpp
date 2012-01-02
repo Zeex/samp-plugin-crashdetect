@@ -217,11 +217,16 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 	}
 }
 
-AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo) {
+AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 	ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
 
-	for (ucell frm = static_cast<ucell>(amx->frm); frm > static_cast<ucell>(amx->stk);) {
+	ucell frm = topFrame;
+	if (frm == 0) {
+		frm = amx->frm;
+	}
+
+	while (frm > static_cast<ucell>(amx->stk)) {
 		AMXStackFrame frame(amx, frm, debugInfo);
 		frames_.push_back(frame);
 		if (!frame) {
