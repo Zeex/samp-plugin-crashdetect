@@ -154,7 +154,7 @@ void Crashdetect::ReportCrash() {
 }
 
 // static
-void Crashdetect::KeyboardInterrupt() {
+void Crashdetect::Interrupt() {
 	logprintf("Keyboard interrupt");
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
@@ -465,7 +465,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	Crash::EnableMiniDump(true);
 
 	// Set Ctrl-C signal handler
-	ControlC::SetHandler(Crashdetect::KeyboardInterrupt);
+	ControlC::SetHandler(Crashdetect::Interrupt);
 
 	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
 	return true;

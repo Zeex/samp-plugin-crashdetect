@@ -32,7 +32,7 @@ public:
 	static void DestroyInstance(AMX *amx);
 
 	static void ReportCrash();
-	static void KeyboardInterrupt();
+	static void Interrupt();
 
 	explicit Crashdetect(AMX *amx);
 
