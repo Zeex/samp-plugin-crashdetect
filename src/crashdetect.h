@@ -18,12 +18,19 @@
 #include <stack>
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+
 #include "amxdebuginfo.h"
 
 #define AMX_EXEC_GDK (-10) // Compatibility with GDK
 
 class Crashdetect {
 public:	
+	static void CreateInstance(AMX *amx);
+	static Crashdetect *GetInstance(AMX *amx);
+	static void DestroyInstance(AMX *amx);
+
 	static void ReportCrash();
 	static void KeyboardInterrupt();
 
@@ -81,6 +88,9 @@ private:
 
 	// Set to true on Runtime Error (to prevent double-reporting)
 	static bool errorCaught_;
+
+	// AMX* <=> Crashdetect*
+	static boost::unordered_map<AMX*, boost::shared_ptr<Crashdetect> > instances_;
 };
 
 #endif // !CRASHDETECT_H
