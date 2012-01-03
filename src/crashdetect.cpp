@@ -37,7 +37,7 @@
 #include "amxpathfinder.h"
 #include "crash.h"
 #include "crashdetect.h"
-#include "ctrl-c.h"
+#include "interrupt.h"
 #include "jump-x86.h"
 #include "plugincommon.h"
 #include "version.h"
@@ -465,7 +465,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	Crash::EnableMiniDump(true);
 
 	// Set Ctrl-C signal handler
-	ControlC::SetHandler(Crashdetect::Interrupt);
+	Interrupt::SetHandler(Crashdetect::Interrupt);
 
 	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
 	return true;

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ctrl-c.h"
+#include "interrupt.h"
 
-ControlC::Handler ControlC::handler_;
+Interrupt::Handler Interrupt::handler_;
 
 #ifdef _WIN32
 
@@ -23,7 +23,7 @@ ControlC::Handler ControlC::handler_;
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 	switch (dwCtrlType) {
 	case CTRL_C_EVENT:
-		ControlC::Handler handler = ControlC::GetHandler();
+		Interrupt::Handler handler = Interrupt::GetHandler();
 		if (handler != 0) {
 			handler();
 		}
@@ -31,7 +31,7 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 	return FALSE;
 }
 
-void ControlC::SetHandler(ControlC::Handler handler) {
+void Interrupt::SetHandler(Interrupt::Handler handler) {
 	handler_ = handler;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }
@@ -43,7 +43,7 @@ void ControlC::SetHandler(ControlC::Handler handler) {
 static void (*previousSignalHandler)(int);
 
 static void HandleSIGINT(int sig) {
-	ControlC::Handler handler = ControlC::GetHandler();
+	Interrupt::Handler handler = Interrupt::GetHandler();
 	if (handler != 0) {
 		handler();
 	}
@@ -52,7 +52,7 @@ static void HandleSIGINT(int sig) {
 }
 
 // static
-void ControlC::SetHandler(ControlC::Handler handler) {
+void Interrupt::SetHandler(Interrupt::Handler handler) {
 	handler_ = handler;
 	previousSignalHandler = signal(SIGINT, HandleSIGINT);
 }
@@ -60,7 +60,7 @@ void ControlC::SetHandler(ControlC::Handler handler) {
 #endif
 
 // static
-ControlC::Handler ControlC::GetHandler() {
+Interrupt::Handler Interrupt::GetHandler() {
 	return handler_;
 }
 

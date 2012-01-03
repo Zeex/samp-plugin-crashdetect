@@ -62,8 +62,8 @@ add_library(crashdetect MODULE
 	src/crashdetect.h
 	src/crashdetect.rc
 	src/crashdetect.rc
-	src/ctrl-c.cpp
-	src/ctrl-c.h
+	src/interrupt.cpp
+	src/interrupt.h
 	src/jump-x86.cpp
 	src/jump-x86.h
 )

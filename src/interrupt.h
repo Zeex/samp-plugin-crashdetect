@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CTRL_C_H
-#define CTRL_C_H
+#ifndef INTERRUPT_H
+#define INTERRUPT_H
 
-class ControlC {
+class Interrupt {
 public:
 	typedef void (*Handler)();
 
@@ -26,4 +26,4 @@ private:
 	static Handler handler_;
 };
 
-#endif // !CTRL_C_H
+#endif // !INTERRUPT_H
