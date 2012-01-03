@@ -471,10 +471,6 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	return true;
 }
 
-PLUGIN_EXPORT void PLUGIN_CALL Unload() {
-	// nothing
-}
-
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	Crashdetect::CreateInstance(amx);
 	amx_SetDebugHook(amx, AmxDebug);
