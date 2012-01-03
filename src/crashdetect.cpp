@@ -142,7 +142,7 @@ void Crashdetect::DestroyInstance(AMX *amx) {
 }
 
 // static
-void Crashdetect::ReportCrash() {
+void Crashdetect::Crash() {
 	// Check if the last native/public call succeeded
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
@@ -461,7 +461,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	new JumpX86(amx_Exec_ptr, (void*)AmxExec);
 
 	// Set crash handler
-	Crash::SetHandler(Crashdetect::ReportCrash);
+	Crash::SetHandler(Crashdetect::Crash);
 	Crash::EnableMiniDump(true);
 
 	// Set Ctrl-C signal handler

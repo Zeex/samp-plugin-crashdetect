@@ -31,7 +31,7 @@ public:
 	static Crashdetect *GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
-	static void ReportCrash();
+	static void Crash();
 	static void Interrupt();
 
 	explicit Crashdetect(AMX *amx);
