@@ -159,8 +159,8 @@ void Crashdetect::Interrupt() {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		Crashdetect::GetInstance(amx)->PrintCallStack();
-		abort();
 	}
+	std::exit(EXIT_FAILURE);
 }
 
 Crashdetect::Crashdetect(AMX *amx) 
