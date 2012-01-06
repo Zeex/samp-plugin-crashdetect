@@ -25,16 +25,16 @@ Imagine that you have the following script:
 
 If crashdetect is loaded, the output would be something like this (in server log):
 
-	[05:57:42]: The server has been crashed by 'gamemodes\crash.amx'.
-	[05:57:42]: Call stack (most recent call first):
-	[05:57:42]:   File 'crash.pwn', line 13
-	[05:57:42]:     native fread()
-	[05:57:42]:   File 'crash.pwn', line 8
-	[05:57:42]:     function2()
-	[05:57:42]:   File 'crash.pwn', line 4
-	[05:57:42]:     function1()
-	[05:57:42]:   File 'crash.pwn'
-	[05:57:42]:     main()
+	[17:37:48] The server has crashed executing 'gamemodes\crash.amx'
+	[17:37:48] Call stack (most recent call first):
+	[17:37:48]   File 'crash.pwn', line 13
+	[17:37:48]     native fread() from samp-server.exe
+	[17:37:48]   File 'crash.pwn', line 8
+	[17:37:48]     function2()
+	[17:37:48]   File 'crash.pwn', line 4
+	[17:37:48]     function1()
+	[17:37:48]   File 'crash.pwn'
+	[17:37:48]     main()
 
 Aha! 
 
@@ -60,15 +60,15 @@ though it doesn't execute the code which follows.
 
 Again, with crashdetect you get something like this:
 
-	[05:48:52]: Script[gamemodes\bounds.amx]: In file 'bounds.pwn' at line 18:
-	[05:48:52]: Script[gamemodes\bounds.amx]: Run time error 4: "Array index out of bounds"
-	[05:48:52]: Additional information:
-	[05:48:52]:   Array max index is 4 but accessing an element at 100
-	[05:48:52]: Call stack (most recent call first):
-	[05:48:52]:   File 'bounds.pwn', line 7
-	[05:48:52]:     do_out_of_bounds()
-	[05:48:52]:   File 'bounds.pwn'
-	[05:48:52]:     public OnGameModeInit()
+	[17:39:55] Script[gamemodes\bounds.amx]: In file 'bounds.pwn' at line 14:
+	[17:39:55] Script[gamemodes\bounds.amx]: Run time error 4: "Array index out of bounds"
+	[17:39:55] Error information:
+	[17:39:55]   Array max index is 4 but accessing an element at 100
+	[17:39:55] Call stack (most recent call first):
+	[17:39:55]   File 'bounds.pwn', line 7
+	[17:39:55]     do_out_of_bounds(index=100)
+	[17:39:55]   File 'bounds.pwn'
+	[17:39:55]     public OnGameModeInit()
 
 As you can see, it even tells you the exact line where the error occurs, the value of array index, etc which 
 is typically enough to fix the problem.
