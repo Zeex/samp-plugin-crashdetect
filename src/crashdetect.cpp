@@ -245,6 +245,7 @@ void Crashdetect::HandleNativeError(int index) {
 			amxFileName_.c_str(), GetNativeName(amx_, index), amx_->cip);
 	}
 	PrintCallStack();
+	std::exit(EXIT_FAILURE);
 }
 
 void Crashdetect::HandleRuntimeError(int index, int error) {
@@ -315,6 +316,7 @@ void Crashdetect::HandleRuntimeError(int index, int error) {
 			break;
 		}
 		PrintCallStack();
+		std::exit(EXIT_FAILURE);
 	}
 }
 
