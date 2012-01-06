@@ -31,11 +31,11 @@ static bool IsFunctionArgument(const AMXDebugInfo::Symbol &symbol, ucell functio
 	return symbol.IsLocal() && symbol.GetCodeStartAddress() == functionAddress; 
 }
 
-class IsArgumentOf : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
+class IsArgumentOf : public std::unary_function<AMXDebugInfo::Symbol, bool> {
 public:
 	IsArgumentOf(ucell function) : function_(function) {}
 
-	bool operator()(const AMXDebugInfo::Symbol &symbol) const {
+	bool operator()(AMXDebugInfo::Symbol symbol) const {
 		return symbol.IsLocal() && symbol.GetCodeStartAddress() == function_;
 	}
 
