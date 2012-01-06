@@ -10,6 +10,7 @@
 #     - gcc
 #     - g++
 #     - GNU make
+#     - sed
 #     - windres (Windows only)
 #  1) Libraries
 #     - Boost.Filesystem
