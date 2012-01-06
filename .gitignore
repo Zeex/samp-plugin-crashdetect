@@ -1,4 +1,5 @@
 build
+src/version.h
 
 _CPack_Packages
 CMakeFiles
@@ -25,5 +26,9 @@ Win32
 *.vcxproj.user
 
 *.o
+src/*.o
+lib/*.o
+lib/amx/*.o
+
 *.so
-Makefile
+
