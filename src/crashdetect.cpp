@@ -377,16 +377,14 @@ void Crashdetect::PrintCallStack() const {
 				}
 			} else {
 				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
-						iterator != frames.end(); ++iterator) 
+					iterator != frames.end() && iterator->GetCallAddress() != 0; ++iterator) 
 				{	
-					if (iterator->GetCallAddress() != 0) {
-						if (iterator->IsPublic()) {
-							logprintf("  0x%08X => public %s()", 
-								iterator->GetCallAddress(), iterator->GetFunctionName().c_str());
-						} else {
-							logprintf("  0x%08X => 0x%08x()", 
-								iterator->GetCallAddress(), iterator->GetFunctionAddress());
-						}
+					if (iterator->IsPublic()) {
+						logprintf("  0x%08X => public %s()", 
+							iterator->GetCallAddress(), iterator->GetFunctionName().c_str());
+					} else {
+						logprintf("  0x%08X => 0x%08x()", 
+							iterator->GetCallAddress(), iterator->GetFunctionAddress());
 					}
 				}
 				// Entry point
