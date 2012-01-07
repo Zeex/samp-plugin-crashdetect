@@ -91,10 +91,15 @@ AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, const AMXDebugInfo &d
 		ucell code = reinterpret_cast<ucell>(amx->base) + hdr->cod;
 
 		callAddress_ = *(reinterpret_cast<ucell*>(data + frameAddress_) + 1) - 2*sizeof(cell);
-		functionAddress_ = *reinterpret_cast<ucell*>(callAddress_ + sizeof(cell) + code) - code;
-
-		Init(amx, debugInfo);
-	}	
+		if (callAddress_ >= static_cast<ucell>(hdr->cod) 
+				&& callAddress_ < static_cast<ucell>(hdr->dat)) 
+		{
+			functionAddress_ = *reinterpret_cast<ucell*>(callAddress_ + sizeof(cell) + code) - code;
+			Init(amx, debugInfo);
+		} else {
+			callAddress_ = 0;
+		}
+	}
 }
 
 AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, ucell callAddress, 
