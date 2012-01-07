@@ -99,13 +99,9 @@ target_link_Libraries(crashdetect ${Boost_LIBRARIES})
 find_package(Git)
 if(GIT_FOUND)
 	# Get latest version tag from Git history
-	git_describe(description --match v[0-9]*.[0-9]*.[0-9]*)
-	string(REPLACE "-" "." description ${description})
-	string(REGEX REPLACE "\\.g[0-9a-f]+$" "" description ${description})
+	git_describe(description --match v[0-9]*.[0-9]**)
+	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
 	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
-	if(NOT version MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+\\.?[0-9]*$")
-		set(version "")
-	endif()
 endif()
 
 if(version STREQUAL "")
@@ -113,14 +109,13 @@ if(version STREQUAL "")
 	message(STATUS "Failed to get version from Git, will read VERSION.txt")
 	file(READ "${crashdetect_SOURCE_DIR}/VERSION.txt" version)
 	string(STRIP ${version} version)
-	if(NOT version MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
-		message(FATAL_ERROR "Invalid version")
-	endif()
 endif()
 
-
 # Comma-separated version for RC
-string(REPLACE "." "," version_rc ${version})
+string(REGEX REPLACE "[.-]" "," version_rc ${version})
+# Append one or two ",0" to the end to make windres happy
+string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
+string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
 # Generate version.h to be included from source files
 file(WRITE "src/version.h" 
