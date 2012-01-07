@@ -229,7 +229,7 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFra
 	while (frm > static_cast<ucell>(amx->stk)) {
 		AMXStackFrame frame(amx, frm, debugInfo);
 		frames_.push_back(frame);
-		if (!frame) {
+		if (frame.GetFunctionAddress() == 0) {
 			// Invalid frame address
 			return;
 		}

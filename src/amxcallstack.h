@@ -62,10 +62,6 @@ public:
 	// Check if an address belongs to AMX stack.
 	static inline bool IsOnStack(cell address, AMX *amx);
 
-	// Returns true if construction succeeded.
-	inline bool OK() const { return callAddress_ != 0; }
-	inline operator bool() const { return OK(); }
-
 private:
 	// Contains the code common to both constructors.
 	void Init(AMX *amx, const AMXDebugInfo &debugInfo);
