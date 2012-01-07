@@ -284,7 +284,7 @@ void Crashdetect::HandleRuntimeError(int index, int error) {
 			break;
 		}
 		case AMX_ERR_NOTFOUND: {
-			logprintf("  The following natives were not registered:");
+			logprintf("  The following native functions are not registered:");
 			AMX_FUNCSTUBNT *natives = 
 				reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
 			int numNatives = 0;
@@ -326,10 +326,13 @@ void Crashdetect::HandleCrash() {
 }
 
 void Crashdetect::PrintCallStack() const {
-	logprintf("Call stack (most recent call first):");	
+	if (npCalls_.empty()) 
+		return;
 
 	std::stack<NativePublicCall> npCallStack = npCalls_;
 	ucell frm = static_cast<ucell>(amx_->frm);
+
+	logprintf("Call stack (most recent call first):");	
 
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();
@@ -350,65 +353,52 @@ void Crashdetect::PrintCallStack() const {
 		} else if (call.type() == NativePublicCall::PUBLIC) {
 			AMXCallStack callStack(call.amx(), debugInfo, frm);
 			std::vector<AMXStackFrame> frames = callStack.GetFrames();
-			if (frames.size() == 0) {
-				logprintf("  Stack corrupted!");
-				return;
+			if (frames.empty()) {
+				logprintf("  Some or all frames are missing");
 			}
-			for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
-					iterator != frames.end(); ++iterator) 
-			{	
-				const AMXStackFrame &frame = *iterator;
-				if (debugInfo.IsLoaded()) {
-					std::string function = frame.GetFunctionName();
-					if (!frame.OK() && function.empty()) {
-						logprintf("  Stack corrupted!");
-						break;
-					}
-					if (frame.GetCallAddress() != 0) {
-						if (!frame.OK()) {
-							logprintf("  Stack corrupted!");
-							break;
-						}
-						logprintf("  File '%s', line %d", frame.GetSourceFileName().c_str(), frame.GetLineNumber());;
-						logprintf("    %s", frame.GetFunctionPrototype().c_str());
-					} else {
-						// Entry point
-						logprintf("  File '%s'", frame.GetSourceFileName().c_str());
-						if (call.index() == AMX_EXEC_MAIN)
-							logprintf("    main()");
-						else if (call.index() >= 0) {
-							AMXStackFrame epFrame = AMXStackFrame(call.amx(), frm, 0, 
-									GetPublicAddress(call.amx(), call.index()), debugInfo_);
-							logprintf("    %s", epFrame.GetFunctionPrototype().c_str());
-						} else {
-							logprintf("    <unknown public>");
-						}
-					}					
+			if (debugInfo.IsLoaded()) {
+				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
+					iterator != frames.end() && iterator->GetCallAddress() != 0; ++iterator) 
+				{	
+					if (iterator->GetCallAddress() != 0) {
+						logprintf("  File '%s', line %d", iterator->GetSourceFileName().c_str(), 
+								iterator->GetLineNumber());;
+						logprintf("    %s", iterator->GetFunctionPrototype().c_str());
+					} 
+				}
+				// Entry point
+				AMXStackFrame epFrame = AMXStackFrame(call.amx(), frm, 0, 
+						GetPublicAddress(call.amx(), call.index()), debugInfo);
+				logprintf("  File '%s'", epFrame.GetSourceFileName().c_str());
+				if (call.index() == AMX_EXEC_MAIN) {
+					logprintf("    main()");
+				} else if (call.index() >= 0) {					
+					logprintf("    %s", epFrame.GetFunctionPrototype().c_str());
 				} else {
-					if (frame.GetCallAddress() != 0) {
-						if (!frame.OK()) {
-							logprintf("  Stack corrupted!");
-							break;
-						}
-						if (frame.IsPublic()) {
+					logprintf("    <unknown function>");
+				}
+			} else {
+				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
+						iterator != frames.end(); ++iterator) 
+				{	
+					if (iterator->GetCallAddress() != 0) {
+						if (iterator->IsPublic()) {
 							logprintf("  0x%08X => public %s()", 
-								frame.GetCallAddress(), frame.GetFunctionName().c_str());
+								iterator->GetCallAddress(), iterator->GetFunctionName().c_str());
 						} else {
 							logprintf("  0x%08X => 0x%08x()", 
-								frame.GetCallAddress(), frame.GetFunctionAddress());
+								iterator->GetCallAddress(), iterator->GetFunctionAddress());
 						}
-					} else {		
-						// Entry point
-						char name[32];
-						if (amx_GetPublic(call.amx(), call.index(), name) == AMX_ERR_NONE) {
-							logprintf("  0x???????? => public %s()", name);
-						} else if (call.index() == AMX_EXEC_MAIN) {
-							logprintf("  0x???????? => main()");
-						} else {
-							logprintf("  0x???????? => 0x????????()");				
-						}
-						break;
 					}
+				}
+				// Entry point
+				char name[32];
+				if (amx_GetPublic(call.amx(), call.index(), name) == AMX_ERR_NONE) {
+					logprintf("  0x???????? => public %s()", name);
+				} else if (call.index() == AMX_EXEC_MAIN) {
+					logprintf("  0x???????? => main()");
+				} else {
+					logprintf("  0x???????? => 0x????????()");				
 				}
 			}
 		} else {
