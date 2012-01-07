@@ -46,9 +46,9 @@ public:
 	inline bool IsPublic() const { return isPublic_; }
 
 	// Always available.
-	inline cell GetFrameAddress()    const { return frameAddress_; }
-	inline cell GetCallAddress()     const { return callAddress_; }
-	inline cell GetFunctionAddress() const { return functionAddress_; }
+	inline ucell GetFrameAddress()    const { return frameAddress_; }
+	inline ucell GetCallAddress()     const { return callAddress_; }
+	inline ucell GetFunctionAddress() const { return functionAddress_; }
 
 	// These require debug info (except GetFunctionName() which always works with publics).
 	inline std::string GetSourceFileName()    const { return fileName_; }
