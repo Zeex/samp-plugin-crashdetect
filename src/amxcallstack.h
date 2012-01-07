@@ -49,6 +49,7 @@ public:
 	inline ucell GetFrameAddress()    const { return frameAddress_; }
 	inline ucell GetCallAddress()     const { return callAddress_; }
 	inline ucell GetFunctionAddress() const { return functionAddress_; }
+	inline ucell GetReturnAddress()   const { return callAddress_ + 2*sizeof(cell); }
 
 	// These require debug info (except GetFunctionName() which always works with publics).
 	inline std::string GetSourceFileName()    const { return fileName_; }
