@@ -360,11 +360,9 @@ void Crashdetect::PrintCallStack() const {
 				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
 					iterator != frames.end() && iterator->GetCallAddress() != 0; ++iterator) 
 				{	
-					if (iterator->GetCallAddress() != 0) {
-						logprintf("  File '%s', line %d", iterator->GetSourceFileName().c_str(), 
-								iterator->GetLineNumber());;
-						logprintf("    %s", iterator->GetFunctionPrototype().c_str());
-					} 
+					logprintf("  File '%s', line %d", iterator->GetSourceFileName().c_str(), 
+							iterator->GetLineNumber());;
+					logprintf("    %s", iterator->GetFunctionPrototype().c_str());
 				}
 				// Entry point
 				AMXStackFrame epFrame = AMXStackFrame(call.amx(), frm, 0, 
