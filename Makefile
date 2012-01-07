@@ -19,6 +19,10 @@
 CC  = gcc
 CXX = g++
 
+ifndef config
+config = release
+endif
+
 ifeq ($(config),debug)
 CFLAGS += -g
 CFLAGS += -Wall
