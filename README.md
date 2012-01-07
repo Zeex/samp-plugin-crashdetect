@@ -84,4 +84,4 @@ Known Issues
 
 *	The plugin can crash your server when it attempts to load debug info from a compiled .amx
 	if it's more than 2^16 lines of code (#include's are counted too). Unfortunately this can't be 
-	fixed without editing Pawn compiler. Also see https://github.com/Zeex/crashdetect/issues/5.
+	fixed without editing Pawn compiler. 
