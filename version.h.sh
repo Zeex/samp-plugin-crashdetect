@@ -1,3 +1,5 @@
+#!/bin/sh
+
 me=`basename $`
 
 # Try git describe first, then VERSION.txt
