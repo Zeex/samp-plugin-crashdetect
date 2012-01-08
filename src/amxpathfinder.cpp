@@ -63,7 +63,7 @@ bool AMXPathFinder::FindAMX(AMX *amx, boost::filesystem::path &result) {
 				continue;
 			}
 
-			std::string filename = file->path().string();
+			std::string filename = file->path().relative_path().string();
 			std::time_t last_write = boost::filesystem::last_write_time(filename);
 
 			std::map<std::string, AMXFile>::iterator script_it = loadedScripts_.find(filename);				
