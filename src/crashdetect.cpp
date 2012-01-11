@@ -438,7 +438,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	void *funAddr = GetJMPAbsoluteAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
 	if (funAddr != 0) {
 		std::string module = GetModuleNameBySymbol(funAddr);
-		if (!module.empty() && module != "samp-server" && module != "samp03svr") {
+		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
 			logprintf("  crashdetect must be loaded before %s", module.c_str());
 			return false;
 		}
