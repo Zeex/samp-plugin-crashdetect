@@ -58,6 +58,8 @@ add_library(crashdetect MODULE
 	src/amxdebuginfo.h
 	src/amxpathfinder.cpp
 	src/amxpathfinder.h
+	src/configreader.cpp
+	src/configreader.h
 	src/crash.cpp
 	src/crash.h
 	src/crashdetect.cpp
