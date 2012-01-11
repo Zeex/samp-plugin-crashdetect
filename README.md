@@ -79,6 +79,14 @@ Usage Notes
 To get as much helpful output as possible you need to tell the Pawn compiler to include debug information
 into the compiled .amx by specifying either -d2 or -d3 flag on the command line (or through `pawn.cfg`).
 
+Configuration
+-------------
+
+You can configure crashdetect by changing the following settings in server.cfg:
+
+*	`die_on_error` <0|1>` - Shut down the server on runtime or native error. 
+	By default this option is turned off.
+
 Known Issues
 ------------
 

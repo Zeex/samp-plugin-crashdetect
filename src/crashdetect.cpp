@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
@@ -37,6 +38,7 @@
 #include "amxpathfinder.h"
 #include "crash.h"
 #include "crashdetect.h"
+#include "configreader.h"
 #include "interrupt.h"
 #include "jump-x86.h"
 #include "logprintf.h"
@@ -104,7 +106,30 @@ static inline ucell GetPublicAddress(AMX *amx, cell index) {
 	return publics[index].address;
 }
 
-// Gets called before amx_Exec() on error but before AMX stack/heap is reset
+static void *GetJMPAbsoluteAddress(unsigned char *jmp) {
+	static unsigned char REL_JMP = 0xE9;
+	if (*jmp == REL_JMP) {
+		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + 5);
+		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
+		uint32_t abs_addr = rel_addr + next_instr;
+		return reinterpret_cast<void*>(abs_addr);
+	} 
+	return 0;
+}
+
+static int AMXAPI AmxDebug(AMX *amx) {
+	return crashdetect::GetInstance(amx)->AmxDebug();
+}
+
+static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
+	return crashdetect::GetInstance(amx)->AmxCallback(index, result, params);
+}
+
+static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
+	return crashdetect::GetInstance(amx)->AmxExec(retval, index);
+}
+
+/// Gets called before amx_Exec() on error but before AMX stack/heap is reset
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
 		crashdetect::GetInstance(amx)->HandleRuntimeError(index, error);
@@ -112,9 +137,17 @@ extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	return AMX_ERR_NONE;
 }
 
-bool crashdetect::errorCaught_ = false;
-std::stack<crashdetect::NativePublicCall> crashdetect::npCalls_;
-boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > crashdetect::instances_;
+bool 
+	crashdetect::errorCaught_ = false;
+
+std::stack<crashdetect::NativePublicCall> 
+	crashdetect::npCalls_;
+
+ConfigReader 
+	crashdetect::serverCfg("server.cfg");
+
+boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > 
+	crashdetect::instances_;
 
 // static
 void crashdetect::CreateInstance(AMX *amx) {
@@ -157,7 +190,14 @@ void crashdetect::Interrupt() {
 		AMX *amx = npCalls_.top().amx();
 		crashdetect::GetInstance(amx)->PrintCallStack();
 	}
-	std::exit(EXIT_FAILURE);
+	ExitOnError();
+}
+
+// static
+void crashdetect::ExitOnError() {
+	if (serverCfg.GetOption("die_on_error", false)) {
+		std::exit(EXIT_FAILURE);
+	}
 }
 
 crashdetect::crashdetect(AMX *amx) 
@@ -242,7 +282,7 @@ void crashdetect::HandleNativeError(int index) {
 			amxFileName_.c_str(), GetNativeName(amx_, index), amx_->cip);
 	}
 	PrintCallStack();
-	std::exit(EXIT_FAILURE);
+	ExitOnError();
 }
 
 void crashdetect::HandleRuntimeError(int index, int error) {
@@ -313,7 +353,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 			break;
 		}
 		PrintCallStack();
-		std::exit(EXIT_FAILURE);
+		ExitOnError();
 	}
 }
 
@@ -400,29 +440,6 @@ void crashdetect::PrintCallStack() const {
 		frm = call.frm();
 		npCallStack.pop();
 	}
-}
-
-static void *GetJMPAbsoluteAddress(unsigned char *jmp) {
-	static unsigned char REL_JMP = 0xE9;
-	if (*jmp == REL_JMP) {
-		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + 5);
-		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
-		uint32_t abs_addr = rel_addr + next_instr;
-		return reinterpret_cast<void*>(abs_addr);
-	} 
-	return 0;
-}
-
-static int AMXAPI AmxDebug(AMX *amx) {
-	return crashdetect::GetInstance(amx)->AmxDebug();
-}
-
-static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return crashdetect::GetInstance(amx)->AmxCallback(index, result, params);
-}
-
-static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
-	return crashdetect::GetInstance(amx)->AmxExec(retval, index);
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {

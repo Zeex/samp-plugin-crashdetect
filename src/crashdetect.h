@@ -22,6 +22,7 @@
 #include <boost/unordered_map.hpp>
 
 #include "amxdebuginfo.h"
+#include "configreader.h"
 
 #define AMX_EXEC_GDK (-10) // Compatibility with GDK
 
@@ -33,6 +34,7 @@ public:
 
 	static void Crash();
 	static void Interrupt();
+	static void ExitOnError();
 
 	explicit crashdetect(AMX *amx);
 
@@ -51,7 +53,7 @@ private:
 	AMX_HEADER  *amxhdr_;
 	AMXDebugInfo debugInfo_;
 
-	// Path to the .amx file
+	/// Path to the .amx file
 	std::string  amxFileName_;
 
 	AMX_CALLBACK prevCallback_;
@@ -83,13 +85,16 @@ private:
 		cell index_;
 	};
 
-	// Native/public calls
+	/// Native/public calls
 	static std::stack<NativePublicCall> npCalls_;
 
-	// Set to true on Runtime Error (to prevent double-reporting)
+	/// Set to true on Runtime Error (to prevent double-reporting)
 	static bool errorCaught_;
 
-	// AMX* <=> crashdetect*
+	/// Server config reader (server.cfg)
+	static ConfigReader serverCfg;
+
+	/// AMX* <=> crashdetect*
 	static boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > instances_;
 };
 
