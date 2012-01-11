@@ -62,7 +62,8 @@ private:
 	static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info);
 	static const char *GetNativeName(AMX *amx, cell index);
 	static AMX_NATIVE GetNativeAddress(AMX *amx, cell index);
-	static ucell GetPublicAddress(AMX *amx, cell index);	
+	static ucell GetPublicAddress(AMX *amx, cell index);
+	static std::string ReadSourceLine(const std::string &filename, long lineNo);
 
 private:
 	AMX         *amx_;

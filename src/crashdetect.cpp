@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
@@ -187,6 +188,22 @@ ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
 	return publics[index].address;
 }
 
+// static 
+std::string crashdetect::ReadSourceLine(const std::string &filename, long lineNo) {	
+	std::ifstream inputFile(filename.c_str());
+	if (inputFile.is_open()) {
+		std::string line;
+		int lineCount = 0;
+		while (std::getline(inputFile, line)) {
+			if (++lineCount == lineNo) {
+				boost::algorithm::trim(line); // strip indents
+				return line;
+			}
+		}
+	}
+	return std::string();
+}
+
 // static
 void crashdetect::Crash() {
 	// Check if the last native/public call succeeded
@@ -335,11 +352,17 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 			logprintf("[debug] [%s]: During execution of %s():", 
 					amxName_.c_str(), entryPoint);
 		} else {
+			std::string filename = debugInfo_.GetFileName(amx_->cip);
+			long line = debugInfo_.GetLineNumber(amx_->cip);
 			logprintf("[debug] [%s]: In file '%s' at line %ld:", 
 					amxName_.c_str(), 
-					debugInfo_.GetFileName(amx_->cip).c_str(),
-					debugInfo_.GetLineNumber(amx_->cip)					
+					filename.c_str(),
+					line
 			);
+			std::string code = ReadSourceLine(filename, line);
+			if (!code.empty()) {
+				logprintf("[debug] [%s]: %s", amxName_.c_str(), code.c_str());
+			}
 		}
 		logprintf("[debug] [%s]: Run time error %d: \"%s\"", 
 				amxName_.c_str(), error, aux_StrError(error));
