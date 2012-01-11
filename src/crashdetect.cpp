@@ -39,15 +39,12 @@
 #include "crashdetect.h"
 #include "interrupt.h"
 #include "jump-x86.h"
+#include "logprintf.h"
 #include "plugincommon.h"
 #include "version.h"
 
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
-
-typedef void (*logprintf_t)(const char *fmt, ...);
-
-static logprintf_t logprintf;
 
 std::string GetModuleNameBySymbol(void *symbol) {
 	if (symbol == 0) {

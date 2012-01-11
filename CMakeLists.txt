@@ -49,6 +49,8 @@ add_library(crashdetect MODULE
 	lib/amx/getch.h
 	lib/amx/osdefs.h
 	lib/amx/sclinux.h
+	lib/logprintf.cpp
+	lib/logprintf.h
 	lib/plugincommon.h
 	src/amxcallstack.cpp
 	src/amxcallstack.h
