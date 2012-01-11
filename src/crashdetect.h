@@ -33,6 +33,8 @@ public:
 	static int AmxLoad(AMX *amx);
 	static int AmxUnload(AMX *amx);
 
+	static crashdetect *GetInstance(AMX *amx);
+
 	static int AMXAPI AmxDebug(AMX *amx);
 	static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params);
 	static int AMXAPI AmxExec(AMX *amx, cell *retval, int index);

@@ -62,18 +62,6 @@ ConfigReader
 boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > 
 	crashdetect::instances_;
 
-int AMXAPI crashdetect::AmxDebug(AMX *amx) {
-	return instances_[amx]->HandleAmxDebug();
-}
-
-int AMXAPI crashdetect::AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return instances_[amx]->HandleAmxCallback(index, result, params);
-}
-
-int AMXAPI crashdetect::AmxExec(AMX *amx, cell *retval, int index) {
-	return instances_[amx]->HandleAmxExec(retval, index);
-}
-
 // static
 bool crashdetect::Load(void **ppPluginData) {
 	// Hook amx_Exec to catch execution errors
@@ -104,7 +92,9 @@ bool crashdetect::Load(void **ppPluginData) {
 
 // static
 int crashdetect::AmxLoad(AMX *amx) {
-	instances_[amx].reset(new crashdetect(amx));
+	if (instances_.find(amx) == instances_.end()) {
+		instances_[amx].reset(new crashdetect(amx));
+	}
 	return AMX_ERR_NONE;
 }
 
@@ -114,95 +104,28 @@ int crashdetect::AmxUnload(AMX *amx) {
 	return AMX_ERR_NONE;
 }
 
-// static 
-void *crashdetect::GetJMPAbsoluteAddress(unsigned char *jmp) {
-	static unsigned char REL_JMP = 0xE9;
-	if (*jmp == REL_JMP) {
-		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + 5);
-		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
-		uint32_t abs_addr = rel_addr + next_instr;
-		return reinterpret_cast<void*>(abs_addr);
+// static
+crashdetect *crashdetect::GetInstance(AMX *amx) {
+	boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> >::iterator 
+			iterator = instances_.find(amx);
+	if (iterator == instances_.end()) {
+		crashdetect *inst = new crashdetect(amx);
+		instances_.insert(std::make_pair(amx, boost::shared_ptr<crashdetect>(inst)));
+		return inst;
 	} 
-	return 0;
+	return iterator->second.get();
 }
 
-// static 
-std::string crashdetect::GetModuleNameBySymbol(void *symbol) {
-	if (symbol == 0) {
-		return std::string();
-	}
-	char module[FILENAME_MAX] = "";
-	#ifdef WIN32
-		MEMORY_BASIC_INFORMATION mbi;
-		VirtualQuery(symbol, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, module, FILENAME_MAX);
-	#else
-		Dl_info info;
-		dladdr(symbol, &info);
-		strcpy(module, info.dli_fname);
-	#endif
-	return boost::filesystem::path(module).filename().string();
+int AMXAPI crashdetect::AmxDebug(AMX *amx) {
+	return GetInstance(amx)->HandleAmxDebug();
 }
 
-// static
-bool crashdetect::GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		hdr->natives + amx->base);
-	AMX_FUNCSTUBNT *libraries = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		hdr->libraries + amx->base);
-	int numNatives = (hdr->libraries - hdr->natives) / hdr->defsize;
-
-	if (index < 0 || index >= numNatives) {
-		return false;
-	}
-
-	info.func = reinterpret_cast<AMX_NATIVE>(natives[index].address);
-	info.name = reinterpret_cast<char*>(natives[index].nameofs +
-		reinterpret_cast<int32_t>(hdr));
-	return true;
+int AMXAPI crashdetect::AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
+	return GetInstance(amx)->HandleAmxCallback(index, result, params);
 }
 
-// static
-const char *crashdetect::GetNativeName(AMX *amx, cell index) {
-	AMX_NATIVE_INFO info;
-	if (!GetNativeInfo(amx, index, info)) {
-		return "<unknown native>";
-	}
-	return info.name;
-}
-
-// static
-AMX_NATIVE crashdetect::GetNativeAddress(AMX *amx, cell index) {
-	AMX_NATIVE_INFO info;
-	if (!GetNativeInfo(amx, index, info)) {
-		return 0;
-	}
-	return info.func;
-}
-
-// static
-ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		reinterpret_cast<AMX_HEADER*>(amx->base)->publics + amx->base);
-	return publics[index].address;
-}
-
-// static 
-std::string crashdetect::ReadSourceLine(const std::string &filename, long lineNo) {	
-	std::ifstream inputFile(filename.c_str());
-	if (inputFile.is_open()) {
-		std::string line;
-		int lineCount = 0;
-		while (std::getline(inputFile, line)) {
-			if (++lineCount == lineNo) {
-				boost::algorithm::trim(line); // strip indents
-				return line;
-			}
-		}
-	}
-	return std::string();
+int AMXAPI crashdetect::AmxExec(AMX *amx, cell *retval, int index) {
+	return GetInstance(amx)->HandleAmxExec(retval, index);
 }
 
 // static
@@ -210,7 +133,7 @@ void crashdetect::Crash() {
 	// Check if the last native/public call succeeded
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		instances_[amx]->HandleCrash();
+		GetInstance(amx)->HandleCrash();
 	} else {
 		// Server/plugin internal error (in another thread?)
 		logprintf("[debug] The server has crashed due to an unknown error");
@@ -219,14 +142,14 @@ void crashdetect::Crash() {
 
 // static
 void crashdetect::RuntimeError(AMX *amx, cell index, int error) {
-	instances_[amx]->HandleRuntimeError(index, error);
+	GetInstance(amx)->HandleRuntimeError(index, error);
 }
 
 // static
 void crashdetect::Interrupt() {	
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		instances_[amx]->HandleInterrupt();
+		GetInstance(amx)->HandleInterrupt();
 	} else {
 		logprintf("[debug] Keyboard interrupt");
 	}
@@ -503,3 +426,94 @@ void crashdetect::PrintCallStack() const {
 	}
 }
 
+
+// static 
+void *crashdetect::GetJMPAbsoluteAddress(unsigned char *jmp) {
+	static unsigned char REL_JMP = 0xE9;
+	if (*jmp == REL_JMP) {
+		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + 5);
+		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
+		uint32_t abs_addr = rel_addr + next_instr;
+		return reinterpret_cast<void*>(abs_addr);
+	} 
+	return 0;
+}
+
+// static 
+std::string crashdetect::GetModuleNameBySymbol(void *symbol) {
+	if (symbol == 0) {
+		return std::string();
+	}
+	char module[FILENAME_MAX] = "";
+	#ifdef WIN32
+		MEMORY_BASIC_INFORMATION mbi;
+		VirtualQuery(symbol, &mbi, sizeof(mbi));
+		GetModuleFileName((HMODULE)mbi.AllocationBase, module, FILENAME_MAX);
+	#else
+		Dl_info info;
+		dladdr(symbol, &info);
+		strcpy(module, info.dli_fname);
+	#endif
+	return boost::filesystem::path(module).filename().string();
+}
+
+// static
+bool crashdetect::GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(
+		hdr->natives + amx->base);
+	AMX_FUNCSTUBNT *libraries = reinterpret_cast<AMX_FUNCSTUBNT*>(
+		hdr->libraries + amx->base);
+	int numNatives = (hdr->libraries - hdr->natives) / hdr->defsize;
+
+	if (index < 0 || index >= numNatives) {
+		return false;
+	}
+
+	info.func = reinterpret_cast<AMX_NATIVE>(natives[index].address);
+	info.name = reinterpret_cast<char*>(natives[index].nameofs +
+		reinterpret_cast<int32_t>(hdr));
+	return true;
+}
+
+// static
+const char *crashdetect::GetNativeName(AMX *amx, cell index) {
+	AMX_NATIVE_INFO info;
+	if (!GetNativeInfo(amx, index, info)) {
+		return "<unknown native>";
+	}
+	return info.name;
+}
+
+// static
+AMX_NATIVE crashdetect::GetNativeAddress(AMX *amx, cell index) {
+	AMX_NATIVE_INFO info;
+	if (!GetNativeInfo(amx, index, info)) {
+		return 0;
+	}
+	return info.func;
+}
+
+// static
+ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(
+		reinterpret_cast<AMX_HEADER*>(amx->base)->publics + amx->base);
+	return publics[index].address;
+}
+
+// static 
+std::string crashdetect::ReadSourceLine(const std::string &filename, long lineNo) {	
+	std::ifstream inputFile(filename.c_str());
+	if (inputFile.is_open()) {
+		std::string line;
+		int lineCount = 0;
+		while (std::getline(inputFile, line)) {
+			if (++lineCount == lineNo) {
+				boost::algorithm::trim(line); // strip indents
+				return line;
+			}
+		}
+	}
+	return std::string();
+}
