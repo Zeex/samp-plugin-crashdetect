@@ -24,11 +24,13 @@ config = release
 endif
 
 ifeq ($(config),debug)
+CPPFLAGS += -DDEBUG
 CFLAGS += -g
 CFLAGS += -Wall
 endif
 
 ifeq ($(config),release)
+CPPFLAGS += -DNDEBUG
 CFLAGS += -O2
 CFLAGS += -Wno-attributes
 endif
