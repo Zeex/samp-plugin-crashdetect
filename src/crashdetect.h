@@ -25,16 +25,16 @@
 
 #define AMX_EXEC_GDK (-10) // Compatibility with GDK
 
-class Crashdetect {
+class crashdetect {
 public:	
 	static void CreateInstance(AMX *amx);
-	static Crashdetect *GetInstance(AMX *amx);
+	static crashdetect *GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
 	static void Crash();
 	static void Interrupt();
 
-	explicit Crashdetect(AMX *amx);
+	explicit crashdetect(AMX *amx);
 
 	int AmxDebug();
 	int AmxCallback(cell index, cell *result, cell *params);
@@ -89,8 +89,8 @@ private:
 	// Set to true on Runtime Error (to prevent double-reporting)
 	static bool errorCaught_;
 
-	// AMX* <=> Crashdetect*
-	static boost::unordered_map<AMX*, boost::shared_ptr<Crashdetect> > instances_;
+	// AMX* <=> crashdetect*
+	static boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > instances_;
 };
 
 #endif // !CRASHDETECT_H

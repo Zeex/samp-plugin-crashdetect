@@ -110,43 +110,43 @@ static inline ucell GetPublicAddress(AMX *amx, cell index) {
 // Gets called before amx_Exec() on error but before AMX stack/heap is reset
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
-		Crashdetect::GetInstance(amx)->HandleRuntimeError(index, error);
+		crashdetect::GetInstance(amx)->HandleRuntimeError(index, error);
 	}
 	return AMX_ERR_NONE;
 }
 
-bool Crashdetect::errorCaught_ = false;
-std::stack<Crashdetect::NativePublicCall> Crashdetect::npCalls_;
-boost::unordered_map<AMX*, boost::shared_ptr<Crashdetect> > Crashdetect::instances_;
+bool crashdetect::errorCaught_ = false;
+std::stack<crashdetect::NativePublicCall> crashdetect::npCalls_;
+boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > crashdetect::instances_;
 
 // static
-void Crashdetect::CreateInstance(AMX *amx) {
-	instances_[amx].reset(new Crashdetect(amx));
+void crashdetect::CreateInstance(AMX *amx) {
+	instances_[amx].reset(new crashdetect(amx));
 }
 
 // static
-Crashdetect *Crashdetect::GetInstance(AMX *amx) {
-	boost::unordered_map<AMX*, boost::shared_ptr<Crashdetect> >::iterator 
+crashdetect *crashdetect::GetInstance(AMX *amx) {
+	boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> >::iterator 
 			iterator = instances_.find(amx);
 	if (iterator == instances_.end()) {
-		Crashdetect *inst = new Crashdetect(amx);
-		instances_.insert(std::make_pair(amx, boost::shared_ptr<Crashdetect>(inst)));
+		crashdetect *inst = new crashdetect(amx);
+		instances_.insert(std::make_pair(amx, boost::shared_ptr<crashdetect>(inst)));
 		return inst;
 	} 
 	return iterator->second.get();
 }
 
 // static
-void Crashdetect::DestroyInstance(AMX *amx) {
+void crashdetect::DestroyInstance(AMX *amx) {
 	instances_.erase(amx);
 }
 
 // static
-void Crashdetect::Crash() {
+void crashdetect::Crash() {
 	// Check if the last native/public call succeeded
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		Crashdetect::GetInstance(amx)->HandleCrash();
+		crashdetect::GetInstance(amx)->HandleCrash();
 	} else {
 		// Server/plugin internal error (in another thread?)
 		logprintf("The server has crashed due to an unknown error");
@@ -154,16 +154,16 @@ void Crashdetect::Crash() {
 }
 
 // static
-void Crashdetect::Interrupt() {
+void crashdetect::Interrupt() {
 	logprintf("Keyboard interrupt");
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		Crashdetect::GetInstance(amx)->PrintCallStack();
+		crashdetect::GetInstance(amx)->PrintCallStack();
 	}
 	std::exit(EXIT_FAILURE);
 }
 
-Crashdetect::Crashdetect(AMX *amx) 
+crashdetect::crashdetect(AMX *amx) 
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 {
@@ -189,14 +189,14 @@ Crashdetect::Crashdetect(AMX *amx)
 	prevCallback_ = amx_->callback;
 }
 
-int Crashdetect::AmxDebug() {
+int crashdetect::AmxDebug() {
 	if (prevDebugHook_ != 0) {
 		return prevDebugHook_(amx_);
 	}
 	return AMX_ERR_NONE;
 }
 
-int Crashdetect::AmxExec(cell *retval, int index) {
+int crashdetect::AmxExec(cell *retval, int index) {
 	npCalls_.push(NativePublicCall(
 		NativePublicCall::PUBLIC, amx_, index, amx_->frm));
 
@@ -211,7 +211,7 @@ int Crashdetect::AmxExec(cell *retval, int index) {
 	return retcode;
 }
 
-int Crashdetect::AmxCallback(cell index, cell *result, cell *params) {
+int crashdetect::AmxCallback(cell index, cell *result, cell *params) {
 	npCalls_.push(NativePublicCall(
 		NativePublicCall::NATIVE, amx_, index, amx_->frm));
 
@@ -233,7 +233,7 @@ int Crashdetect::AmxCallback(cell index, cell *result, cell *params) {
 	return retcode;
 }
 
-void Crashdetect::HandleNativeError(int index) {
+void crashdetect::HandleNativeError(int index) {
 	if (debugInfo_.IsLoaded()) {
 		logprintf("Script[%s]: Native function %s() called at line %ld in '%s' has failed",
 			amxFileName_.c_str(), GetNativeName(amx_, index), 
@@ -248,8 +248,8 @@ void Crashdetect::HandleNativeError(int index) {
 	std::exit(EXIT_FAILURE);
 }
 
-void Crashdetect::HandleRuntimeError(int index, int error) {
-	Crashdetect::errorCaught_ = true;
+void crashdetect::HandleRuntimeError(int index, int error) {
+	crashdetect::errorCaught_ = true;
 	if (error == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		// Fail silently as this public doesn't really exist
 		error = AMX_ERR_NONE;
@@ -320,12 +320,12 @@ void Crashdetect::HandleRuntimeError(int index, int error) {
 	}
 }
 
-void Crashdetect::HandleCrash() {
+void crashdetect::HandleCrash() {
 	logprintf("The server has crashed executing '%s'", amxFileName_.c_str());
 	PrintCallStack();
 }
 
-void Crashdetect::PrintCallStack() const {
+void crashdetect::PrintCallStack() const {
 	if (npCalls_.empty()) 
 		return;
 
@@ -336,7 +336,7 @@ void Crashdetect::PrintCallStack() const {
 
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();
-		AMXDebugInfo debugInfo = Crashdetect::GetInstance(call.amx())->debugInfo_;
+		AMXDebugInfo debugInfo = crashdetect::GetInstance(call.amx())->debugInfo_;
 		if (call.type() == NativePublicCall::NATIVE) {			
 			std::string module = GetModuleNameBySymbol(
 					(void*)GetNativeAddress(call.amx(), call.index()));
@@ -417,15 +417,15 @@ static void *GetJMPAbsoluteAddress(unsigned char *jmp) {
 }
 
 static int AMXAPI AmxDebug(AMX *amx) {
-	return Crashdetect::GetInstance(amx)->AmxDebug();
+	return crashdetect::GetInstance(amx)->AmxDebug();
 }
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return Crashdetect::GetInstance(amx)->AmxCallback(index, result, params);
+	return crashdetect::GetInstance(amx)->AmxCallback(index, result, params);
 }
 
 static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
-	return Crashdetect::GetInstance(amx)->AmxExec(retval, index);
+	return crashdetect::GetInstance(amx)->AmxExec(retval, index);
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
@@ -449,24 +449,24 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
 	new JumpX86(amx_Exec_ptr, (void*)AmxExec);
 
 	// Set crash handler
-	Crash::SetHandler(Crashdetect::Crash);
+	Crash::SetHandler(crashdetect::Crash);
 	Crash::EnableMiniDump(true);
 
 	// Set Ctrl-C signal handler
-	Interrupt::SetHandler(Crashdetect::Interrupt);
+	Interrupt::SetHandler(crashdetect::Interrupt);
 
 	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
 	return true;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	Crashdetect::CreateInstance(amx);
+	crashdetect::CreateInstance(amx);
 	amx_SetDebugHook(amx, AmxDebug);
 	amx_SetCallback(amx, AmxCallback);
 	return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	Crashdetect::DestroyInstance(amx);
+	crashdetect::DestroyInstance(amx);
 	return AMX_ERR_NONE;
 }
