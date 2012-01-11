@@ -5,20 +5,30 @@ project(crashdetect)
 list(APPEND CMAKE_MODULE_PATH 
 	${crashdetect_SOURCE_DIR}/cmake/Modules)
 
-include(CheckHeader)
+include(CheckIncludeFile)
 include(GetGitRevisionDescription)
 
-check_header(alloca.h)
-check_header(inttypes.h)
-check_header(malloc.h)
-check_header(stdint.h)
-check_header_cxx(memory)
-check_header_cxx(tr1/memory)
+check_include_file(alloca.h HAVE_ALLOCA_H)
+if(HAVE_ALLOCA_H)
+	add_definitions(-DHAVE_ALLOCA_H)
+endif()
+check_include_file(inttypes.h HAVE_INTTYPES_H)
+if(HAVE_INTTYPES_H)
+	add_definitions(-DHAVE_INTTYPES_H)
+endif()
+check_include_file(malloc.h HAVE_MALLOC_H)
+if(HAVE_MALLOC_H)
+	add_definitions(-DHAVE_MALLOC_H)
+endif()
+check_include_file(stdint.h HAVE_STDINT_H)
+if(HAVE_STDINT_H)
+	add_definitions(-DHAVE_STDINT_H)
+endif()
 
 find_package(Boost 1.47 REQUIRED COMPONENTS filesystem system)
 
-include_directories(lib)
-include_directories(lib/amx) 
+include_directories(src)
+include_directories(src/amx) 
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Disable Boost auto-link feature 
@@ -40,22 +50,23 @@ add_definitions(
 	-DAMX_NODYNALOAD)
 
 add_library(crashdetect MODULE
-	lib/amx/amx.c
-	lib/amx/amx.h
-	lib/amx/amxaux.c
-	lib/amx/amxaux.h
-	lib/amx/amxdbg.c
-	lib/amx/amxdbg.h
-	lib/amx/getch.h
-	lib/amx/osdefs.h
-	lib/amx/sclinux.h
-	lib/logprintf.cpp
-	lib/logprintf.h
-	lib/plugincommon.h
+	src/amx/amx.c
+	src/amx/amx.h
+	src/amx/amxaux.c
+	src/amx/amxaux.h
+	src/amx/amxdbg.c
+	src/amx/amxdbg.h
+	src/amx/getch.h
+	src/amx/osdefs.h
+	src/amx/sclinux.h
+	src/logprintf.cpp
+	src/logprintf.h
+	src/plugincommon.h
 	src/amxcallstack.cpp
 	src/amxcallstack.h
 	src/amxdebuginfo.cpp
 	src/amxdebuginfo.h
+	src/amxerror.cpp
 	src/amxpathfinder.cpp
 	src/amxpathfinder.h
 	src/configreader.cpp
@@ -64,12 +75,12 @@ add_library(crashdetect MODULE
 	src/crash.h
 	src/crashdetect.cpp
 	src/crashdetect.h
-	src/crashdetect.rc
-	src/crashdetect.rc
 	src/interrupt.cpp
 	src/interrupt.h
 	src/jump-x86.cpp
 	src/jump-x86.h
+	src/plugin.cpp
+	src/plugin.rc
 )
 
 # Don't prefix the output .so with "lib" 
@@ -87,7 +98,7 @@ endif()
 
 if(WIN32)
 	add_definitions(-DWIN32 -D_WIN32)
-	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/crashdetect.def")
+	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/plugin.def")
 	if(MSVC)
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS) # Shut up security warnings
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 

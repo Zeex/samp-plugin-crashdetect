@@ -40,7 +40,7 @@ LDFLAGS += -m32
 
 ifeq ($(os),windows)
 CPPFLAGS += -D_WIN32 
-LDFLAGS  += -Wl,--kill-at --def crashdetect.def
+LDFLAGS  += -Wl,--kill-at --def plugin.def
 endif
 
 ifeq ($(os),linux)
@@ -50,8 +50,8 @@ LDFLAGS  += -Wl,--no-undefined
 LDFLAGS  += -fPIC
 endif
 
-CPPFLAGS += -Ilib 
-CPPFLAGS += -Ilib/amx 
+CPPFLAGS += -Isrc
+CPPFLAGS += -Isrc/amx 
 CPPFLAGS += -I$(BOOST_ROOT)
 CPPFLAGS += -DHAVE_STDINT_H 
 CPPFLAGS += -include stddef.h
@@ -59,24 +59,26 @@ CPPFLAGS += -include stddef.h
 CXXFLAGS += -std=c++98
 CXXFLAGS += $(CFLAGS)
 
-LDFLAGS  += -L$(BOOST_ROOT)/stage/lib 
+LDFLAGS  += -L$(BOOST_ROOT)/stage/src 
 LDFLAGS  += -lboost_filesystem 
 LDFLAGS  += -lboost_system 
 LDFLAGS  += -ldl
 LDFLAGS  += -shared
 
-objects = lib/amx/amx.c.o \
-	  lib/amx/amxaux.c.o \
-	  lib/amx/amxdbg.c.o \
-	  lib/logprintf.cpp.o \
+objects = src/amx/amx.c.o \
+	  src/amx/amxaux.c.o \
+	  src/amx/amxdbg.c.o \
+	  src/logprintf.cpp.o \
           src/amxcallstack.cpp.o \
           src/amxdebuginfo.cpp.o \
+	  src/amxerror.cpp.o \
           src/amxpathfinder.cpp.o \
           src/configreader.cpp.o \
           src/crash.cpp.o \
           src/crashdetect.cpp.o \
           src/interrupt.cpp.o \
-          src/jump-x86.cpp.o
+          src/jump-x86.cpp.o \
+          src/plugin.cpp.o
 
 ifeq ($(os),windows)
 objects += src/crashdetect.rc.o
@@ -95,25 +97,28 @@ all: $(binary)
 $(binary): $(objects)
 	$(CXX) $(LDFLAGS) -o $@ $?
 
-lib/amx/amx.c.o: lib/amx/amx.c lib/amx/amx.h lib/amx/sclinux.h lib/amx/getch.h lib/amx/osdefs.h
+src/amx/amx.c.o: src/amx/amx.c src/amx/amx.h src/amx/sclinux.h src/amx/getch.h src/amx/osdefs.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-lib/amx/amxaux.c.o: lib/amx/amxaux.c lib/amx/amxaux.h lib/amx/amx.h
+src/amx/amxaux.c.o: src/amx/amxaux.c src/amx/amxaux.h src/amx/amx.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-lib/amx/amxdbg.c.o: lib/amx/amxdbg.c lib/amx/amxdbg.h lib/amx/amx.h
+src/amx/amxdbg.c.o: src/amx/amxdbg.c src/amx/amxdbg.h src/amx/amx.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-lib/logprintf.cpp.o: lib/logprintf.cpp lib/logprintf.h
+src/logprintf.cpp.o: src/logprintf.cpp src/logprintf.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 src/amxcallstack.cpp.o: src/amxcallstack.cpp src/amxcallstack.h src/amxdebuginfo.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-src/amxdebuginfo.cpp.o: src/amxdebuginfo.cpp src/amxdebuginfo.h lib/amx/amx.h lib/amx/amxdbg.h
+src/amxdebuginfo.cpp.o: src/amxdebuginfo.cpp src/amxdebuginfo.h src/amx/amx.h src/amx/amxdbg.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-src/amxpathfinder.cpp.o: src/amxpathfinder.cpp src/amxpathfinder.h lib/amx/amx.h lib/amx/amxaux.h
+src/amxerror.cpp.o: src/amxerror.cpp src/crashdetect.h src/amx/amx.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+src/amxpathfinder.cpp.o: src/amxpathfinder.cpp src/amxpathfinder.h src/amx/amx.h src/amx/amxaux.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 src/configreader.cpp.o: src/configreader.cpp src/configreader.h
@@ -124,19 +129,22 @@ src/crash.cpp.o: src/crash.cpp src/crash.h
 	
 src/crashdetect.cpp.o: src/crashdetect.cpp src/crashdetect.h src/amxcallstack.h src/amxdebuginfo.h \
                        src/amxpathfinder.h src/configreader.h src/jump-x86.h src/version.h \
-                       lib/logprintf.h lib/plugincommon.h lib/amx/amx.h
+                       src/logprintf.h src/plugincommon.h src/amx/amx.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+src/interrupt.cpp.o: src/interrupt.cpp src/interrupt.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+src/jump-x86.cpp.o: src/jump-x86.cpp src/jump-x86.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+src/plugin.cpp.o: src/plugin.cpp src/crashdetect.h src/logprintf.h src/plugincommon.h src/amx/amx.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 ifeq ($(os),windows)
-src/crashdetect.rc.o: src/crashdetect.rc src/version.h
+src/plugin.rc.o: src/plugin.rc src/version.h
 	windres $< $@
 endif
-
-src/interrupt.cpp.o: src/interrupt.cpp src/interrupt.h
-	$(CXX) $(CPPFALGS) $(CXXFLAGS) -c $< -o $@
-
-src/jump-x86.cpp.o: src/jump-x86.cpp src/jump-x86.h
-	$(CXX) $(CPPFALGS) $(CXXFLAGS) -c $< -o $@
 
 src/version.h:
 	echo "Generating $@..."

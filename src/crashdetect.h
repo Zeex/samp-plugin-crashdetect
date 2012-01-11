@@ -28,26 +28,41 @@
 
 class crashdetect {
 public:	
-	static void CreateInstance(AMX *amx);
-	static crashdetect *GetInstance(AMX *amx);
-	static void DestroyInstance(AMX *amx);
+	static bool Load(void **ppPluginData);
+	static void Unload();
+	static int AmxLoad(AMX *amx);
+	static int AmxUnload(AMX *amx);
+
+	static int AMXAPI AmxDebug(AMX *amx);
+	static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params);
+	static int AMXAPI AmxExec(AMX *amx, cell *retval, int index);
 
 	static void Crash();
+	static void RuntimeError(AMX *amx, cell index, int error);
 	static void Interrupt();
-	static void ExitOnError();
-
-	explicit crashdetect(AMX *amx);
-
-	int AmxDebug();
-	int AmxCallback(cell index, cell *result, cell *params);
-	int AmxExec(cell *retval, int index);
+	static void ExitOnError();	
 
 	void HandleCrash();
 	void HandleNativeError(int index);
 	void HandleRuntimeError(int index, int error);
 	void HandleInterrupt();
-	
+
+	int HandleAmxDebug();
+	int HandleAmxCallback(cell index, cell *result, cell *params);
+	int HandleAmxExec(cell *retval, int index);
+
 	void PrintCallStack() const;
+
+private:
+	explicit crashdetect(AMX *amx);
+
+	// Helpers
+	static void *GetJMPAbsoluteAddress(unsigned char *jmp);
+	static std::string GetModuleNameBySymbol(void *symbol);
+	static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info);
+	static const char *GetNativeName(AMX *amx, cell index);
+	static AMX_NATIVE GetNativeAddress(AMX *amx, cell index);
+	static ucell GetPublicAddress(AMX *amx, cell index);	
 
 private:
 	AMX         *amx_;

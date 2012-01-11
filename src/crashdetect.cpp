@@ -48,7 +48,84 @@
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
 
-std::string GetModuleNameBySymbol(void *symbol) {
+bool 
+	crashdetect::errorCaught_ = false;
+
+std::stack<crashdetect::NativePublicCall> 
+	crashdetect::npCalls_;
+
+ConfigReader 
+	crashdetect::serverCfg("server.cfg");
+
+boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > 
+	crashdetect::instances_;
+
+int AMXAPI crashdetect::AmxDebug(AMX *amx) {
+	return instances_[amx]->HandleAmxDebug();
+}
+
+int AMXAPI crashdetect::AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
+	return instances_[amx]->HandleAmxCallback(index, result, params);
+}
+
+int AMXAPI crashdetect::AmxExec(AMX *amx, cell *retval, int index) {
+	return instances_[amx]->HandleAmxExec(retval, index);
+}
+
+// static
+bool crashdetect::Load(void **ppPluginData) {
+	// Hook amx_Exec to catch execution errors
+	void *amxExecPtr = ((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
+
+	// But first make sure it's not already hooked by someone else
+	void *funAddr = GetJMPAbsoluteAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
+	if (funAddr == 0) {
+		new JumpX86(amxExecPtr, (void*)AmxExec);
+	} else {
+		std::string module = crashdetect::GetModuleNameBySymbol(funAddr);
+		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
+			logprintf("  crashdetect must be loaded before %s", module.c_str());
+			return false;
+		}
+	}
+
+	// Set crash handler
+	Crash::SetHandler(crashdetect::Crash);
+	Crash::EnableMiniDump(true);
+
+	// Set Ctrl-C signal handler
+	Interrupt::SetHandler(crashdetect::Interrupt);
+
+	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
+	return true;
+}
+
+// static
+int crashdetect::AmxLoad(AMX *amx) {
+	instances_[amx].reset(new crashdetect(amx));
+	return AMX_ERR_NONE;
+}
+
+// static
+int crashdetect::AmxUnload(AMX *amx) {
+	instances_.erase(amx);
+	return AMX_ERR_NONE;
+}
+
+// static 
+void *crashdetect::GetJMPAbsoluteAddress(unsigned char *jmp) {
+	static unsigned char REL_JMP = 0xE9;
+	if (*jmp == REL_JMP) {
+		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + 5);
+		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
+		uint32_t abs_addr = rel_addr + next_instr;
+		return reinterpret_cast<void*>(abs_addr);
+	} 
+	return 0;
+}
+
+// static 
+std::string crashdetect::GetModuleNameBySymbol(void *symbol) {
 	if (symbol == 0) {
 		return std::string();
 	}
@@ -65,7 +142,8 @@ std::string GetModuleNameBySymbol(void *symbol) {
 	return boost::filesystem::path(module).filename().string();
 }
 
-static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
+// static
+bool crashdetect::GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(
@@ -84,7 +162,8 @@ static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
 	return true;
 }
 
-static inline const char *GetNativeName(AMX *amx, cell index) {
+// static
+const char *crashdetect::GetNativeName(AMX *amx, cell index) {
 	AMX_NATIVE_INFO info;
 	if (!GetNativeInfo(amx, index, info)) {
 		return "<unknown native>";
@@ -92,7 +171,8 @@ static inline const char *GetNativeName(AMX *amx, cell index) {
 	return info.name;
 }
 
-static inline AMX_NATIVE GetNativeAddress(AMX *amx, cell index) {
+// static
+AMX_NATIVE crashdetect::GetNativeAddress(AMX *amx, cell index) {
 	AMX_NATIVE_INFO info;
 	if (!GetNativeInfo(amx, index, info)) {
 		return 0;
@@ -100,75 +180,11 @@ static inline AMX_NATIVE GetNativeAddress(AMX *amx, cell index) {
 	return info.func;
 }
 
-static inline ucell GetPublicAddress(AMX *amx, cell index) {
+// static
+ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
 	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(
 		reinterpret_cast<AMX_HEADER*>(amx->base)->publics + amx->base);
 	return publics[index].address;
-}
-
-static void *GetJMPAbsoluteAddress(unsigned char *jmp) {
-	static unsigned char REL_JMP = 0xE9;
-	if (*jmp == REL_JMP) {
-		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + 5);
-		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
-		uint32_t abs_addr = rel_addr + next_instr;
-		return reinterpret_cast<void*>(abs_addr);
-	} 
-	return 0;
-}
-
-static int AMXAPI AmxDebug(AMX *amx) {
-	return crashdetect::GetInstance(amx)->AmxDebug();
-}
-
-static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return crashdetect::GetInstance(amx)->AmxCallback(index, result, params);
-}
-
-static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
-	return crashdetect::GetInstance(amx)->AmxExec(retval, index);
-}
-
-/// Gets called before amx_Exec() on error but before AMX stack/heap is reset
-extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
-	if (error != AMX_ERR_NONE) {
-		crashdetect::GetInstance(amx)->HandleRuntimeError(index, error);
-	}
-	return AMX_ERR_NONE;
-}
-
-bool 
-	crashdetect::errorCaught_ = false;
-
-std::stack<crashdetect::NativePublicCall> 
-	crashdetect::npCalls_;
-
-ConfigReader 
-	crashdetect::serverCfg("server.cfg");
-
-boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > 
-	crashdetect::instances_;
-
-// static
-void crashdetect::CreateInstance(AMX *amx) {
-	instances_[amx].reset(new crashdetect(amx));
-}
-
-// static
-crashdetect *crashdetect::GetInstance(AMX *amx) {
-	boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> >::iterator 
-			iterator = instances_.find(amx);
-	if (iterator == instances_.end()) {
-		crashdetect *inst = new crashdetect(amx);
-		instances_.insert(std::make_pair(amx, boost::shared_ptr<crashdetect>(inst)));
-		return inst;
-	} 
-	return iterator->second.get();
-}
-
-// static
-void crashdetect::DestroyInstance(AMX *amx) {
-	instances_.erase(amx);
 }
 
 // static
@@ -176,7 +192,7 @@ void crashdetect::Crash() {
 	// Check if the last native/public call succeeded
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		crashdetect::GetInstance(amx)->HandleCrash();
+		instances_[amx]->HandleCrash();
 	} else {
 		// Server/plugin internal error (in another thread?)
 		logprintf("[debug] The server has crashed due to an unknown error");
@@ -184,10 +200,15 @@ void crashdetect::Crash() {
 }
 
 // static
+void crashdetect::RuntimeError(AMX *amx, cell index, int error) {
+	instances_[amx]->HandleRuntimeError(index, error);
+}
+
+// static
 void crashdetect::Interrupt() {	
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		crashdetect::GetInstance(amx)->HandleInterrupt();
+		instances_[amx]->HandleInterrupt();
 	} else {
 		logprintf("[debug] Keyboard interrupt");
 	}
@@ -231,16 +252,19 @@ crashdetect::crashdetect(AMX *amx)
 	// Remember previously set callback and debug hook
 	prevDebugHook_ = amx_->debug;
 	prevCallback_ = amx_->callback;
+
+	amx_SetDebugHook(amx, AmxDebug);
+	amx_SetCallback(amx, AmxCallback);
 }
 
-int crashdetect::AmxDebug() {
+int crashdetect::HandleAmxDebug() {
 	if (prevDebugHook_ != 0) {
 		return prevDebugHook_(amx_);
 	}
 	return AMX_ERR_NONE;
 }
 
-int crashdetect::AmxExec(cell *retval, int index) {
+int crashdetect::HandleAmxExec(cell *retval, int index) {
 	npCalls_.push(NativePublicCall(
 		NativePublicCall::PUBLIC, amx_, index, amx_->frm));
 
@@ -255,7 +279,7 @@ int crashdetect::AmxExec(cell *retval, int index) {
 	return retcode;
 }
 
-int crashdetect::AmxCallback(cell index, cell *result, cell *params) {
+int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
 	npCalls_.push(NativePublicCall(
 		NativePublicCall::NATIVE, amx_, index, amx_->frm));
 
@@ -323,38 +347,38 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 			case AMX_ERR_BOUNDS: {
 				ucell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
 				ucell index = amx_->pri;
-				logprintf("[debug] [%s]: Array max. index is %d but accessing an element at %d", 
+				logprintf("[debug] [%s]:   Array max. index is %d but accessing an element at %d", 
 						amxName_.c_str(), bound, index);
 				break;
 			}
 			case AMX_ERR_NOTFOUND: {
-				logprintf("[debug] [%s]: These natives are not registered:", amxName_.c_str());
+				logprintf("[debug] [%s]:   These natives are not registered:", amxName_.c_str());
 				AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
 				int numNatives = 0;
 				amx_NumNatives(amx_, &numNatives);
 				for (int i = 0; i < numNatives; ++i) {
 					if (natives[i].address == 0) {
 						char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
-						logprintf("[debug] [%s]: %s", amxName_.c_str(), name);
+						logprintf("[debug] [%s]:   %s", amxName_.c_str(), name);
 					}
 				}
 				break;
 			}
 			case AMX_ERR_STACKERR:
-				logprintf("[debug] [%s]: Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", 
+				logprintf("[debug] [%s]:   Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", 
 						amxName_.c_str(), amx_->stk, amx_->hea); 
 				break;
 			case AMX_ERR_STACKLOW:
-				logprintf("[debug] [%s]: Stack index (STK) is 0x%X, stack top (STP) is 0x%X", 
+				logprintf("[debug] [%s]:   Stack index (STK) is 0x%X, stack top (STP) is 0x%X", 
 						amxName_.c_str(), amx_->stk, amx_->stp);
 				break;
 			case AMX_ERR_HEAPLOW:
-				logprintf("[debug] [%s]: Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", 
+				logprintf("[debug] [%s]:   Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", 
 						amxName_.c_str(), amx_->hea, amx_->hlw);
 				break;
 			case AMX_ERR_INVINSTR: {
 				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
-				logprintf("[debug] [%s]: Invalid opcode 0x%X at address 0x%X", 
+				logprintf("[debug] [%s]:   Invalid opcode 0x%X at address 0x%X", 
 						amxName_.c_str(), opcode , amx_->cip - sizeof(cell));
 				break;
 			}
@@ -385,7 +409,7 @@ void crashdetect::PrintCallStack() const {
 
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();
-		AMXDebugInfo debugInfo = crashdetect::GetInstance(call.amx())->debugInfo_;
+		AMXDebugInfo debugInfo = instances_[call.amx()]->debugInfo_;
 		if (call.type() == NativePublicCall::NATIVE) {			
 			std::string module = GetModuleNameBySymbol(
 					(void*)GetNativeAddress(call.amx(), call.index()));
@@ -455,45 +479,3 @@ void crashdetect::PrintCallStack() const {
 	}
 }
 
-PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
-	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
-}
-
-PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppPluginData) {
-	logprintf = (logprintf_t)ppPluginData[PLUGIN_DATA_LOGPRINTF];
-
-	// Hook amx_Exec to catch execution errors.
-	// But first make sure it's not already hooked by someone else.
-	void *amx_Exec_ptr = ((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
-	void *funAddr = GetJMPAbsoluteAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
-	if (funAddr != 0) {
-		std::string module = GetModuleNameBySymbol(funAddr);
-		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
-			logprintf("  crashdetect must be loaded before %s", module.c_str());
-			return false;
-		}
-	} 
-	new JumpX86(amx_Exec_ptr, (void*)AmxExec);
-
-	// Set crash handler
-	Crash::SetHandler(crashdetect::Crash);
-	Crash::EnableMiniDump(true);
-
-	// Set Ctrl-C signal handler
-	Interrupt::SetHandler(crashdetect::Interrupt);
-
-	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
-	return true;
-}
-
-PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	crashdetect::CreateInstance(amx);
-	amx_SetDebugHook(amx, AmxDebug);
-	amx_SetCallback(amx, AmxCallback);
-	return AMX_ERR_NONE;
-}
-
-PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	crashdetect::DestroyInstance(amx);
-	return AMX_ERR_NONE;
-}
