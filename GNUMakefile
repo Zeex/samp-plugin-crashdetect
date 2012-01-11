@@ -66,9 +66,11 @@ LDFLAGS  += -shared
 objects = lib/amx/amx.c.o \
 	  lib/amx/amxaux.c.o \
 	  lib/amx/amxdbg.c.o \
+	  lib/logprintf.cpp.o \
           src/amxcallstack.cpp.o \
           src/amxdebuginfo.cpp.o \
           src/amxpathfinder.cpp.o \
+          src/configreader.cpp.o \
           src/crash.cpp.o \
           src/crashdetect.cpp.o \
           src/interrupt.cpp.o \
@@ -100,6 +102,9 @@ lib/amx/amxaux.c.o: lib/amx/amxaux.c lib/amx/amxaux.h lib/amx/amx.h
 lib/amx/amxdbg.c.o: lib/amx/amxdbg.c lib/amx/amxdbg.h lib/amx/amx.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+lib/logprintf.cpp.o: lib/logprintf.cpp lib/logprintf.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
 src/amxcallstack.cpp.o: src/amxcallstack.cpp src/amxcallstack.h src/amxdebuginfo.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
@@ -109,11 +114,15 @@ src/amxdebuginfo.cpp.o: src/amxdebuginfo.cpp src/amxdebuginfo.h lib/amx/amx.h li
 src/amxpathfinder.cpp.o: src/amxpathfinder.cpp src/amxpathfinder.h lib/amx/amx.h lib/amx/amxaux.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
+src/configreader.cpp.o: src/configreader.cpp src/configreader.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
 src/crash.cpp.o: src/crash.cpp src/crash.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 	
-src/crashdetect.cpp.o: src/crashdetect.cpp src/crashdetect.h src/amxcallstack.h src/amxdebuginfo.h\
-                       src/amxpathfinder.h src/jump-x86.h src/version.h lib/plugincommon.h lib/amx/amx.h
+src/crashdetect.cpp.o: src/crashdetect.cpp src/crashdetect.h src/amxcallstack.h src/amxdebuginfo.h \
+                       src/amxpathfinder.h src/configreader.h src/jump-x86.h src/version.h \
+                       lib/logprintf.h lib/plugincommon.h lib/amx/amx.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 ifeq ($(os),windows)
