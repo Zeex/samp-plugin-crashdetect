@@ -44,7 +44,8 @@ public:
 
 	void HandleCrash();
 	void HandleNativeError(int index);
-	void HandleRuntimeError(int index, int error);	
+	void HandleRuntimeError(int index, int error);
+	void HandleInterrupt();
 	
 	void PrintCallStack() const;
 
@@ -53,8 +54,10 @@ private:
 	AMX_HEADER  *amxhdr_;
 	AMXDebugInfo debugInfo_;
 
-	/// Path to the .amx file
-	std::string  amxFileName_;
+	/// The path to the .amx file
+	std::string amxPath_;
+	/// The name of the .amx file (including extension)
+	std::string amxName_;
 
 	AMX_CALLBACK prevCallback_;
 	AMX_DEBUG    prevDebugHook_;	

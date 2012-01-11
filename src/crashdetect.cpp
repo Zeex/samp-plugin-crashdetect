@@ -179,16 +179,17 @@ void crashdetect::Crash() {
 		crashdetect::GetInstance(amx)->HandleCrash();
 	} else {
 		// Server/plugin internal error (in another thread?)
-		logprintf("The server has crashed due to an unknown error");
+		logprintf("[debug] The server has crashed due to an unknown error");
 	}
 }
 
 // static
-void crashdetect::Interrupt() {
-	logprintf("Keyboard interrupt");
+void crashdetect::Interrupt() {	
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		crashdetect::GetInstance(amx)->PrintCallStack();
+		crashdetect::GetInstance(amx)->HandleInterrupt();
+	} else {
+		logprintf("[debug] Keyboard interrupt");
 	}
 	ExitOnError();
 }
@@ -196,6 +197,7 @@ void crashdetect::Interrupt() {
 // static
 void crashdetect::ExitOnError() {
 	if (serverCfg.GetOption("die_on_error", false)) {
+		logprintf("[debug] Aborting...");
 		std::exit(EXIT_FAILURE);
 	}
 }
@@ -208,13 +210,18 @@ crashdetect::crashdetect(AMX *amx)
 	AMXPathFinder pathFinder;
 	pathFinder.AddSearchPath("gamemodes/");
 	pathFinder.AddSearchPath("filterscripts/");
-	amxFileName_ = pathFinder.FindAMX(amx);
 
-	if (!amxFileName_.empty()) {		
+	boost::filesystem::path path;
+	if (pathFinder.FindAMX(amx, path)) {		
+		amxPath_ = path.string();
+		amxName_ = path.filename().string();
+	}
+
+	if (!amxPath_.empty()) {
 		uint16_t flags;
 		amx_Flags(amx_, &flags);
 		if ((flags & AMX_FLAG_DEBUG) != 0) {
-			debugInfo_.Load(amxFileName_);
+			debugInfo_.Load(amxPath_);
 		}
 	}
 
@@ -272,14 +279,14 @@ int crashdetect::AmxCallback(cell index, cell *result, cell *params) {
 
 void crashdetect::HandleNativeError(int index) {
 	if (debugInfo_.IsLoaded()) {
-		logprintf("Script[%s]: Native function %s() called at line %ld in '%s' has failed",
-			amxFileName_.c_str(), GetNativeName(amx_, index), 
-			debugInfo_.GetLineNumber(amx_->cip), 
-			debugInfo_.GetFileName(amx_->cip).c_str()
+		logprintf("[debug] [%s]: Native function %s() called at line %ld in '%s' has failed",
+				amxName_.c_str(), GetNativeName(amx_, index), 
+				debugInfo_.GetLineNumber(amx_->cip), 
+				debugInfo_.GetFileName(amx_->cip).c_str()
 		);				
 	} else {
-		logprintf("Script[%d]: Native function %s() called at address 0x%X has failed",
-			amxFileName_.c_str(), GetNativeName(amx_, index), amx_->cip);
+		logprintf("[debug] [%s]: Native function %s() called at address 0x%X has failed",
+				amxName_.c_str(), GetNativeName(amx_, index), amx_->cip);
 	}
 	PrintCallStack();
 	ExitOnError();
@@ -301,56 +308,56 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 					strcpy(entryPoint, "<unknown function>");
 				}
 			}
-			logprintf("Script[%s]: During execution of %s():", 
-				amxFileName_.c_str(), entryPoint);
+			logprintf("[debug] [%s]: During execution of %s():", 
+					amxName_.c_str(), entryPoint);
 		} else {
-			logprintf("Script[%s]: In file '%s' at line %ld:", 
-				amxFileName_.c_str(), 
-				debugInfo_.GetFileName(amx_->cip).c_str(),
-				debugInfo_.GetLineNumber(amx_->cip)					
+			logprintf("[debug] [%s]: In file '%s' at line %ld:", 
+					amxName_.c_str(), 
+					debugInfo_.GetFileName(amx_->cip).c_str(),
+					debugInfo_.GetLineNumber(amx_->cip)					
 			);
 		}
-		logprintf("Script[%s]: Run time error %d: \"%s\"", 
-			amxFileName_.c_str(), error, aux_StrError(error));
-		logprintf("Error information:");
+		logprintf("[debug] [%s]: Run time error %d: \"%s\"", 
+				amxName_.c_str(), error, aux_StrError(error));
 		switch (error) {
-		case AMX_ERR_BOUNDS: {
-			ucell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
-			ucell index = amx_->pri;
-			logprintf("  Array max index is %d but accessing an element at %d", bound, index);
-			break;
-		}
-		case AMX_ERR_NOTFOUND: {
-			logprintf("  The following native functions are not registered:");
-			AMX_FUNCSTUBNT *natives = 
-				reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
-			int numNatives = 0;
-			amx_NumNatives(amx_, &numNatives);
-			for (int i = 0; i < numNatives; ++i) {
-				if (natives[i].address == 0) {
-					char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
-					logprintf("    %s", name);
-				}
+			case AMX_ERR_BOUNDS: {
+				ucell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
+				ucell index = amx_->pri;
+				logprintf("[debug] [%s]: Array max. index is %d but accessing an element at %d", 
+						amxName_.c_str(), bound, index);
+				break;
 			}
-			break;
-		}
-		case AMX_ERR_STACKERR:
-			logprintf("  Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", amx_->stk, amx_->hea); 
-			break;
-		case AMX_ERR_STACKLOW:
-			logprintf("  Stack index (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
-			break;
-		case AMX_ERR_HEAPLOW:
-			logprintf("  Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
-			break;
-		case AMX_ERR_INVINSTR: {
-			cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
-			logprintf("  Invalid opcode 0x%X at address 0x%X", opcode , amx_->cip - sizeof(cell));
-			break;
-		}
-		default:
-			logprintf("  No details available");
-			break;
+			case AMX_ERR_NOTFOUND: {
+				logprintf("[debug] [%s]: These natives are not registered:", amxName_.c_str());
+				AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
+				int numNatives = 0;
+				amx_NumNatives(amx_, &numNatives);
+				for (int i = 0; i < numNatives; ++i) {
+					if (natives[i].address == 0) {
+						char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
+						logprintf("[debug] [%s]: %s", amxName_.c_str(), name);
+					}
+				}
+				break;
+			}
+			case AMX_ERR_STACKERR:
+				logprintf("[debug] [%s]: Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", 
+						amxName_.c_str(), amx_->stk, amx_->hea); 
+				break;
+			case AMX_ERR_STACKLOW:
+				logprintf("[debug] [%s]: Stack index (STK) is 0x%X, stack top (STP) is 0x%X", 
+						amxName_.c_str(), amx_->stk, amx_->stp);
+				break;
+			case AMX_ERR_HEAPLOW:
+				logprintf("[debug] [%s]: Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", 
+						amxName_.c_str(), amx_->hea, amx_->hlw);
+				break;
+			case AMX_ERR_INVINSTR: {
+				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
+				logprintf("[debug] [%s]: Invalid opcode 0x%X at address 0x%X", 
+						amxName_.c_str(), opcode , amx_->cip - sizeof(cell));
+				break;
+			}
 		}
 		PrintCallStack();
 		ExitOnError();
@@ -358,7 +365,12 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 }
 
 void crashdetect::HandleCrash() {
-	logprintf("The server has crashed executing '%s'", amxFileName_.c_str());
+	logprintf("[debug] The server has crashed execution '%s'", amxName_.c_str());
+	PrintCallStack();
+}
+
+void crashdetect::HandleInterrupt() {
+	logprintf("[debug] [%s]: Keyboard interrupt", amxName_.c_str());
 	PrintCallStack();
 }
 
@@ -369,7 +381,7 @@ void crashdetect::PrintCallStack() const {
 	std::stack<NativePublicCall> npCallStack = npCalls_;
 	ucell frm = static_cast<ucell>(amx_->frm);
 
-	logprintf("Call stack (most recent call first):");	
+	logprintf("[debug] [%s]: Call stack (most recent call first):", amxName_.c_str());	
 
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();
@@ -378,60 +390,61 @@ void crashdetect::PrintCallStack() const {
 			std::string module = GetModuleNameBySymbol(
 					(void*)GetNativeAddress(call.amx(), call.index()));
 			if (debugInfo.IsLoaded()) {
-				logprintf("  File '%s', line %ld", 
+				logprintf("[debug] [%s]:   File '%s', line %ld", amxName_.c_str(),
 						debugInfo.GetFileName(call.amx()->cip).c_str(),
 						debugInfo.GetLineNumber(call.amx()->cip));
-				logprintf("    native %s() from %s", 
+				logprintf("[debug] [%s]:     native %s() from %s", amxName_.c_str(),
 						GetNativeName(call.amx(), call.index()), module.c_str());
 			} else {
-				logprintf("  0x%08X => native %s() from %s", call.amx()->cip - sizeof(cell), 
-						GetNativeName(call.amx(), call.index()), module.c_str());
+				logprintf("[debug] [%s]:   0x%08X => native %s() from %s", amxName_.c_str(), 
+						call.amx()->cip - sizeof(cell), GetNativeName(call.amx(), call.index()), module.c_str());
 			}
 		} else if (call.type() == NativePublicCall::PUBLIC) {
 			AMXCallStack callStack(call.amx(), debugInfo, frm);
 			std::vector<AMXStackFrame> frames = callStack.GetFrames();
 			if (frames.empty()) {
-				logprintf("  Some or all frames are missing");
+				logprintf("[debug] [%s]:   Some or all frames are missing", amxName_.c_str());
 			}
 			if (debugInfo.IsLoaded()) {
 				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
 					iterator != frames.end() && iterator->GetCallAddress() != 0; ++iterator) 
 				{	
-					logprintf("  File '%s', line %d", iterator->GetSourceFileName().c_str(), 
-							iterator->GetLineNumber());;
-					logprintf("    %s", iterator->GetFunctionPrototype().c_str());
+					logprintf("[debug] [%s]:   File '%s', line %d", amxName_.c_str(),
+							iterator->GetSourceFileName().c_str(), iterator->GetLineNumber());;
+					logprintf("[debug] [%s]:     %s", amxName_.c_str(), 
+							iterator->GetFunctionPrototype().c_str());
 				}
 				// Entry point
 				AMXStackFrame epFrame = AMXStackFrame(call.amx(), frm, 0, 
 						GetPublicAddress(call.amx(), call.index()), debugInfo);
-				logprintf("  File '%s'", epFrame.GetSourceFileName().c_str());
+				logprintf("[debug] [%s]:   File '%s'", amxName_.c_str(), epFrame.GetSourceFileName().c_str());
 				if (call.index() == AMX_EXEC_MAIN) {
-					logprintf("    main()");
+					logprintf("[debug] [%s]:     main()", amxName_.c_str());
 				} else if (call.index() >= 0) {					
-					logprintf("    %s", epFrame.GetFunctionPrototype().c_str());
+					logprintf("[debug] [%s]:     %s", amxName_.c_str(), epFrame.GetFunctionPrototype().c_str());
 				} else {
-					logprintf("    <unknown function>");
+					logprintf("[debug] [%s]:     <unknown function>", amxName_.c_str());
 				}
 			} else {
 				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
 					iterator != frames.end() && iterator->GetCallAddress() != 0; ++iterator) 
 				{	
 					if (iterator->IsPublic()) {
-						logprintf("  0x%08X => public %s()", 
+						logprintf("[debug] [%s]:   0x%08X => public %s()", amxName_.c_str(),
 							iterator->GetCallAddress(), iterator->GetFunctionName().c_str());
 					} else {
-						logprintf("  0x%08X => 0x%08x()", 
+						logprintf("[debug] [%s]:   0x%08X => 0x%08x()", amxName_.c_str(),
 							iterator->GetCallAddress(), iterator->GetFunctionAddress());
 					}
 				}
 				// Entry point
 				char name[32];
 				if (amx_GetPublic(call.amx(), call.index(), name) == AMX_ERR_NONE) {
-					logprintf("  0x???????? => public %s()", name);
+					logprintf("[debug] [%s]:   0x???????? => public %s()", amxName_.c_str(), name);
 				} else if (call.index() == AMX_EXEC_MAIN) {
-					logprintf("  0x???????? => main()");
+					logprintf("[debug] [%s]:   0x???????? => main()", amxName_.c_str());
 				} else {
-					logprintf("  0x???????? => 0x????????()");				
+					logprintf("[debug] [%s]:   0x???????? => 0x????????()", amxName_.c_str());				
 				}
 			}
 		} else {
