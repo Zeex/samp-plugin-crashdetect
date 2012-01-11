@@ -412,7 +412,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 }
 
 void crashdetect::HandleCrash() {
-	logprintf("[debug] The server has crashed execution '%s'", amxName_.c_str());
+	logprintf("[debug] The server has crashed executing '%s'", amxName_.c_str());
 	PrintCallStack();
 }
 
