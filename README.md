@@ -27,13 +27,13 @@ If crashdetect is loaded, the output would be something like this (in server log
 
 	[22:51:19] [debug] The server has crashed executing 'crash.amx'
 	[22:51:19] [debug] [crash.amx]: Call stack (most recent call first):
-	[22:51:19] [debug] [crash.amx]:   File 'crash.pwn', line 13
+	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn', line 13
 	[22:51:19] [debug] [crash.amx]:     native fread() from samp-server.exe
-	[22:51:19] [debug] [crash.amx]:   File 'crash.pwn', line 8
+	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn', line 8
 	[22:51:19] [debug] [crash.amx]:     function2()
-	[22:51:19] [debug] [crash.amx]:   File 'crash.pwn', line 4
+	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn', line 4
 	[22:51:19] [debug] [crash.amx]:     function1()
-	[22:51:19] [debug] [crash.amx]:   File 'crash.pwn'
+	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn'
 	[22:51:19] [debug] [crash.amx]:     main()
 
 Aha! 
@@ -84,7 +84,7 @@ Configuration
 
 You can configure crashdetect by changing the following settings in server.cfg:
 
-*	`die_on_error` <0|1>` - Shut down the server on runtime or native error. 
+*	`die_on_error <0|1>` - Shut down the server on runtime or native error. 
 	By default this option is turned off.
 
 Known Issues
