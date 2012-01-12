@@ -49,17 +49,11 @@
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
 
-bool 
-	crashdetect::errorCaught_ = false;
-
-std::stack<crashdetect::NativePublicCall> 
-	crashdetect::npCalls_;
-
-ConfigReader 
-	crashdetect::serverCfg("server.cfg");
-
-boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > 
-	crashdetect::instances_;
+// static members
+bool crashdetect::errorCaught_ = false;
+std::stack<crashdetect::NativePublicCall> crashdetect::npCalls_;
+ConfigReader crashdetect::serverCfg("server.cfg");
+boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > crashdetect::instances_;
 
 // static
 bool crashdetect::Load(void **ppPluginData) {
@@ -115,14 +109,17 @@ crashdetect *crashdetect::GetInstance(AMX *amx) {
 	return iterator->second.get();
 }
 
+// static
 int AMXAPI crashdetect::AmxDebug(AMX *amx) {
 	return GetInstance(amx)->HandleAmxDebug();
 }
 
+// static
 int AMXAPI crashdetect::AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
 	return GetInstance(amx)->HandleAmxCallback(index, result, params);
 }
 
+// static
 int AMXAPI crashdetect::AmxExec(AMX *amx, cell *retval, int index) {
 	return GetInstance(amx)->HandleAmxExec(retval, index);
 }
@@ -424,7 +421,6 @@ void crashdetect::PrintCallStack() const {
 		npCallStack.pop();
 	}
 }
-
 
 // static 
 void *crashdetect::GetJMPAbsoluteAddress(unsigned char *jmp) {

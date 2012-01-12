@@ -24,62 +24,87 @@
 #include "amxdebuginfo.h"
 #include "configreader.h"
 
-#define AMX_EXEC_GDK (-10) // Compatibility with GDK
+// Compatibility with GDK
+#define AMX_EXEC_GDK (-10) 
 
 class crashdetect {
 public:	
+	// SA-MP plugin acrhitecture, called from plugin.cpp
 	static bool Load(void **ppPluginData);
 	static void Unload();
 	static int AmxLoad(AMX *amx);
 	static int AmxUnload(AMX *amx);
 
+	// Gets a "crashdetect" instance mapped to a AMX or creates a new one.
 	static crashdetect *GetInstance(AMX *amx);
 
+	// AMX API hooks.
 	static int AMXAPI AmxDebug(AMX *amx);
 	static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params);
 	static int AMXAPI AmxExec(AMX *amx, cell *retval, int index);
 
+	// Global event handlers.
 	static void Crash();
 	static void RuntimeError(AMX *amx, cell index, int error);
 	static void Interrupt();
 	static void ExitOnError();	
 
+	// Instance-specific event handlers, called by the global ones (see above).
 	void HandleCrash();
 	void HandleNativeError(int index);
 	void HandleRuntimeError(int index, int error);
 	void HandleInterrupt();
 
+	// Called by the global hooks.
 	int HandleAmxDebug();
 	int HandleAmxCallback(cell index, cell *result, cell *params);
 	int HandleAmxExec(cell *retval, int index);
 
+	// Prints a call stack, including inter-AMX calls like CallRemoteFunction().
 	void PrintCallStack() const;
 
 private:
 	explicit crashdetect(AMX *amx);
 
-	// Helpers
+	// Reads a E9 JMP destination and converts it to an aboluste address.
 	static void *GetJMPAbsoluteAddress(unsigned char *jmp);
+
+	// Finds to which module (DLL/shared library/executable) a symbol belongs to.
 	static std::string GetModuleNameBySymbol(void *symbol);
+
+	// Extracts native function info from native table.
 	static bool GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info);
+
+	// Returns the name of native function.
 	static const char *GetNativeName(AMX *amx, cell index);
+
+	// Returns the address of a native function.
 	static AMX_NATIVE GetNativeAddress(AMX *amx, cell index);
+
+	// Returns the address of a public function.
 	static ucell GetPublicAddress(AMX *amx, cell index);
+
+	// Reads a single line from a source file.
 	static std::string ReadSourceLine(const std::string &filename, long lineNo);
 
 private:
+	// The corresponding AMX instance and its header.
 	AMX         *amx_;
 	AMX_HEADER  *amxhdr_;
+
+	// AMX debugging information (symbols, file names, line numbers, etc).
 	AMXDebugInfo debugInfo_;
 
-	/// The path to the .amx file
+	// The path to the AMX file.
 	std::string amxPath_;
-	/// The name of the .amx file (including extension)
+	// The name of the AMX file + .amx extension.
 	std::string amxName_;
 
+	// Old AMX callback and debug hook.
 	AMX_CALLBACK prevCallback_;
 	AMX_DEBUG    prevDebugHook_;	
 
+	// This class represents both native and public function calls.
 	class NativePublicCall {
 	public:
 		enum Type {
@@ -100,22 +125,23 @@ private:
 			{ return frm_; }
 
 	private:
-		Type type_;
-		AMX *amx_;
+		Type  type_;
+		AMX   *amx_;
 		ucell frm_;
-		cell index_;
+		cell  index_;
 	};
 
-	/// Native/public calls
+	// The native/public call stack.
 	static std::stack<NativePublicCall> npCalls_;
 
-	/// Set to true on Runtime Error (to prevent double-reporting)
+	// This variable is set to true on when an AMX runtime error 
+	// occurs to prvent double report.
 	static bool errorCaught_;
 
-	/// Server config reader (server.cfg)
+	// The server config (server.cfg).
 	static ConfigReader serverCfg;
 
-	/// AMX* <=> crashdetect*
+	// AMX* <=> crashdetect*
 	static boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > instances_;
 };
 
