@@ -23,7 +23,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/program_options.hpp>
 
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
