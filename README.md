@@ -87,6 +87,19 @@ You can configure crashdetect by changing the following settings in server.cfg:
 *	`die_on_error <0|1>` - Shut down the server on runtime or native error. 
 	By default this option is turned off.
 
+Build Requirements
+------------------
+
+To build crashdetect from source you need:
+
+*	Boost Libraries 1.47+
+
+	http://www.boost.org/users/download/
+
+*	CMake 2.8.6+
+
+	http://www.cmake.org/cmake/resources/software.html
+
 Known Issues
 ------------
 
