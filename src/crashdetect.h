@@ -134,8 +134,8 @@ private:
 	// The native/public call stack.
 	static std::stack<NativePublicCall> npCalls_;
 
-	// This variable is set to true on when an AMX runtime error 
-	// occurs to prvent double report.
+	// This variable is set to true when an AMX runtime error 
+	// occurs to prvent double report in certain cases.
 	static bool errorCaught_;
 
 	// The server config (server.cfg).
