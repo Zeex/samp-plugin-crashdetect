@@ -497,9 +497,11 @@ ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
 	return publics[index].address;
 }
 
-// static 
 std::string crashdetect::ReadSourceLine(const std::string &filename, long lineNo) {	
 	std::ifstream inputFile(filename.c_str());
+	if (!inputFile.is_open()) {
+		inputFile.open((boost::filesystem::path(amxPath_).parent_path() /= filename).c_str());
+	}
 	if (inputFile.is_open()) {
 		std::string line;
 		int lineCount = 0;

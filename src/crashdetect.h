@@ -85,7 +85,7 @@ private:
 	static ucell GetPublicAddress(AMX *amx, cell index);
 
 	// Reads a single line from a source file.
-	static std::string ReadSourceLine(const std::string &filename, long lineNo);
+	std::string ReadSourceLine(const std::string &filename, long lineNo);
 
 private:
 	// The corresponding AMX instance and its header.
