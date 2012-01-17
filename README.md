@@ -1,8 +1,11 @@
 crashdetect plugin for SA:MP server
 ===================================
 
-This plugin helps in debugging SA:MP server crashes and AMX run-time errors. Because the latter are (almost) always
+This small plugin helps in debugging SA:MP server crashes and AMX run-time errors. Because the latter are (almost) always
 ignored by the server this is currently the only way to catch them.
+
+Basically it just prints a call stack when an error occurs and sometimes can provide some extra info. See the two
+demo cases below.
 
 ### Demo 1: Crash by native function ###
 
@@ -36,7 +39,7 @@ If crashdetect is loaded, the output would be something like this (in server log
 	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn'
 	[22:51:19] [debug] [crash.amx]:     main()
 
-Aha! 
+so now you know what's wrong.
 
 
 ### Demo 2: Run-time error ###
@@ -54,11 +57,7 @@ Consider this code:
 		printf("%d", a[i]);
  	}
 
-What would this output? Nothing! Guess why? Right, the array index we specified is out of array bounds. 
-This may be very confusing sometimes, especially if you are a beginner - the server doesn't report any error
-though it doesn't execute the code which follows.
-
-Again, with crashdetect you get something like this:
+What would this output? Nothing! Guess why? Right! The array index we specified is out of array bounds:
 
 	[22:52:23] [debug] [bounds.amx]: In file 'Z:\samp-server\gamemodes\bounds.pwn' at line 13:
 	[22:52:23] [debug] [bounds.amx]: printf("%d", a[i]);
@@ -70,17 +69,17 @@ Again, with crashdetect you get something like this:
 	[22:52:23] [debug] [bounds.amx]:   File 'Z:\samp-server\gamemodes\bounds.pwn'
 	[22:52:23] [debug] [bounds.amx]:     public OnGameModeInit()
 
-As you can see, it even tells you the exact line where the error occurs, the value of array index, etc which 
-is typically enough to fix the problem.
+As you can see, it even tells you the exact line where the error occurs, array index, etc which is
+enough to fix the problem.
 
 Usage Notes
 -----------
 
-To get as much helpful output as possible you need to tell the Pawn compiler to include debug information
-into the compiled .amx by specifying either -d2 or -d3 flag on the command line (or through `pawn.cfg`).
+To get as much helpful output as possible (e.g. line numbers) you need to tell the Pawn compiler to 
+produce debugging information by passing either -d2 or -d3 flag on the command line or through *pawn.cfg*.
 
-Configuration
--------------
+Plugin Options
+--------------
 
 You can configure crashdetect by changing the following settings in server.cfg:
 
