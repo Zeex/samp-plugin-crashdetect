@@ -69,8 +69,7 @@ What would this output? Nothing! Guess why? Right! The array index we specified 
 	[22:52:23] [debug] [bounds.amx]:   File 'Z:\samp-server\gamemodes\bounds.pwn'
 	[22:52:23] [debug] [bounds.amx]:     public OnGameModeInit()
 
-As you can see, it even tells you the exact line where the error occurs, array index, etc which is
-enough to fix the problem.
+As you can see, it even tells you the error line, array index, etc which is enough to fix the problem.
 
 Usage Notes
 -----------
