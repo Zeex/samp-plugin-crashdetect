@@ -101,6 +101,5 @@ To build crashdetect from source you need:
 Known Issues
 ------------
 
-*	The plugin can crash your server when it attempts to load debug info from a compiled .amx
-	if it's more than 2^16 lines of code (#include's are counted too). Unfortunately this can't be 
-	fixed without editing Pawn compiler. 
+*	The plugin can crash your server when it attempts to load debug info from a script that is
+	more than 2^16 lines long (together with #include's). This is due to a compiler bug/limit.
