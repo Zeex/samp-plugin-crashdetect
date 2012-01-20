@@ -3,7 +3,7 @@
  *  This file contains extra definitions that are convenient for debugger
  *  support.
  *
- *  Copyright (c) ITB CompuPhase, 2005-2006
+ *  Copyright (c) ITB CompuPhase, 2005
  *
  *  This software is provided "as-is", without any express or implied warranty.
  *  In no event will the authors be held liable for any damages arising from
@@ -21,11 +21,13 @@
  *      misrepresented as being the original software.
  *  3.  This notice may not be removed or altered from any source distribution.
  *
- *  Version: $Id: amxdbg.h 3612 2006-07-22 09:59:46Z thiadmer $
+ *  Version: $Id: amxdbg.h 3363 2005-07-23 09:03:29Z thiadmer $
  */
 
 #ifndef AMXDBG_H_INCLUDED
 #define AMXDBG_H_INCLUDED
+
+#include <stdio.h> // was missing stdio.h
 
 #ifndef AMX_H_INCLUDED
   #include "amx.h"
@@ -63,72 +65,72 @@ extern  "C" {
 #endif
 
 typedef struct tagAMX_DBG_HDR {
-  int32_t size          PACKED; /* size of the debug information chunk */
+  uint32_t size          PACKED; /* size of the debug information chunk */
   uint16_t magic        PACKED; /* signature, must be 0xf1ef */
   char    file_version  PACKED; /* file format version */
   char    amx_version   PACKED; /* required version of the AMX */
-  int16_t flags         PACKED; /* currently unused */
-  int16_t files         PACKED; /* number of entries in the "file" table */
-  int32_t lines         PACKED; /* number of entries in the "line" table */
-  int16_t symbols       PACKED; /* number of entries in the "symbol" table */
-  int16_t tags          PACKED; /* number of entries in the "tag" table */
-  int16_t automatons    PACKED; /* number of entries in the "automaton" table */
-  int16_t states        PACKED; /* number of entries in the "state" table */
-} PACKED AMX_DBG_HDR;
+  uint16_t flags         PACKED; /* currently unused */
+  uint16_t files         PACKED; /* number of entries in the "file" table */
+  uint16_t lines         PACKED; /* number of entries in the "line" table */
+  uint16_t symbols       PACKED; /* number of entries in the "symbol" table */
+  uint16_t tags          PACKED; /* number of entries in the "tag" table */
+  uint16_t automatons    PACKED; /* number of entries in the "automaton" table */
+  uint16_t states        PACKED; /* number of entries in the "state" table */
+} AMX_DBG_HDR           PACKED;
 #define AMX_DBG_MAGIC   0xf1ef
 
 typedef struct tagAMX_DBG_FILE {
   ucell   address       PACKED; /* address in the code segment where generated code (for this file) starts */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
-} PACKED AMX_DBG_FILE;
+} AMX_DBG_FILE          PACKED;
 
 typedef struct tagAMX_DBG_LINE {
   ucell   address       PACKED; /* address in the code segment where generated code (for this line) starts */
   int32_t line          PACKED; /* line number */
-} PACKED AMX_DBG_LINE;
+} AMX_DBG_LINE          PACKED;
 
 typedef struct tagAMX_DBG_SYMBOL {
-  ucell   address       PACKED; /* address in the data segment or relative to the frame */
-  int16_t tag           PACKED; /* tag for the symbol */
-  ucell   codestart     PACKED; /* address in the code segment from which this symbol is valid (in scope) */
-  ucell   codeend       PACKED; /* address in the code segment until which this symbol is valid (in scope) */
-  char    ident         PACKED; /* kind of symbol (function/variable) */
-  char    vclass        PACKED; /* class of symbol (global/local) */
-  int16_t dim           PACKED; /* number of dimensions */
+  ucell    address       PACKED; /* address in the data segment or relative to the frame */
+  uint16_t tag           PACKED; /* tag for the symbol */
+  ucell    codestart     PACKED; /* address in the code segment from which this symbol is valid (in scope) */
+  ucell    codeend       PACKED; /* address in the code segment until which this symbol is valid (in scope) */
+  char     ident         PACKED; /* kind of symbol (function/variable) */
+  char     vclass        PACKED; /* class of symbol (global/local) */
+  uint16_t dim           PACKED; /* number of dimensions */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
-} PACKED AMX_DBG_SYMBOL;
+} AMX_DBG_SYMBOL        PACKED;
 
 typedef struct tagAMX_DBG_SYMDIM {
-  int16_t tag           PACKED; /* tag for the array dimension */
-  ucell   size          PACKED; /* size of the array dimension */
-} PACKED AMX_DBG_SYMDIM;
+  uint16_t tag           PACKED; /* tag for the array dimension */
+  ucell    size          PACKED; /* size of the array dimension */
+} AMX_DBG_SYMDIM        PACKED;
 
 typedef struct tagAMX_DBG_TAG {
-  int16_t tag           PACKED; /* tag id */
+  uint16_t tag           PACKED; /* tag id */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
-} PACKED AMX_DBG_TAG;
+} AMX_DBG_TAG           PACKED;
 
 typedef struct tagAMX_DBG_MACHINE {
-  int16_t automaton     PACKED; /* automaton id */
+  uint16_t automaton     PACKED; /* automaton id */
   ucell address         PACKED; /* address of state variable */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
-} PACKED AMX_DBG_MACHINE;
+} AMX_DBG_MACHINE       PACKED;
 
 typedef struct tagAMX_DBG_STATE {
-  int16_t state         PACKED; /* state id */
-  int16_t automaton     PACKED; /* automaton id */
+  uint16_t state         PACKED; /* state id */
+  uint16_t automaton     PACKED; /* automaton id */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
-} PACKED AMX_DBG_STATE;
+} AMX_DBG_STATE         PACKED;
 
 typedef struct tagAMX_DBG {
-  AMX_DBG_HDR     *hdr           PACKED; /* points to the AMX_DBG header */
-  AMX_DBG_FILE    **filetbl      PACKED;
-  AMX_DBG_LINE    *linetbl       PACKED;
-  AMX_DBG_SYMBOL  **symboltbl    PACKED;
-  AMX_DBG_TAG     **tagtbl       PACKED;
-  AMX_DBG_MACHINE **automatontbl PACKED;
-  AMX_DBG_STATE   **statetbl     PACKED;
-} PACKED AMX_DBG;
+  AMX_DBG_HDR     _FAR *hdr         PACKED; /* points to the AMX_DBG header */
+  AMX_DBG_FILE    _FAR **filetbl    PACKED;
+  AMX_DBG_LINE    _FAR *linetbl     PACKED;
+  AMX_DBG_SYMBOL  _FAR **symboltbl  PACKED;
+  AMX_DBG_TAG     _FAR **tagtbl     PACKED;
+  AMX_DBG_MACHINE _FAR **automatontbl PACKED;
+  AMX_DBG_STATE   _FAR **statetbl   PACKED;
+} AMX_DBG                           PACKED;
 
 #if !defined iVARIABLE
   #define iVARIABLE  1  /* cell that has an address and that can be fetched directly (lvalue) */
