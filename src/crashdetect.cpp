@@ -240,13 +240,13 @@ int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
 
 void crashdetect::HandleNativeError(int index) {
 	if (debugInfo_.IsLoaded()) {
-		logprintf("[debug] [%s]: Native function %s() called at line %ld in '%s' has failed",
+		logprintf("[debug] [%s]: Native function %s() has failed",
 				amxName_.c_str(), GetNativeName(amx_, index), 
 				debugInfo_.GetLineNumber(amx_->cip), 
 				debugInfo_.GetFileName(amx_->cip).c_str()
 		);				
 	} else {
-		logprintf("[debug] [%s]: Native function %s() called at address 0x%X has failed",
+		logprintf("[debug] [%s]: Native function %s() has failed",
 				amxName_.c_str(), GetNativeName(amx_, index), amx_->cip);
 	}
 	PrintCallStack();
@@ -259,69 +259,44 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 		// Fail silently as this public doesn't really exist
 		error = AMX_ERR_NONE;
 	} else {
-		if (!debugInfo_.IsLoaded() || amx_->cip == 0) {
-			char entryPoint[33];
-			// GetInstance entry point name
-			if (index == AMX_EXEC_MAIN) {
-				strcpy(entryPoint, "main");
-			} else {
-				if (index < 0 || amx_GetPublic(amx_, index, entryPoint) != AMX_ERR_NONE) {
-					strcpy(entryPoint, "<unknown function>");
-				}
-			}
-			logprintf("[debug] [%s]: During execution of %s():", 
-					amxName_.c_str(), entryPoint);
-		} else {
-			std::string filename = debugInfo_.GetFileName(amx_->cip);
-			long line = debugInfo_.GetLineNumber(amx_->cip);
-			logprintf("[debug] [%s]: In file '%s' at line %ld:", 
-					amxName_.c_str(), 
-					filename.c_str(),
-					line
-			);
-			std::string code = ReadSourceLine(filename, line);
-			if (!code.empty()) {
-				logprintf("[debug] [%s]: %s", amxName_.c_str(), code.c_str());
-			}
-		}
 		logprintf("[debug] [%s]: Run time error %d: \"%s\"", 
 				amxName_.c_str(), error, aux_StrError(error));
 		switch (error) {
 			case AMX_ERR_BOUNDS: {
 				ucell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
 				ucell index = amx_->pri;
-				logprintf("[debug] [%s]:   Array max. index is %d but accessing an element at %d", 
+				logprintf("[debug] [%s]: Array max. index is %d but accessing an element at %d", 
 						amxName_.c_str(), bound, index);
 				break;
 			}
 			case AMX_ERR_NOTFOUND: {
-				logprintf("[debug] [%s]:   These natives are not registered:", amxName_.c_str());
+				logprintf("[debug] [%s]: The following natives are not registered:", amxName_.c_str());
 				AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
 				int numNatives = 0;
 				amx_NumNatives(amx_, &numNatives);
 				for (int i = 0; i < numNatives; ++i) {
 					if (natives[i].address == 0) {
 						char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
-						logprintf("[debug] [%s]:   %s", amxName_.c_str(), name);
+						logprintf("[debug] [%s]: %s", amxName_.c_str(), name);
 					}
 				}
 				break;
 			}
 			case AMX_ERR_STACKERR:
-				logprintf("[debug] [%s]:   Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", 
+				logprintf("[debug] [%s]: Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", 
 						amxName_.c_str(), amx_->stk, amx_->hea); 
 				break;
 			case AMX_ERR_STACKLOW:
-				logprintf("[debug] [%s]:   Stack index (STK) is 0x%X, stack top (STP) is 0x%X", 
+				logprintf("[debug] [%s]: Stack index (STK) is 0x%X, stack top (STP) is 0x%X", 
 						amxName_.c_str(), amx_->stk, amx_->stp);
 				break;
 			case AMX_ERR_HEAPLOW:
-				logprintf("[debug] [%s]:   Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", 
+				logprintf("[debug] [%s]: Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", 
 						amxName_.c_str(), amx_->hea, amx_->hlw);
 				break;
 			case AMX_ERR_INVINSTR: {
 				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
-				logprintf("[debug] [%s]:   Invalid opcode 0x%X at address 0x%X", 
+				logprintf("[debug] [%s]: Invalid opcode 0x%X at address 0x%X", 
 						amxName_.c_str(), opcode , amx_->cip - sizeof(cell));
 				break;
 			}
@@ -341,6 +316,9 @@ void crashdetect::HandleInterrupt() {
 	PrintCallStack();
 }
 
+static void PrintNative(AMX *amx, cell index) {
+	}
+
 void crashdetect::PrintCallStack() const {
 	if (npCalls_.empty()) 
 		return;
@@ -348,80 +326,93 @@ void crashdetect::PrintCallStack() const {
 	std::stack<NativePublicCall> npCallStack = npCalls_;
 	ucell frm = static_cast<ucell>(amx_->frm);
 
-	logprintf("[debug] [%s]: Call stack (most recent call first):", amxName_.c_str());	
+	logprintf("[debug] [%s]: Call Stack (most recent call first):", amxName_.c_str());
+
+	int depth = 0;
 
 	while (!npCallStack.empty()) {
-		NativePublicCall call = npCallStack.top();
-		AMXDebugInfo debugInfo = instances_[call.amx()]->debugInfo_;
+		NativePublicCall call = npCallStack.top();		
+
 		if (call.type() == NativePublicCall::NATIVE) {
-			void *address = (void*)GetNativeAddress(call.amx(), call.index());
 			std::string name = GetNativeName(call.amx(), call.index());
 			std::string module = GetModuleNameBySymbol(
-					(void*)GetNativeAddress(call.amx(), call.index()));
-			if (debugInfo.IsLoaded()) {
-				logprintf("[debug] [%s]:   File '%s', line %ld", amxName_.c_str(),
-						debugInfo.GetFileName(call.amx()->cip).c_str(),
-						debugInfo.GetLineNumber(call.amx()->cip));
-				logprintf("[debug] [%s]:     native %s() [0x%08x] from %s", amxName_.c_str(),
-						name.c_str(), address, module.c_str());
-			} else {
-				logprintf("[debug] [%s]:   0x%08X => native %s() [0x%08x] from %s", amxName_.c_str(), 
-						call.amx()->cip - sizeof(cell), name.c_str(), address, module.c_str());
-			}
-		} else if (call.type() == NativePublicCall::PUBLIC) {
-			AMXCallStack callStack(call.amx(), debugInfo, frm);
-			std::vector<AMXStackFrame> frames = callStack.GetFrames();
+				(void*)GetNativeAddress(call.amx(), call.index()));			
+			logprintf("[debug] [%s]: #%d native %s() from %s", amxName_.c_str(), depth, 
+					name.c_str(), module.c_str());
+			++depth;
+		} 
+		else if (call.type() == NativePublicCall::PUBLIC) {
+			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
+
+			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
 			if (frames.empty()) {
-				logprintf("[debug] [%s]:   Some or all frames are missing", amxName_.c_str());
+				logprintf("[debug] [%s]: Stack corrupted", amxName_.c_str(), depth);
 			}
-			if (debugInfo.IsLoaded()) {
-				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
-					iterator != frames.end() && iterator->GetCallAddress() != 0; ++iterator) 
-				{	
-					logprintf("[debug] [%s]:   File '%s', line %d", amxName_.c_str(),
-							iterator->GetSourceFileName().c_str(), iterator->GetLineNumber());;
-					logprintf("[debug] [%s]:     %s [0x%08x]", amxName_.c_str(), 
-							iterator->GetFunctionPrototype().c_str(), iterator->GetFunctionAddress());
-				}
-				// Entry point
-				ucell epAddr = GetPublicAddress(call.amx(), call.index());
-				AMXStackFrame epFrame = AMXStackFrame(call.amx(), frm, 0, 
-						epAddr, debugInfo);
-				logprintf("[debug] [%s]:   File '%s'", amxName_.c_str(), epFrame.GetSourceFileName().c_str());
-				if (call.index() == AMX_EXEC_MAIN) {
-					logprintf("[debug] [%s]:     main() [0x%08x]", amxName_.c_str(), epAddr);
-				} else if (call.index() >= 0) {					
-					logprintf("[debug] [%s]:     %s [0x%08x]", amxName_.c_str(), epFrame.GetFunctionPrototype().c_str(), epAddr);
-				} else {
-					logprintf("[debug] [%s]:     0x????????()", amxName_.c_str());
-				}
-			} else {
-				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
-					iterator != frames.end() && iterator->GetCallAddress() != 0; ++iterator) 
-				{	
-					if (iterator->IsPublic()) {
-						logprintf("[debug] [%s]:   0x%08X => public %s()", amxName_.c_str(),
-							iterator->GetCallAddress(), iterator->GetFunctionName().c_str());
+
+			for (size_t i = 0; i < frames.size(); i++) {				
+				if (debugInfo.IsLoaded()) {
+					AMXStackFrame &frame = frames[i];
+					if (i > 0) {
+						AMXStackFrame &prevFrame = frames[i - 1];
+						logprintf("[debug] [%s]: #%d %s at %s:%ld", amxName_.c_str(), depth,
+								frame.GetFunctionPrototype().c_str(), 
+								frame.GetSourceFileName().c_str(), 
+								debugInfo.GetLineNumber(prevFrame.GetCallAddress()));
 					} else {
-						logprintf("[debug] [%s]:   0x%08X => 0x%08x()", amxName_.c_str(),
-							iterator->GetCallAddress(), iterator->GetFunctionAddress());
+						logprintf("[debug] [%s]: #%d %s at %s:%ld", amxName_.c_str(), depth,
+								frame.GetFunctionPrototype().c_str(),
+								debugInfo.GetFileName(call.amx()->cip).c_str(),
+								debugInfo.GetLineNumber(call.amx()->cip));
 					}
-				}
-				// Entry point
-				char name[32];
-				if (amx_GetPublic(call.amx(), call.index(), name) == AMX_ERR_NONE) {
-					logprintf("[debug] [%s]:   0x???????? => public %s()", amxName_.c_str(), name);
-				} else if (call.index() == AMX_EXEC_MAIN) {
-					logprintf("[debug] [%s]:   0x???????? => main()", amxName_.c_str());
 				} else {
-					logprintf("[debug] [%s]:   0x???????? => 0x????????()", amxName_.c_str());				
+					AMXStackFrame &frame = frames[i];
+					if (i > 0) {
+						AMXStackFrame &prevFrame = frames[i - 1];
+						if (frame.IsPublic()) {
+							logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), depth,
+									frame.GetFunctionName().c_str(),
+									prevFrame.GetCallAddress() - frame.GetFunctionAddress());
+						} else {
+							if (frame.GetCallAddress() != 0) {
+								logprintf("[debug] [%s]: #%d 0x%08x()+0x%x", amxName_.c_str(), depth, 
+										frame.GetFunctionAddress(),
+										prevFrame.GetCallAddress() - frame.GetFunctionAddress());
+							} else {
+								// This is the entry point
+								ucell epAddr = GetPublicAddress(call.amx(), call.index());
+								ucell offset = prevFrame.GetCallAddress() - epAddr;
+								char epName[32];
+								if (amx_GetPublic(call.amx(), call.index(), epName) == AMX_ERR_NONE) {
+									logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), 
+											depth, epName, offset);
+								} else if (call.index() == AMX_EXEC_MAIN) {
+									logprintf("[debug] [%s]: #%d main()+0x%x", amxName_.c_str(), 
+											depth, offset);
+								} else {
+									logprintf("[debug] [%s]: #%d ??", amxName_.c_str(), depth);
+								}
+							}
+						}
+					} else {
+						if (frame.IsPublic()) {
+							logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), depth,
+									frame.GetFunctionName().c_str(),
+									call.amx()->cip - frame.GetFunctionAddress());
+						} else {
+							logprintf("[debug] [%s]: #%d 0x%08x()+0x%x", amxName_.c_str(), depth,
+									frame.GetFunctionAddress(),
+									call.amx()->cip - frame.GetFunctionAddress());
+						}
+					}				
 				}
+				++depth;
 			}
 		} else {
 			assert(0 && "Invalid call.type()");
 		}
+
 		frm = call.frm();
-		npCallStack.pop();
+		npCallStack.pop();		
 	}
 }
 
@@ -504,22 +495,4 @@ ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
 	} else {
 		return 0;
 	}
-}
-
-std::string crashdetect::ReadSourceLine(const std::string &filename, long lineNo) {	
-	std::ifstream inputFile(filename.c_str());
-	if (!inputFile.is_open()) {
-		inputFile.open((boost::filesystem::path(amxPath_).parent_path() /= filename).c_str());
-	}
-	if (inputFile.is_open()) {
-		std::string line;
-		int lineCount = 0;
-		while (std::getline(inputFile, line)) {
-			if (++lineCount == lineNo) {
-				boost::algorithm::trim(line); // strip indents
-				return line;
-			}
-		}
-	}
-	return std::string();
 }

@@ -84,9 +84,6 @@ private:
 	// Returns the address of a public function.
 	static ucell GetPublicAddress(AMX *amx, cell index);
 
-	// Reads a single line from a source file.
-	std::string ReadSourceLine(const std::string &filename, long lineNo);
-
 private:
 	// The corresponding AMX instance and its header.
 	AMX         *amx_;

@@ -92,11 +92,11 @@ AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, const AMXDebugInfo &d
 
 		callAddress_ = *(reinterpret_cast<ucell*>(data + frameAddress_) + 1) - 2*sizeof(cell);
 		if (callAddress_ >= 0 && callAddress_ < static_cast<ucell>(hdr->dat - hdr->cod)) {
-			functionAddress_ = *reinterpret_cast<ucell*>(callAddress_ + sizeof(cell) + code) - code;
+			functionAddress_ = *reinterpret_cast<ucell*>(callAddress_ + sizeof(cell) + code) - code;			
 			Init(amx, debugInfo);
 		} else {
 			callAddress_ = 0;
-		}
+		}		
 	}
 }
 
@@ -234,7 +234,7 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFra
 		frames_.push_back(frame);
 		if (frame.GetFunctionAddress() == 0) {
 			// Invalid frame address
-			return;
+			break;
 		}
 		frm = *reinterpret_cast<ucell*>(data + frm);
 	} 
