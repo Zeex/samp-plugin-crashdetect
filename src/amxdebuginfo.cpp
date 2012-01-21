@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -66,7 +67,7 @@ bool AMXDebugInfo::HasDebugInfo(AMX *amx) {
 void AMXDebugInfo::FreeAmxDbg(AMX_DBG *amxdbg) {
 	if (amxdbg != 0) {
 		dbg_FreeInfo(amxdbg);
-		delete amxdbg;
+		std::free(amxdbg);
 	}
 }
 
@@ -77,9 +78,9 @@ bool AMXDebugInfo::IsLoaded() const {
 void AMXDebugInfo::Load(const std::string &filename) {
 	std::FILE* fp = std::fopen(filename.c_str(), "rb");
 	if (fp != 0) {
-		amxdbgPtr_.reset(new AMX_DBG, FreeAmxDbg);
-		if (dbg_LoadInfo(amxdbgPtr_.get(), fp) != AMX_ERR_NONE) {
-			amxdbgPtr_.reset();
+		AMX_DBG *amxdbg = reinterpret_cast<AMX_DBG*>(std::malloc(sizeof(AMX_DBG)));
+		if (dbg_LoadInfo(amxdbg, fp) == AMX_ERR_NONE) {
+			amxdbgPtr_.reset(amxdbg, FreeAmxDbg);
 		}
 		fclose(fp);
 	}
