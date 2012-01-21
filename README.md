@@ -28,16 +28,12 @@ Imagine that you have the following script:
 
 If crashdetect is loaded, the output would be something like this (in server log):
 
-	[22:51:19] [debug] The server has crashed executing 'crash.amx'
-	[22:51:19] [debug] [crash.amx]: Call stack (most recent call first):
-	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn', line 13
-	[22:51:19] [debug] [crash.amx]:     native fread() from samp-server.exe
-	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn', line 8
-	[22:51:19] [debug] [crash.amx]:     function2()
-	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn', line 4
-	[22:51:19] [debug] [crash.amx]:     function1()
-	[22:51:19] [debug] [crash.amx]:   File 'Z:\samp-server\crash.pwn'
-	[22:51:19] [debug] [crash.amx]:     main()
+	[05:31:41] [debug] The server has crashed executing 'crash.amx'
+	[05:31:41] [debug] [crash.amx]: Call Stack (most recent call first):
+	[05:31:41] [debug] [crash.amx]: #0 native fread() from samp-server.exe
+	[05:31:41] [debug] [crash.amx]: #1 function2() at crash.pwn:13
+	[05:31:41] [debug] [crash.amx]: #2 function1() at crash.pwn:8
+	[05:31:41] [debug] [crash.amx]: #3 main() at crash.pwn:4
 
 so now you know what's wrong.
 
@@ -59,15 +55,11 @@ Consider this code:
 
 What would this output? Nothing! Guess why? Right! The array index we specified is out of array bounds:
 
-	[22:52:23] [debug] [bounds.amx]: In file 'Z:\samp-server\gamemodes\bounds.pwn' at line 13:
-	[22:52:23] [debug] [bounds.amx]: printf("%d", a[i]);
-	[22:52:23] [debug] [bounds.amx]: Run time error 4: "Array index out of bounds"
-	[22:52:23] [debug] [bounds.amx]:   Array max. index is 4 but accessing an element at 100
-	[22:52:23] [debug] [bounds.amx]: Call stack (most recent call first):
-	[22:52:23] [debug] [bounds.amx]:   File 'Z:\samp-server\gamemodes\bounds.pwn', line 6
-	[22:52:23] [debug] [bounds.amx]:     do_out_of_bounds()
-	[22:52:23] [debug] [bounds.amx]:   File 'Z:\samp-server\gamemodes\bounds.pwn'
-	[22:52:23] [debug] [bounds.amx]:     public OnGameModeInit()
+	[05:33:03] [debug] [bounds.amx]: Run time error 4: "Array index out of bounds"
+	[05:33:03] [debug] [bounds.amx]: Accessing element at index 100 past array upper bound 4
+	[05:33:03] [debug] [bounds.amx]: Call Stack (most recent call first):
+	[05:33:03] [debug] [bounds.amx]: #0 do_out_of_bounds() at bounds.pwn:14
+	[05:33:03] [debug] [bounds.amx]: #1 public OnGameModeInit() at bounds.pwn:7
 
 As you can see, it even tells you the error line, array index, etc which is enough to fix the problem.
 
