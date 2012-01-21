@@ -263,10 +263,15 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				amxName_.c_str(), error, aux_StrError(error));
 		switch (error) {
 			case AMX_ERR_BOUNDS: {
-				ucell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
-				ucell index = amx_->pri;
-				logprintf("[debug] [%s]: Array max. index is %d but accessing an element at %d", 
-						amxName_.c_str(), bound, index);
+				cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
+				cell index = amx_->pri;
+				if (index < 0) {
+					logprintf("[debug] [%s]: Accessing element at negative index %d", 
+							amxName_.c_str(), index);
+				} else {
+					logprintf("[debug] [%s]: Accessing element at index %d past array upper bound %d", 
+							amxName_.c_str(), index, bound);
+				}
 				break;
 			}
 			case AMX_ERR_NOTFOUND: {
