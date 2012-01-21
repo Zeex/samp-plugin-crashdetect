@@ -353,18 +353,20 @@ void crashdetect::PrintCallStack() const {
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();
 		AMXDebugInfo debugInfo = instances_[call.amx()]->debugInfo_;
-		if (call.type() == NativePublicCall::NATIVE) {			
+		if (call.type() == NativePublicCall::NATIVE) {
+			void *address = (void*)GetNativeAddress(call.amx(), call.index());
+			std::string name = GetNativeName(call.amx(), call.index());
 			std::string module = GetModuleNameBySymbol(
 					(void*)GetNativeAddress(call.amx(), call.index()));
 			if (debugInfo.IsLoaded()) {
 				logprintf("[debug] [%s]:   File '%s', line %ld", amxName_.c_str(),
 						debugInfo.GetFileName(call.amx()->cip).c_str(),
 						debugInfo.GetLineNumber(call.amx()->cip));
-				logprintf("[debug] [%s]:     native %s() from %s", amxName_.c_str(),
-						GetNativeName(call.amx(), call.index()), module.c_str());
+				logprintf("[debug] [%s]:     native %s() [0x%08x] from %s", amxName_.c_str(),
+						name.c_str(), address, module.c_str());
 			} else {
-				logprintf("[debug] [%s]:   0x%08X => native %s() from %s", amxName_.c_str(), 
-						call.amx()->cip - sizeof(cell), GetNativeName(call.amx(), call.index()), module.c_str());
+				logprintf("[debug] [%s]:   0x%08X => native %s() [0x%08x] from %s", amxName_.c_str(), 
+						call.amx()->cip - sizeof(cell), name.c_str(), address, module.c_str());
 			}
 		} else if (call.type() == NativePublicCall::PUBLIC) {
 			AMXCallStack callStack(call.amx(), debugInfo, frm);
@@ -378,19 +380,20 @@ void crashdetect::PrintCallStack() const {
 				{	
 					logprintf("[debug] [%s]:   File '%s', line %d", amxName_.c_str(),
 							iterator->GetSourceFileName().c_str(), iterator->GetLineNumber());;
-					logprintf("[debug] [%s]:     %s", amxName_.c_str(), 
-							iterator->GetFunctionPrototype().c_str());
+					logprintf("[debug] [%s]:     %s [0x%08x]", amxName_.c_str(), 
+							iterator->GetFunctionPrototype().c_str(), iterator->GetFunctionAddress());
 				}
 				// Entry point
+				ucell epAddr = GetPublicAddress(call.amx(), call.index());
 				AMXStackFrame epFrame = AMXStackFrame(call.amx(), frm, 0, 
-						GetPublicAddress(call.amx(), call.index()), debugInfo);
+						epAddr, debugInfo);
 				logprintf("[debug] [%s]:   File '%s'", amxName_.c_str(), epFrame.GetSourceFileName().c_str());
 				if (call.index() == AMX_EXEC_MAIN) {
-					logprintf("[debug] [%s]:     main()", amxName_.c_str());
+					logprintf("[debug] [%s]:     main() [0x%08x]", amxName_.c_str(), epAddr);
 				} else if (call.index() >= 0) {					
-					logprintf("[debug] [%s]:     %s", amxName_.c_str(), epFrame.GetFunctionPrototype().c_str());
+					logprintf("[debug] [%s]:     %s [0x%08x]", amxName_.c_str(), epFrame.GetFunctionPrototype().c_str(), epAddr);
 				} else {
-					logprintf("[debug] [%s]:     <unknown function>", amxName_.c_str());
+					logprintf("[debug] [%s]:     0x????????()", amxName_.c_str());
 				}
 			} else {
 				for (std::vector<AMXStackFrame>::const_iterator iterator = frames.begin(); 
@@ -492,9 +495,15 @@ AMX_NATIVE crashdetect::GetNativeAddress(AMX *amx, cell index) {
 
 // static
 ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		reinterpret_cast<AMX_HEADER*>(amx->base)->publics + amx->base);
-	return publics[index].address;
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
+	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
+		return publics[index].address;
+	} else if (index == AMX_EXEC_MAIN) {
+		return hdr->cip;
+	} else {
+		return 0;
+	}
 }
 
 std::string crashdetect::ReadSourceLine(const std::string &filename, long lineNo) {	
