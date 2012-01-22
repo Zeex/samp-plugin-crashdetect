@@ -1,7 +1,7 @@
 crashdetect plugin
 ==================
 
-This plugin helps in debugging SA:MP server crashes and runtime AMX errors.
+This plugin helps in debugging SA-MP server crashes and runtime AMX errors.
 
 Usage Notes
 -----------
@@ -26,6 +26,10 @@ To build crashdetect from source you will need:
 
 	http://www.boost.org/users/download/
 
-*	CMake 2.8.6+
+*	CMake 2.8.6+ (Windows and Linux)
 
 	http://www.cmake.org/cmake/resources/software.html
+	
+	or
+	
+	GNU make (Linux only)
