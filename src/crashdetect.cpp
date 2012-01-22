@@ -132,7 +132,7 @@ void crashdetect::Crash() {
 		GetInstance(amx)->HandleCrash();
 	} else {
 		// Server/plugin internal error (in another thread?)
-		logprintf("[debug] The server has crashed due to an unknown error");
+		logprintf("[debug] Server crashed due to an unknown error");
 	}
 }
 
@@ -312,7 +312,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 }
 
 void crashdetect::HandleCrash() {
-	logprintf("[debug] The server has crashed executing '%s'", amxName_.c_str());
+	logprintf("[debug] [%s]: Server crashed", amxName_.c_str());
 	PrintCallStack();
 }
 
