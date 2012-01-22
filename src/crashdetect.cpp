@@ -333,13 +333,18 @@ void crashdetect::PrintCallStack() const {
 	int depth = 0;
 
 	while (!npCallStack.empty()) {
-		NativePublicCall call = npCallStack.top();		
+		NativePublicCall call = npCallStack.top();
+
+		std::string amxName = instances_[call.amx()]->amxName_;
+		if (amxName.empty()) {
+			amxName = "unknown";
+		}
 
 		if (call.type() == NativePublicCall::NATIVE) {
 			std::string name = GetNativeName(call.amx(), call.index());
 			std::string module = GetModuleNameBySymbol(
 				(void*)GetNativeAddress(call.amx(), call.index()));			
-			logprintf("[debug] [%s]: #%d native %s() from %s", amxName_.c_str(), depth, 
+			logprintf("[debug] [%s]: #%d native %s() from %s", amxName.c_str(), depth, 
 					name.c_str(), module.c_str());
 			++depth;
 		} 
@@ -348,7 +353,7 @@ void crashdetect::PrintCallStack() const {
 
 			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
 			if (frames.empty()) {
-				logprintf("[debug] [%s]: Stack corrupted", amxName_.c_str(), depth);
+				logprintf("[debug] [%s]: Stack corrupted", amxName.c_str(), depth);
 			}
 
 			for (size_t i = 0; i < frames.size(); i++) {				
@@ -356,12 +361,12 @@ void crashdetect::PrintCallStack() const {
 					AMXStackFrame &frame = frames[i];
 					if (i > 0) {
 						AMXStackFrame &prevFrame = frames[i - 1];
-						logprintf("[debug] [%s]: #%d %s at %s:%ld", amxName_.c_str(), depth,
+						logprintf("[debug] [%s]: #%d %s at %s:%ld", amxName.c_str(), depth,
 								frame.GetFunctionPrototype().c_str(), 
 								frame.GetSourceFileName().c_str(), 
 								debugInfo.GetLineNumber(prevFrame.GetCallAddress()));
 					} else {
-						logprintf("[debug] [%s]: #%d %s at %s:%ld", amxName_.c_str(), depth,
+						logprintf("[debug] [%s]: #%d %s at %s:%ld", amxName.c_str(), depth,
 								frame.GetFunctionPrototype().c_str(),
 								debugInfo.GetFileName(call.amx()->cip).c_str(),
 								debugInfo.GetLineNumber(call.amx()->cip));
@@ -371,12 +376,12 @@ void crashdetect::PrintCallStack() const {
 					if (i > 0) {
 						AMXStackFrame &prevFrame = frames[i - 1];
 						if (frame.IsPublic()) {
-							logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), depth,
+							logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName.c_str(), depth,
 									frame.GetFunctionName().c_str(),
 									prevFrame.GetCallAddress() - frame.GetFunctionAddress());
 						} else {
 							if (frame.GetCallAddress() != 0) {
-								logprintf("[debug] [%s]: #%d 0x%08x()+0x%x", amxName_.c_str(), depth, 
+								logprintf("[debug] [%s]: #%d 0x%08x()+0x%x", amxName.c_str(), depth, 
 										frame.GetFunctionAddress(),
 										prevFrame.GetCallAddress() - frame.GetFunctionAddress());
 							} else {
@@ -385,23 +390,23 @@ void crashdetect::PrintCallStack() const {
 								ucell offset = prevFrame.GetCallAddress() - epAddr;
 								char epName[32];
 								if (amx_GetPublic(call.amx(), call.index(), epName) == AMX_ERR_NONE) {
-									logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), 
+									logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName.c_str(), 
 											depth, epName, offset);
 								} else if (call.index() == AMX_EXEC_MAIN) {
-									logprintf("[debug] [%s]: #%d main()+0x%x", amxName_.c_str(), 
+									logprintf("[debug] [%s]: #%d main()+0x%x", amxName.c_str(), 
 											depth, offset);
 								} else {
-									logprintf("[debug] [%s]: #%d ??", amxName_.c_str(), depth);
+									logprintf("[debug] [%s]: #%d ??", amxName.c_str(), depth);
 								}
 							}
 						}
 					} else {
 						if (frame.IsPublic()) {
-							logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), depth,
+							logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName.c_str(), depth,
 									frame.GetFunctionName().c_str(),
 									call.amx()->cip - frame.GetFunctionAddress());
 						} else {
-							logprintf("[debug] [%s]: #%d 0x%08x()+0x%x", amxName_.c_str(), depth,
+							logprintf("[debug] [%s]: #%d 0x%08x()+0x%x", amxName.c_str(), depth,
 									frame.GetFunctionAddress(),
 									call.amx()->cip - frame.GetFunctionAddress());
 						}
