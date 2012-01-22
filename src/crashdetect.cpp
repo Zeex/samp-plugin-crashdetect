@@ -240,13 +240,13 @@ int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
 
 void crashdetect::HandleNativeError(int index) {
 	if (debugInfo_.IsLoaded()) {
-		logprintf("[debug] [%s]: Native function %s() has failed",
+		logprintf("[debug] [%s]: Native function %s() failed (AMX_ERR_NATIVE)",
 				amxName_.c_str(), GetNativeName(amx_, index), 
 				debugInfo_.GetLineNumber(amx_->cip), 
 				debugInfo_.GetFileName(amx_->cip).c_str()
 		);				
 	} else {
-		logprintf("[debug] [%s]: Native function %s() has failed",
+		logprintf("[debug] [%s]: Native function %s() failed (AMX_ERR_NATIVE)",
 				amxName_.c_str(), GetNativeName(amx_, index), amx_->cip);
 	}
 	PrintCallStack();
