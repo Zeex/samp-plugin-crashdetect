@@ -321,9 +321,6 @@ void crashdetect::HandleInterrupt() {
 	PrintCallStack();
 }
 
-static void PrintNative(AMX *amx, cell index) {
-	}
-
 void crashdetect::PrintCallStack() const {
 	if (npCalls_.empty()) 
 		return;
