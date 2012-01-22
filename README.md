@@ -1,7 +1,7 @@
 crashdetect plugin
 ==================
 
-This plugin helps in debugging SA-MP server crashes and runtime AMX errors.
+This plugin helps in debugging of SA-MP server crashes and runtime AMX errors.
 
 Usage Notes
 -----------
