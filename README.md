@@ -29,9 +29,3 @@ To build crashdetect from source you will need:
 *	CMake 2.8.6+
 
 	http://www.cmake.org/cmake/resources/software.html
-
-Known Issues
-------------
-
-*	The plugin can crash your server when it attempts to load debug info from a script that is
-	more than 2^16 lines long (together with #include's). This is due to a compiler bug/limit.
