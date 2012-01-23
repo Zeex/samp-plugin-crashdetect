@@ -24,16 +24,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
-#ifdef _WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#include <Windows.h>
-#else
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE 1 // for dladdr()
-	#endif
-	#include <dlfcn.h> 
-#endif
-
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
@@ -44,6 +34,7 @@
 #include "interrupt.h"
 #include "jump-x86.h"
 #include "logprintf.h"
+#include "os.h"
 #include "plugincommon.h"
 #include "version.h"
 
@@ -69,7 +60,7 @@ bool crashdetect::Load(void **ppPluginData) {
 	if (funAddr == 0) {
 		new JumpX86(amxExecPtr, (void*)AmxExec);
 	} else {
-		std::string module = crashdetect::GetModuleNameBySymbol(funAddr);
+		std::string module = os::GetModuleNameBySymbol(funAddr);
 		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
 			logprintf("  crashdetect must be loaded before %s", module.c_str());
 			return false;
@@ -336,7 +327,7 @@ void crashdetect::PrintBacktrace() const {
 			if (address == 0) {
 				logprintf("[debug] #%-2d native ??", depth);
 			} else {				
-				std::string module = GetModuleNameBySymbol((void*)address);
+				std::string module = os::GetModuleNameBySymbol((void*)address);
 				if (module.empty()) {
 					module.assign("??");
 				}
@@ -425,20 +416,3 @@ void crashdetect::PrintBacktrace() const {
 	}
 }
 
-// static 
-std::string crashdetect::GetModuleNameBySymbol(void *symbol) {
-	if (symbol == 0) {
-		return std::string();
-	}
-	char module[FILENAME_MAX] = "";
-	#ifdef WIN32
-		MEMORY_BASIC_INFORMATION mbi;
-		VirtualQuery(symbol, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, module, FILENAME_MAX);
-	#else
-		Dl_info info;
-		dladdr(symbol, &info);
-		strcpy(module, info.dli_fname);
-	#endif
-	return StripDirs(module);
-}

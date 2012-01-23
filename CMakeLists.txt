@@ -49,7 +49,7 @@ add_definitions(
 	-DAMX_ANSIONLY
 	-DAMX_NODYNALOAD)
 
-add_library(crashdetect MODULE
+set(SOURCES
 	src/amx/amx.c
 	src/amx/amx.h
 	src/amx/amxaux.c
@@ -80,10 +80,23 @@ add_library(crashdetect MODULE
 	src/jump-x86.h
 	src/logprintf.cpp
 	src/logprintf.h
+	src/os.h
 	src/plugin.cpp
 	src/plugin.rc
 	src/plugincommon.h
 )
+
+if(WIN32)
+	set(SOURCES ${SOURCES}
+		src/os-win32.cpp
+	)
+elseif(UNIX)
+	set(SOURCES ${SOURCES}
+		src/os-unix.cpp
+	)
+endif()
+
+add_library(crashdetect MODULE ${SOURCES})
 
 # Don't prefix the output .so with "lib" 
 set_property(TARGET crashdetect PROPERTY PREFIX "")

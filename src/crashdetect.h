@@ -66,9 +66,6 @@ public:
 private:
 	explicit crashdetect(AMX *amx);
 
-	// Finds to which module (DLL/shared library/executable) a symbol belongs to.
-	static std::string GetModuleNameBySymbol(void *symbol);
-
 private:
 	// The corresponding AMX instance and its header.
 	AMX         *amx_;
