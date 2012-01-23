@@ -1,7 +1,7 @@
 # crashdetect makefile
 #
-# To compile crahdetect on Linux run make as follows:
-#   make os=linux config=release
+# To compile crahdetect on *nix run make as follows:
+#   make os=unix config=release
 # Similarly, to build on Windows with MinGW/Cygwin:
 #   make os=windows config=release
 #
@@ -43,7 +43,7 @@ CPPFLAGS += -D_WIN32
 LDFLAGS  += -Wl,--kill-at --def plugin.def
 endif
 
-ifeq ($(os),linux)
+ifeq ($(os),unix)
 CPPFLAGS += -DLINUX
 CFLAGS   += -fPIC
 LDFLAGS  += -Wl,--no-undefined 
@@ -68,27 +68,33 @@ LDFLAGS  += -shared
 objects = src/amx/amx.c.o \
 	  src/amx/amxaux.c.o \
 	  src/amx/amxdbg.c.o \
-	  src/logprintf.cpp.o \
           src/amxcallstack.cpp.o \
           src/amxdebuginfo.cpp.o \
 	  src/amxerror.cpp.o \
           src/amxpathfinder.cpp.o \
+          src/amxutils.cpp.o \
           src/configreader.cpp.o \
           src/crash.cpp.o \
           src/crashdetect.cpp.o \
           src/interrupt.cpp.o \
           src/jump-x86.cpp.o \
+	  src/logprintf.cpp.o \
           src/plugin.cpp.o
 
 ifeq ($(os),windows)
-objects += src/crashdetect.rc.o
+objects += src/os-win32.cpp.o
+objects += src/plugin.rc.o
+endif
+
+ifeq ($(os),unix)
+objects += src/os-unix.cpp.o
 endif
 
 ifeq ($(os),windows)
 binary = crashdetect.dll
 endif
 
-ifeq ($(os),linux)
+ifeq ($(os),unix)
 binary = crashdetect.so
 endif
 
@@ -106,9 +112,6 @@ src/amx/amxaux.c.o: src/amx/amxaux.c src/amx/amxaux.h src/amx/amx.h
 src/amx/amxdbg.c.o: src/amx/amxdbg.c src/amx/amxdbg.h src/amx/amx.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-src/logprintf.cpp.o: src/logprintf.cpp src/logprintf.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
 src/amxcallstack.cpp.o: src/amxcallstack.cpp src/amxcallstack.h src/amxdebuginfo.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
@@ -119,6 +122,9 @@ src/amxerror.cpp.o: src/amxerror.cpp src/crashdetect.h src/amx/amx.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 src/amxpathfinder.cpp.o: src/amxpathfinder.cpp src/amxpathfinder.h src/amx/amx.h src/amx/amxaux.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+src/amxutils.cpp.o: src/amxutils.cpp src/amxutils.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 src/configreader.cpp.o: src/configreader.cpp src/configreader.h
@@ -138,13 +144,20 @@ src/interrupt.cpp.o: src/interrupt.cpp src/interrupt.h
 src/jump-x86.cpp.o: src/jump-x86.cpp src/jump-x86.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
+src/logprintf.cpp.o: src/logprintf.cpp src/logprintf.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+src/os-unix.cpp.o: src/os-unix.cpp src/os.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+src/os-win32.cpp.o: src/os-win32.cpp src/os.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
 src/plugin.cpp.o: src/plugin.cpp src/crashdetect.h src/logprintf.h src/plugincommon.h src/amx/amx.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-ifeq ($(os),windows)
 src/plugin.rc.o: src/plugin.rc src/version.h
 	windres $< $@
-endif
 
 src/version.h:
 	echo "Generating $@..."
