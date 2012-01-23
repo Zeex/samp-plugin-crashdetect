@@ -249,7 +249,7 @@ void crashdetect::HandleNativeError(int index) {
 		logprintf("[debug] [%s]: Native function %s() failed (AMX_ERR_NATIVE)",
 				amxName_.c_str(), GetNativeName(amx_, index), amx_->cip);
 	}
-	PrintCallStack();
+	PrintBacktrace();
 	ExitOnError();
 }
 
@@ -306,29 +306,29 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				break;
 			}
 		}
-		PrintCallStack();
+		PrintBacktrace();
 		ExitOnError();
 	}
 }
 
 void crashdetect::HandleCrash() {
 	logprintf("[debug] [%s]: Server crashed", amxName_.c_str());
-	PrintCallStack();
+	PrintBacktrace();
 }
 
 void crashdetect::HandleInterrupt() {
 	logprintf("[debug] [%s]: Keyboard interrupt", amxName_.c_str());
-	PrintCallStack();
+	PrintBacktrace();
 }
 
-void crashdetect::PrintCallStack() const {
+void crashdetect::PrintBacktrace() const {
 	if (npCalls_.empty()) 
 		return;
 
 	std::stack<NativePublicCall> npCallStack = npCalls_;
 	ucell frm = static_cast<ucell>(amx_->frm);
 
-	logprintf("[debug] [%s]: Call Stack (most recent call first):", amxName_.c_str());
+	logprintf("[debug] [%s]: Backtrace (most recent call first):", amxName_.c_str());
 
 	int depth = 0;
 

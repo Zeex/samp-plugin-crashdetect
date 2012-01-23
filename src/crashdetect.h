@@ -61,7 +61,7 @@ public:
 	int HandleAmxExec(cell *retval, int index);
 
 	// Prints a call stack, including inter-AMX calls like CallRemoteFunction().
-	void PrintCallStack() const;
+	void PrintBacktrace() const;
 
 private:
 	explicit crashdetect(AMX *amx);
