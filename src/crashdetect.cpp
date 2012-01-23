@@ -56,7 +56,7 @@ bool crashdetect::Load(void **ppPluginData) {
 	void *amxExecPtr = ((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
 
 	// But first make sure it's not already hooked by someone else
-	void *funAddr = JumpX86::GetAbsoluteAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
+	void *funAddr = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
 	if (funAddr == 0) {
 		new JumpX86(amxExecPtr, (void*)AmxExec);
 	} else {

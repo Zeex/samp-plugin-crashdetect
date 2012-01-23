@@ -108,7 +108,7 @@ bool JumpX86::IsInstalled() const {
 }
 
 // static 
-void *JumpX86::GetAbsoluteAddress(unsigned char *jmp) {
+void *JumpX86::GetTargetAddress(unsigned char *jmp) {
 	if (*jmp == 0xE9) {
 		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + kJmpInstrSize);
 		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
