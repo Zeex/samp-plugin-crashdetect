@@ -49,7 +49,10 @@
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
 
-// static members
+static inline std::string StripDirs(const std::string &filename) {
+	return boost::filesystem::path(filename).filename().string();
+}
+
 bool crashdetect::errorCaught_ = false;
 std::stack<crashdetect::NativePublicCall> crashdetect::npCalls_;
 ConfigReader crashdetect::serverCfg("server.cfg");
@@ -360,12 +363,12 @@ void crashdetect::PrintBacktrace() const {
 						AMXStackFrame &prevFrame = frames[i - 1];
 						logprintf("[debug] #%-2d %s at %s:%ld ", depth,
 								frame.GetFunctionPrototype().c_str(), 
-								frame.GetSourceFileName().c_str(), 
+								StripDirs(frame.GetSourceFileName()).c_str(), 
 								debugInfo.GetLineNumber(prevFrame.GetCallAddress()));
 					} else {
 						logprintf("[debug] #%-2d %s at %s:%ld", depth,
 								frame.GetFunctionPrototype().c_str(),
-								debugInfo.GetFileName(call.amx()->cip).c_str(),
+								StripDirs(debugInfo.GetFileName(call.amx()->cip)).c_str(),
 								debugInfo.GetLineNumber(call.amx()->cip));
 					}
 				} else {
@@ -448,7 +451,7 @@ std::string crashdetect::GetModuleNameBySymbol(void *symbol) {
 		dladdr(symbol, &info);
 		strcpy(module, info.dli_fname);
 	#endif
-	return boost::filesystem::path(module).filename().string();
+	return StripDirs(module);
 }
 
 // static
