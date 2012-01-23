@@ -66,9 +66,6 @@ public:
 private:
 	explicit crashdetect(AMX *amx);
 
-	// Reads a E9 JMP destination and converts it to an aboluste address.
-	static void *GetJMPAbsoluteAddress(unsigned char *jmp);
-
 	// Finds to which module (DLL/shared library/executable) a symbol belongs to.
 	static std::string GetModuleNameBySymbol(void *symbol);
 

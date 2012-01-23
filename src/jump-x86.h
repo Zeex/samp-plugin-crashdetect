@@ -33,6 +33,9 @@ public:
 
 	bool IsInstalled() const;
 
+	// Returns a E9 JMP destination as an aboluste address
+	static void *GetAbsoluteAddress(unsigned char *jmp);
+
 private:
 	void *src_;
 	void *dst_;

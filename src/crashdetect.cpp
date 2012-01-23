@@ -65,7 +65,7 @@ bool crashdetect::Load(void **ppPluginData) {
 	void *amxExecPtr = ((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
 
 	// But first make sure it's not already hooked by someone else
-	void *funAddr = GetJMPAbsoluteAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
+	void *funAddr = JumpX86::GetAbsoluteAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
 	if (funAddr == 0) {
 		new JumpX86(amxExecPtr, (void*)AmxExec);
 	} else {
@@ -423,18 +423,6 @@ void crashdetect::PrintBacktrace() const {
 		frm = call.frm();
 		npCallStack.pop();		
 	}
-}
-
-// static 
-void *crashdetect::GetJMPAbsoluteAddress(unsigned char *jmp) {
-	static unsigned char REL_JMP = 0xE9;
-	if (*jmp == REL_JMP) {
-		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + 5);
-		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
-		uint32_t abs_addr = rel_addr + next_instr;
-		return reinterpret_cast<void*>(abs_addr);
-	} 
-	return 0;
 }
 
 // static 
