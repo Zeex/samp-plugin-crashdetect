@@ -391,7 +391,7 @@ void crashdetect::PrintBacktrace() const {
 								if (epName != 0) {
 									if (call.index() == AMX_EXEC_MAIN) {
 										logprintf("[debug] #%-2d main()+0x%x from %s", depth, offset, amxName_.c_str());
-									} else if (call.index() == AMX_EXEC_MAIN) {
+									} else {
 										logprintf("[debug] #%-2d public %s()+0x%x from %s", depth, epName, offset, amxName_.c_str());
 									}
 								} else {
