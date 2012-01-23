@@ -335,12 +335,24 @@ void crashdetect::PrintBacktrace() const {
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();		
 
-		if (call.type() == NativePublicCall::NATIVE) {
-			std::string name = GetNativeName(call.amx(), call.index());
-			std::string module = GetModuleNameBySymbol(
-				(void*)GetNativeAddress(call.amx(), call.index()));			
-			logprintf("[debug] [%s]: #%d native %s() from %s", amxName_.c_str(), depth, 
-					name.c_str(), module.c_str());
+		if (call.type() == NativePublicCall::NATIVE) {			
+			AMX_NATIVE address = GetNativeAddress(call.amx(), call.index());
+			if (address == 0) {
+				logprintf("[debug] [%s]: #%d native ??", amxName_.c_str(), depth);
+			} else {				
+				std::string module = GetModuleNameBySymbol((void*)address);
+				if (module.empty()) {
+					module.assign("??");
+				}
+				const char *name = GetNativeName(call.amx(), call.index());
+				if (name != 0) {
+					logprintf("[debug] [%s]: #%d native %s() from %s", amxName_.c_str(), depth, 
+							name, module.c_str());
+				} else {
+					logprintf("[debug] [%s]: #%d native ?? from %s", amxName_.c_str(), depth, 
+							name, module.c_str());
+				}
+			}
 			++depth;
 		} 
 		else if (call.type() == NativePublicCall::PUBLIC) {
@@ -383,13 +395,15 @@ void crashdetect::PrintBacktrace() const {
 								// This is the entry point
 								ucell epAddr = GetPublicAddress(call.amx(), call.index());
 								ucell offset = prevFrame.GetCallAddress() - epAddr;
-								char epName[32];
-								if (amx_GetPublic(call.amx(), call.index(), epName) == AMX_ERR_NONE) {
-									logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), 
-											depth, epName, offset);
-								} else if (call.index() == AMX_EXEC_MAIN) {
-									logprintf("[debug] [%s]: #%d main()+0x%x", amxName_.c_str(), 
-											depth, offset);
+								const char *epName = GetPublicName(call.amx(), call.index());
+								if (epName != 0) {
+									if (call.index() == AMX_EXEC_MAIN) {
+										logprintf("[debug] [%s]: #%d main()+0x%x", amxName_.c_str(), 
+												depth, offset);
+									} else if (call.index() == AMX_EXEC_MAIN) {
+										logprintf("[debug] [%s]: #%d public %s()+0x%x", amxName_.c_str(), 
+												depth, epName, offset);
+									}
 								} else {
 									logprintf("[debug] [%s]: #%d ??", amxName_.c_str(), depth);
 								}
@@ -449,41 +463,23 @@ std::string crashdetect::GetModuleNameBySymbol(void *symbol) {
 }
 
 // static
-bool crashdetect::GetNativeInfo(AMX *amx, cell index, AMX_NATIVE_INFO &info) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		hdr->natives + amx->base);
-	AMX_FUNCSTUBNT *libraries = reinterpret_cast<AMX_FUNCSTUBNT*>(
-		hdr->libraries + amx->base);
-	int numNatives = (hdr->libraries - hdr->natives) / hdr->defsize;
-
-	if (index < 0 || index >= numNatives) {
-		return false;
-	}
-
-	info.func = reinterpret_cast<AMX_NATIVE>(natives[index].address);
-	info.name = reinterpret_cast<char*>(natives[index].nameofs +
-		reinterpret_cast<int32_t>(hdr));
-	return true;
-}
-
-// static
 const char *crashdetect::GetNativeName(AMX *amx, cell index) {
-	AMX_NATIVE_INFO info;
-	if (!GetNativeInfo(amx, index, info)) {
-		return "<unknown native>";
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
+	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
+		return reinterpret_cast<char*>(natives[index].nameofs + amx->base);
 	}
-	return info.name;
+	return 0;
 }
 
 // static
 AMX_NATIVE crashdetect::GetNativeAddress(AMX *amx, cell index) {
-	AMX_NATIVE_INFO info;
-	if (!GetNativeInfo(amx, index, info)) {
-		return 0;
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
+	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
+		return reinterpret_cast<AMX_NATIVE>(natives[index].address);
 	}
-	return info.func;
+	return 0;
 }
 
 // static
@@ -494,7 +490,18 @@ ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
 		return publics[index].address;
 	} else if (index == AMX_EXEC_MAIN) {
 		return hdr->cip;
-	} else {
-		return 0;
 	}
+	return 0;
+}
+
+// static
+const char *crashdetect::GetPublicName(AMX *amx, cell index) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
+	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
+		return reinterpret_cast<char*>(amx->base + publics[index].nameofs);
+	} else if (index == AMX_EXEC_MAIN) {
+		return "main";
+	}
+	return 0;
 }
