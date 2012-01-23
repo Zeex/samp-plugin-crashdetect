@@ -37,6 +37,7 @@
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
+#include "amxutils.h"
 #include "crash.h"
 #include "crashdetect.h"
 #include "configreader.h"
@@ -242,7 +243,7 @@ int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
 }
 
 void crashdetect::HandleNativeError(int index) {
-	const char *name = GetNativeName(amx_, index);
+	const char *name = amxutils::GetNativeName(amx_, index);
 	if (name == 0) {
 		name = "??";
 	}		
@@ -331,7 +332,7 @@ void crashdetect::PrintBacktrace() const {
 		NativePublicCall call = npCallStack.top();		
 
 		if (call.type() == NativePublicCall::NATIVE) {			
-			AMX_NATIVE address = GetNativeAddress(call.amx(), call.index());
+			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address == 0) {
 				logprintf("[debug] #%-2d native ??", depth);
 			} else {				
@@ -339,7 +340,7 @@ void crashdetect::PrintBacktrace() const {
 				if (module.empty()) {
 					module.assign("??");
 				}
-				const char *name = GetNativeName(call.amx(), call.index());
+				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
 					logprintf("[debug] #%-2d native %s() from %s", depth, name, module.c_str());
 				} else {
@@ -388,9 +389,9 @@ void crashdetect::PrintBacktrace() const {
 										amxName_.c_str());
 							} else {
 								// This is the entry point
-								ucell epAddr = GetPublicAddress(call.amx(), call.index());
+								ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
 								ucell offset = prevFrame.GetCallAddress() - epAddr;
-								const char *epName = GetPublicName(call.amx(), call.index());
+								const char *epName = amxutils::GetPublicName(call.amx(), call.index());
 								if (epName != 0) {
 									if (call.index() == AMX_EXEC_MAIN) {
 										logprintf("[debug] #%-2d main()+0x%x from %s", depth, offset, amxName_.c_str());
@@ -452,48 +453,4 @@ std::string crashdetect::GetModuleNameBySymbol(void *symbol) {
 		strcpy(module, info.dli_fname);
 	#endif
 	return StripDirs(module);
-}
-
-// static
-const char *crashdetect::GetNativeName(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
-	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
-		return reinterpret_cast<char*>(natives[index].nameofs + amx->base);
-	}
-	return 0;
-}
-
-// static
-AMX_NATIVE crashdetect::GetNativeAddress(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
-	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
-		return reinterpret_cast<AMX_NATIVE>(natives[index].address);
-	}
-	return 0;
-}
-
-// static
-ucell crashdetect::GetPublicAddress(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
-	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
-		return publics[index].address;
-	} else if (index == AMX_EXEC_MAIN) {
-		return hdr->cip;
-	}
-	return 0;
-}
-
-// static
-const char *crashdetect::GetPublicName(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
-	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
-		return reinterpret_cast<char*>(amx->base + publics[index].nameofs);
-	} else if (index == AMX_EXEC_MAIN) {
-		return "main";
-	}
-	return 0;
 }

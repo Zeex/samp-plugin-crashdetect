@@ -59,9 +59,6 @@ add_library(crashdetect MODULE
 	src/amx/getch.h
 	src/amx/osdefs.h
 	src/amx/sclinux.h
-	src/logprintf.cpp
-	src/logprintf.h
-	src/plugincommon.h
 	src/amxcallstack.cpp
 	src/amxcallstack.h
 	src/amxdebuginfo.cpp
@@ -69,6 +66,8 @@ add_library(crashdetect MODULE
 	src/amxerror.cpp
 	src/amxpathfinder.cpp
 	src/amxpathfinder.h
+	src/amxutils.cpp
+	src/amxutils.h
 	src/configreader.cpp
 	src/configreader.h
 	src/crash.cpp
@@ -79,8 +78,11 @@ add_library(crashdetect MODULE
 	src/interrupt.h
 	src/jump-x86.cpp
 	src/jump-x86.h
+	src/logprintf.cpp
+	src/logprintf.h
 	src/plugin.cpp
 	src/plugin.rc
+	src/plugincommon.h
 )
 
 # Don't prefix the output .so with "lib" 

@@ -72,18 +72,6 @@ private:
 	// Finds to which module (DLL/shared library/executable) a symbol belongs to.
 	static std::string GetModuleNameBySymbol(void *symbol);
 
-	// Returns the name of a native function.
-	static const char *GetNativeName(AMX *amx, cell index);
-
-	// Returns the address of a native function.
-	static AMX_NATIVE GetNativeAddress(AMX *amx, cell index);
-
-	// Returns the address of a public function.
-	static ucell GetPublicAddress(AMX *amx, cell index);
-
-	// Returns the name of public funtion.
-	static const char *GetPublicName(AMX *amx, cell index);
-
 private:
 	// The corresponding AMX instance and its header.
 	AMX         *amx_;
