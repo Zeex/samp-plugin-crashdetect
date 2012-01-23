@@ -70,12 +70,8 @@ set(SOURCES
 	src/amxutils.h
 	src/configreader.cpp
 	src/configreader.h
-	src/crash.cpp
-	src/crash.h
 	src/crashdetect.cpp
 	src/crashdetect.h
-	src/interrupt.cpp
-	src/interrupt.h
 	src/jump-x86.cpp
 	src/jump-x86.h
 	src/logprintf.cpp

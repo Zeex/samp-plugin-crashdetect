@@ -14,7 +14,6 @@
 
 #include "os.h"
 
-#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
 std::string os::GetModuleNameBySymbol(void *symbol) {
@@ -27,4 +26,50 @@ std::string os::GetModuleNameBySymbol(void *symbol) {
 	}
 	
 	return std::string(module);
+}
+
+// The crash handler - it is set via SetCrashHandler()
+static void (*crashHandler)() = 0;
+
+// Previous exception filter
+static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
+
+// Our exception filter
+static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo)
+{
+	if (::crashHandler != 0) {
+		::crashHandler();
+	}
+	if (::previousExceptionFilter != 0) {
+		return ::previousExceptionFilter(exceptionInfo);
+	}
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void os::SetCrashHandler(void (*handler)()) {
+	::crashHandler = handler;
+	if (handler != 0) {
+		::previousExceptionFilter = SetUnhandledExceptionFilter(ExceptionFilter);
+	} else {
+		SetUnhandledExceptionFilter(::previousExceptionFilter);
+	}
+}
+
+// The interrupt (Ctrl+C) handler - set via SetInterruptHandler
+static void (*interruptHandler)();
+
+// Console event handler
+static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
+	switch (dwCtrlType) {
+	case CTRL_C_EVENT:
+		if (::interruptHandler != 0) {
+			::interruptHandler();
+		}
+	}
+	return FALSE;
+}
+
+void os::SetInterruptHandler(void (*handler)()) {
+	::interruptHandler = handler;
+	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }

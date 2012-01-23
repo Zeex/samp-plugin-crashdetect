@@ -28,10 +28,8 @@
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
 #include "amxutils.h"
-#include "crash.h"
 #include "crashdetect.h"
 #include "configreader.h"
-#include "interrupt.h"
 #include "jump-x86.h"
 #include "logprintf.h"
 #include "os.h"
@@ -68,11 +66,10 @@ bool crashdetect::Load(void **ppPluginData) {
 	}
 
 	// Set crash handler
-	Crash::SetHandler(crashdetect::Crash);
-	Crash::EnableMiniDump(true);
+	os::SetCrashHandler(crashdetect::Crash);
 
 	// Set Ctrl-C signal handler
-	Interrupt::SetHandler(crashdetect::Interrupt);
+	os::SetInterruptHandler(crashdetect::Interrupt);
 
 	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
 	return true;

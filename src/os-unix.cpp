@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "os.h"
+
+#include <csignal>
+#include <cstdio>
+#include <cstring>
+
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE 1 // for dladdr()
 #endif
@@ -29,3 +35,45 @@ std::string os::GetModuleNameBySymbol(void *symbol) {
 	return std::string(module);
 }
 
+// The crash handler - it is set via SetCrashHandler()
+static void (*crashHandler)() = 0;
+
+// Previous SIGSEGV handler
+static void (*previousSIGSEGVHandler)(int);
+
+static void HandleSIGSEGV(int sig)
+{
+	if (::crashHandler != 0) {
+		::crashHandler();
+	}
+	signal(sig, SIG_DFL);
+}
+
+void os::SetCrashHandler(void (*handler)()) {
+	::crashHandler = handler;
+	if (handler != 0) {
+		::previousSIGSEGVHandler = signal(SIGSEGV, HandleSIGSEGV);
+	} else {
+		signal(SIGSEGV, ::previousSIGSEGVHandler);
+	}
+}
+
+// The interrupt (Ctrl+C) handler - set via SetInterruptHandler
+static void (*interruptHandler)();
+
+// Previous SIGINT handler
+static void (*previousSIGINTHandler)(int);
+
+// Out SIGINT handler
+static void HandleSIGINT(int sig) {
+	if (::interruptHandler != 0) {
+		::interruptHandler();
+	}
+	signal(sig, ::previousSIGINTHandler);
+	raise(sig);
+}
+
+void os::SetInterruptHandler(void (*handler)()) {
+	::interruptHandler = handler;
+	::previousSIGINTHandler = signal(SIGINT, HandleSIGINT);
+}

@@ -74,9 +74,7 @@ objects = src/amx/amx.c.o \
           src/amxpathfinder.cpp.o \
           src/amxutils.cpp.o \
           src/configreader.cpp.o \
-          src/crash.cpp.o \
           src/crashdetect.cpp.o \
-          src/interrupt.cpp.o \
           src/jump-x86.cpp.o \
 	  src/logprintf.cpp.o \
           src/plugin.cpp.o
@@ -129,16 +127,10 @@ src/amxutils.cpp.o: src/amxutils.cpp src/amxutils.h
 
 src/configreader.cpp.o: src/configreader.cpp src/configreader.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
-
-src/crash.cpp.o: src/crash.cpp src/crash.h
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 	
 src/crashdetect.cpp.o: src/crashdetect.cpp src/crashdetect.h src/amxcallstack.h src/amxdebuginfo.h \
                        src/amxpathfinder.h src/configreader.h src/jump-x86.h src/version.h \
                        src/logprintf.h src/plugincommon.h src/amx/amx.h
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
-
-src/interrupt.cpp.o: src/interrupt.cpp src/interrupt.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 src/jump-x86.cpp.o: src/jump-x86.cpp src/jump-x86.h

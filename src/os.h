@@ -17,11 +17,17 @@
 
 #include <string>
 
-// OS specific stuff goes here
+// OS abstractions
 namespace os {
 
 // Finds which module (DLL/shared library/executable) a given symbol belongs to.
 std::string GetModuleNameBySymbol(void *symbol);
+
+// Sets server crash handler.
+void SetCrashHandler(void (*handler)());
+
+// Sets SIGINT/Ctrl-C handler.
+void SetInterruptHandler(void (*handler)());
 
 } // namespace os
 
