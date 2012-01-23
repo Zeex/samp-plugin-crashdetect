@@ -259,37 +259,37 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
 				cell index = amx_->pri;
 				if (index < 0) {
-					logprintf("[debug] Accessing element at negative index %d", index);
+					logprintf("[debug]   Accessing element at negative index %d", index);
 				} else {
-					logprintf("[debug] Accessing element at index %d past array upper bound %d", index, bound);
+					logprintf("[debug]   Accessing element at index %d past array upper bound %d", index, bound);
 				}
 				break;
 			}
 			case AMX_ERR_NOTFOUND: {
-				logprintf("[debug] The following natives are not registered:");
+				logprintf("[debug]   The following natives are not registered:");
 				AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
 				int numNatives = 0;
 				amx_NumNatives(amx_, &numNatives);
 				for (int i = 0; i < numNatives; ++i) {
 					if (natives[i].address == 0) {
 						char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
-						logprintf("[debug] %s", name);
+						logprintf("[debug]     %s", name);
 					}
 				}
 				break;
 			}
 			case AMX_ERR_STACKERR:
-				logprintf("[debug] Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", amx_->stk, amx_->hea); 
+				logprintf("[debug]   Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", amx_->stk, amx_->hea); 
 				break;
 			case AMX_ERR_STACKLOW:
-				logprintf("[debug] Stack index (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
+				logprintf("[debug]   Stack index (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
 				break;
 			case AMX_ERR_HEAPLOW:
-				logprintf("[debug] Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
+				logprintf("[debug]   Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
 				break;
 			case AMX_ERR_INVINSTR: {
 				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
-				logprintf("[debug] Invalid opcode 0x%X at address 0x%X", opcode , amx_->cip - sizeof(cell));
+				logprintf("[debug]   Invalid opcode 0x%X at address 0x%X", opcode , amx_->cip - sizeof(cell));
 				break;
 			}
 		}
