@@ -290,7 +290,14 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				break;
 			}
 		}
-		PrintBacktrace();
+		// Do not print backtrace on certain errors as it has no effect.
+		if (error != AMX_ERR_NOTFOUND &&
+		    error != AMX_ERR_INDEX &&
+		    error != AMX_ERR_CALLBACK &&
+		    error != AMX_ERR_INIT) 
+		{
+			PrintBacktrace();
+		}
 		ExitOnError();
 	}
 }
