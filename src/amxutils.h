@@ -28,7 +28,7 @@ AMX_NATIVE GetNativeAddress(AMX *amx, cell index);
 // Returns the address of a public function.
 ucell GetPublicAddress(AMX *amx, cell index);
 
-// Returns the name of public funtion.
+// Returns the name of a public funtion.
 const char *GetPublicName(AMX *amx, cell index);
 
 } // namespace amxutils
