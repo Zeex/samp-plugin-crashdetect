@@ -347,6 +347,11 @@ void crashdetect::PrintBacktrace() const {
 		else if (call.type() == NativePublicCall::PUBLIC) {
 			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
 
+			std::string &amxName = instances_[call.amx()]->amxName_;
+			if (amxName.empty()) {
+				amxName.assign("??");
+			}
+
 			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
 			if (frames.empty()) {
 				logprintf("[debug] Stack corrupted");
@@ -375,13 +380,13 @@ void crashdetect::PrintBacktrace() const {
 							logprintf("[debug] #%-2d public %s()+0x%x from %s", depth,
 									frame.GetFunctionName().c_str(),
 									prevFrame.GetCallAddress() - frame.GetFunctionAddress(),
-									amxName_.c_str());
+									amxName.c_str());
 						} else {
 							if (frame.GetCallAddress() != 0) {
 								logprintf("[debug] #%-2d 0x%08x()+0x%x from %s", depth, 
 										frame.GetFunctionAddress(),
 										prevFrame.GetCallAddress() - frame.GetFunctionAddress(),
-										amxName_.c_str());
+										amxName.c_str());
 							} else {
 								// This is the entry point
 								ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
@@ -389,12 +394,12 @@ void crashdetect::PrintBacktrace() const {
 								const char *epName = amxutils::GetPublicName(call.amx(), call.index());
 								if (epName != 0) {
 									if (call.index() == AMX_EXEC_MAIN) {
-										logprintf("[debug] #%-2d main()+0x%x from %s", depth, offset, amxName_.c_str());
+										logprintf("[debug] #%-2d main()+0x%x from %s", depth, offset, amxName.c_str());
 									} else {
-										logprintf("[debug] #%-2d public %s()+0x%x from %s", depth, epName, offset, amxName_.c_str());
+										logprintf("[debug] #%-2d public %s()+0x%x from %s", depth, epName, offset, amxName.c_str());
 									}
 								} else {
-									logprintf("[debug] #%-2d ?? from %s", depth, amxName_.c_str());
+									logprintf("[debug] #%-2d ?? from %s", depth, amxName.c_str());
 								}
 							}
 						}
@@ -402,10 +407,10 @@ void crashdetect::PrintBacktrace() const {
 						ucell offset = call.amx()->cip - frame.GetFunctionAddress();
 						if (frame.IsPublic()) {
 							logprintf("[debug] #%-2d public %s()+0x%x from %s", depth,
-									frame.GetFunctionName().c_str(), offset, amxName_.c_str());
+									frame.GetFunctionName().c_str(), offset, amxName.c_str());
 						} else {
 							logprintf("[debug] #%-2d 0x%08x()+0x%x from %s", depth,
-									frame.GetFunctionAddress(), offset, amxName_.c_str());
+									frame.GetFunctionAddress(), offset, amxName.c_str());
 						}
 					}				
 				}
