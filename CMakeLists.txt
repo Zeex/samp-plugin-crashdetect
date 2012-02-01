@@ -101,14 +101,13 @@ if(UNIX OR MINGW)
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
 		COMPILE_FLAGS " -m32 -Wno-attributes")
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
-		LINK_FLAGS " -m32 -Wl,--no-undefined -ldl")
+		LINK_FLAGS " -m32 -Wl,--no-undefined")
 	if(UNIX)
 		add_definitions(-DLINUX)
 	endif()
 endif()
 
 if(WIN32)
-	add_definitions(-DWIN32 -D_WIN32)
 	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/plugin.def")
 	if(MSVC)
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS) # Shut up security warnings
@@ -121,6 +120,9 @@ if(WIN32)
 endif()
 
 target_link_Libraries(crashdetect ${Boost_LIBRARIES})
+if(CMAKE_COMPILER_IS_GNUCXX)
+	target_link_Libraries(crashdetect -ldl)
+endif()
 
 find_package(Git)
 if(GIT_FOUND)
