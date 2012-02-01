@@ -196,7 +196,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 						}
 					}
 				}
-				argStream << "=@0x" << std::hex << value << std::dec;
+				argStream << "=@0x" << std::hex << std::setw(8) << std::setfill('0') << value << std::dec;
 			}
 		}	
 
