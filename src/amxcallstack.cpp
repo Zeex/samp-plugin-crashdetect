@@ -263,6 +263,10 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 					if (s.second) {
 						argStream << "!"; // packed string
 					}
+					if (s.first.length() > kMaxString) {
+						// test is too long
+						s.first.replace(kMaxString, s.first.length() - kMaxString, "...");
+					}
 					argStream << "\"" << s.first << "\"";
 				}
 			}
