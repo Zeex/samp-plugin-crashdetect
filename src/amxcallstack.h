@@ -37,6 +37,8 @@ private:
 
 class AMXStackFrame {
 public:
+	static const int kMaxString = 30;
+
 	AMXStackFrame(AMX *amx, ucell frameAddress, 
 			const AMXDebugInfo &debugInfo = AMXDebugInfo());
 	AMXStackFrame(AMX *amx, ucell frameAddress, ucell callAddress, ucell functionAddress, 

@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
@@ -110,6 +111,65 @@ AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, ucell callAddress,
 	Init(amx, debugInfo);
 }
 
+static inline char ToASCII(char c) {
+	if (c >= 32 && c <= 126) {
+		return c;
+	}
+	return '\0';
+}
+
+static inline char ToASCII(cell c) {
+	return ToASCII(static_cast<char>(c & 0xFF));
+}
+
+static inline std::string GetPackedAMXString(AMX *amx, cell *string, std::size_t size) {
+	std::string s;
+	for (std::size_t i = 0; i < size; i++) {
+		cell cp = string[i / sizeof(cell)] >> ((sizeof(cell) - i % sizeof(cell) - 1) * 8);
+		char cu = ToASCII(cp);
+		if (cu == '\0') {
+			break;
+		}
+		s.push_back(cu);
+	}
+
+	return s;
+}
+
+static inline std::string GetUnpackedAMXString(AMX *amx, cell *string, std::size_t size) {
+	std::string s;
+	for (std::size_t i = 0; i < size; i++) {
+		char c = ToASCII(string[i]);
+		if (c == '\0') {
+			break;
+		}
+		s.push_back(c);
+	}
+	return s;
+}
+
+static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::size_t size) {
+	std::pair<std::string, bool> retVal;
+
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	cell *cstr = reinterpret_cast<cell*>(amx->base + hdr->dat + address);
+
+	if (size == 0) {
+		// Size is unknown, copy up to the end of data.
+		size = hdr->hea - address; 
+	}
+
+	if (*reinterpret_cast<ucell*>(cstr) > UNPACKEDMAX) {
+		retVal.first = GetPackedAMXString(amx, cstr, size);
+		retVal.second = true;
+	} else {
+		retVal.first = GetUnpackedAMXString(amx, cstr, size);
+		retVal.second = false;
+	}
+
+	return retVal;
+}
+
 void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 	isPublic_ = IsPublicFunction(amx, functionAddress_);
 
@@ -183,9 +243,8 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 					argStream << "=" << value;
 				}
 			} else {
+				std::vector<AMXDebugInfo::SymbolDim> dims = arg->GetDims();
 				if (arg->IsArray() || arg->IsArrayRef()) {
-					// Get array dimensions 
-					std::vector<AMXDebugInfo::SymbolDim> dims = arg->GetDims();
 					for (std::size_t i = 0; i < dims.size(); ++i) {
 						if (dims[i].GetSize() == 0) {
 							argStream << "[]";
@@ -196,7 +255,16 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 						}
 					}
 				}
-				argStream << "=@0x" << std::hex << std::setw(8) << std::setfill('0') << value << std::dec;
+				argStream << "=@0x" << std::hex << std::setw(8) 
+						<< std::setfill('0') << value << std::dec;
+				if (dims.size() == 1) {
+					std::pair<std::string, bool> s = GetAMXString(amx, value, dims[0].GetSize());
+					argStream << " ";
+					if (s.second) {
+						argStream << "!"; // packed string
+					}
+					argStream << "\"" << s.first << "\"";
+				}
 			}
 		}	
 
