@@ -241,6 +241,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 
 			cell value = arg->GetValue(amx);	
 			if (arg->IsVariable()) {
+				// Value arguments
 				if (tag == "bool:") {
 					argStream << "=" << value ? "true" : "false";
 				} else if (tag == "Float:") {
@@ -249,7 +250,10 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 					argStream << "=" << value;
 				}
 			} else {
+				// Reference arguments
 				std::vector<AMXDebugInfo::SymbolDim> dims = arg->GetDims();
+
+				// Show array dimensions 
 				if (arg->IsArray() || arg->IsArrayRef()) {
 					for (std::size_t i = 0; i < dims.size(); ++i) {
 						if (dims[i].GetSize() == 0) {
@@ -261,16 +265,22 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 						}
 					}
 				}
-				argStream << "=@0x" << std::hex << std::setw(8) 
-						<< std::setfill('0') << value << std::dec;
-				if (dims.size() == 1) {
+
+				argStream << "=@0x" << std::hex << std::setw(8) << std::setfill('0') << value << std::dec;
+
+				// If this is a string argument, get the text
+				if (arg->IsArray() || arg->IsArrayRef() 
+						&& dims.size() == 1
+						&& tag == "_:"
+						&& debugInfo.GetTagName(dims[0].GetTag()) == "_") 
+				{
 					std::pair<std::string, bool> s = GetAMXString(amx, value, dims[0].GetSize());
 					argStream << " ";
 					if (s.second) {
 						argStream << "!"; // packed string
 					}
 					if (s.first.length() > kMaxString) {
-						// test is too long
+						// The text is too long.
 						s.first.replace(kMaxString, s.first.length() - kMaxString, "...");
 					}
 					argStream << "\"" << s.first << "\"";
