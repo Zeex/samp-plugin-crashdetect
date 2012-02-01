@@ -149,9 +149,15 @@ static inline std::string GetUnpackedAMXString(AMX *amx, cell *string, std::size
 }
 
 static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::size_t size) {
-	std::pair<std::string, bool> retVal;
+	std::pair<std::string, bool> result = std::make_pair("", false);
 
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	if (address < 0 || address >= hdr->hea - hdr->dat) {
+		// The address is not inside the data section...
+		return result;
+	}
+
 	cell *cstr = reinterpret_cast<cell*>(amx->base + hdr->dat + address);
 
 	if (size == 0) {
@@ -160,14 +166,14 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 	}
 
 	if (*reinterpret_cast<ucell*>(cstr) > UNPACKEDMAX) {
-		retVal.first = GetPackedAMXString(amx, cstr, size);
-		retVal.second = true;
+		result.first = GetPackedAMXString(amx, cstr, size);
+		result.second = true;
 	} else {
-		retVal.first = GetUnpackedAMXString(amx, cstr, size);
-		retVal.second = false;
+		result.first = GetUnpackedAMXString(amx, cstr, size);
+		result.second = false;
 	}
 
-	return retVal;
+	return result;
 }
 
 void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
