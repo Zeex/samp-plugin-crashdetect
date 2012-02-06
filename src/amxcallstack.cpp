@@ -317,7 +317,7 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFra
 		frm = amx->frm;
 	}
 
-	while (frm > static_cast<ucell>(amx->stk)) {
+	while (frm >= static_cast<ucell>(amx->stk)) {
 		AMXStackFrame frame(amx, frm, debugInfo);
 		frames_.push_back(frame);
 		if (frame.GetFunctionAddress() == 0) {
@@ -338,6 +338,8 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFra
 		}
 	} else {
 		// Can't fetch the address
-		frames_.back() = AMXStackFrame(amx, 0, 0, 0);
+		if (!frames_.empty()) {
+			frames_.back() = AMXStackFrame(amx, 0, 0, 0);
+		}
 	}
 }
