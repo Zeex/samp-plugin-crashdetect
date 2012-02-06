@@ -233,7 +233,7 @@ int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
 void crashdetect::HandleNativeError(int index) {
 	const char *name = amxutils::GetNativeName(amx_, index);
 	if (name == 0) {
-		name = "??";
+		name = "<unknown native>";
 	}		
 	if (debugInfo_.IsLoaded()) {
 		logprintf("[debug] Native function %s() failed (AMX_ERR_NATIVE is set)", name);
@@ -333,7 +333,7 @@ void crashdetect::PrintBacktrace() const {
 			} else {				
 				std::string module = StripDirs(os::GetModuleNameBySymbol((void*)address));
 				if (module.empty()) {
-					module.assign("??");
+					module.assign("<unknown module>");
 				}
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
@@ -349,7 +349,7 @@ void crashdetect::PrintBacktrace() const {
 
 			std::string &amxName = instances_[call.amx()]->amxName_;
 			if (amxName.empty()) {
-				amxName.assign("??");
+				amxName.assign("<unknown script>");
 			}
 
 			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
