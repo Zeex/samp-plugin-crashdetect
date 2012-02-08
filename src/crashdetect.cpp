@@ -313,14 +313,13 @@ void crashdetect::HandleInterrupt() {
 }
 
 void crashdetect::PrintBacktrace() const {
-	if (npCalls_.empty()) 
+	if (npCalls_.empty()) {
 		return;
-
-	std::stack<NativePublicCall> npCallStack = npCalls_;
-	ucell frm = static_cast<ucell>(amx_->frm);
+	}
 
 	logprintf("[debug] Backtrace (most recent call first):");
 
+	std::stack<NativePublicCall> npCallStack = npCalls_;
 	int depth = 0;
 
 	while (!npCallStack.empty()) {
@@ -350,7 +349,7 @@ void crashdetect::PrintBacktrace() const {
 				amxName.assign("??");
 			}
 
-			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
+			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, call.amx()->frm).GetFrames();
 			if (frames.empty()) {
 				AMXStackFrame fakeFrame(call.amx(), 0, 0,
 					amxutils::GetPublicAddress(call.amx(), call.index()), debugInfo);
@@ -396,7 +395,7 @@ void crashdetect::PrintBacktrace() const {
 					} else {
 						offset = call.amx()->cip - frame.GetFunctionAddress();
 						if (frames.size() == 1) {
-							// This is the first and the only frame.							
+							// This is the first and the only frame.
 							frame = AMXStackFrame(call.amx(), 0, 0, 
 									amxutils::GetPublicAddress(call.amx(), call.index()));						
 						}
@@ -407,8 +406,6 @@ void crashdetect::PrintBacktrace() const {
 				}				
 			}
 		}
-
-		frm = call.frm();
 		npCallStack.pop();		
 	}
 }
