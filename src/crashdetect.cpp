@@ -353,11 +353,8 @@ void crashdetect::PrintBacktrace() const {
 			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
 			if (frames.empty()) {
 				AMXStackFrame fakeFrame(call.amx(), 0, 0,
-					amxutils::GetPublicAddress(call.amx(), call.index()));
-				logprintf("[debug] #%-2d %s+0x%x from %s", depth,
-						fakeFrame.GetFunctionPrototype().c_str(), 
-						call.amx()->cip - fakeFrame.GetFunctionAddress(),
-						amxName.c_str());
+					amxutils::GetPublicAddress(call.amx(), call.index()), debugInfo);
+				frames.push_back(fakeFrame);
 			}
 
 			if (debugInfo.IsLoaded()) {
@@ -388,7 +385,7 @@ void crashdetect::PrintBacktrace() const {
 						offset = prevFrame.GetCallAddress() - frame.GetFunctionAddress();
 						if (frame.GetFunctionAddress() == 0) {
 							if (i == frames.size() - 1) {
-								// Reaced the top frame (entry point).
+								// Reached the top frame (entry point).
 								frame = AMXStackFrame(call.amx(), 0, 0, 
 										amxutils::GetPublicAddress(call.amx(), call.index()));
 							} else {
