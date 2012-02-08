@@ -253,7 +253,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 		logprintf("[debug] Run time error %d: \"%s\"", error, aux_StrError(error));
 		switch (error) {
 			case AMX_ERR_BOUNDS: {
-				cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
+				cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
 				cell index = amx_->pri;
 				if (index < 0) {
 					logprintf("[debug]   Accessing element at negative index %d", index);
@@ -285,7 +285,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				logprintf("[debug]   Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
 				break;
 			case AMX_ERR_INVINSTR: {
-				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod) - 1);
+				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
 				logprintf("[debug]   Invalid opcode 0x%X at address 0x%X", opcode , amx_->cip - sizeof(cell));
 				break;
 			}
