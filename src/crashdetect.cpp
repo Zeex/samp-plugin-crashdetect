@@ -354,7 +354,16 @@ void crashdetect::PrintBacktrace() const {
 
 			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
 			if (frames.empty()) {
-				logprintf("[debug] Stack corrupted");
+				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
+				if (call.index() == AMX_EXEC_MAIN) {
+					logprintf("[debug] #%-2d main() from %s", depth, amxName.c_str());
+				} else {
+					const char *epName = amxutils::GetPublicName(call.amx(), call.index());
+					if (epName == 0) {
+						epName = "<unknown public>";
+					}
+					logprintf("[debug] #%-2d public %s() from %s", depth, epName, amxName.c_str());
+				}
 			}
 
 			for (size_t i = 0; i < frames.size(); i++) {				
@@ -391,15 +400,14 @@ void crashdetect::PrintBacktrace() const {
 								// This is the entry point
 								ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
 								ucell offset = prevFrame.GetCallAddress() - epAddr;
-								const char *epName = amxutils::GetPublicName(call.amx(), call.index());
-								if (epName != 0) {
-									if (call.index() == AMX_EXEC_MAIN) {
-										logprintf("[debug] #%-2d main()+0x%x from %s", depth, offset, amxName.c_str());
-									} else {
-										logprintf("[debug] #%-2d public %s()+0x%x from %s", depth, epName, offset, amxName.c_str());
-									}
+								if (call.index() == AMX_EXEC_MAIN) {
+									logprintf("[debug] #%-2d main()+0x%x from %s", depth, offset, amxName.c_str());
 								} else {
-									logprintf("[debug] #%-2d ?? from %s", depth, amxName.c_str());
+									const char *epName = amxutils::GetPublicName(call.amx(), call.index());
+									if (epName == 0) {
+										epName = "<unknown public>";
+									}
+									logprintf("[debug] #%-2d public %s()+0x%x from %s", depth, epName, offset, amxName.c_str());
 								}
 							}
 						}
