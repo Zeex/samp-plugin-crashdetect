@@ -152,6 +152,16 @@ static inline std::string GetUnpackedAMXString(AMX *amx, cell *string, std::size
 	return s;
 }
 
+// Read the number of arguments passed from the stack.
+static inline int GetNumArgs(AMX *amx, ucell frame) {
+	if (frame > 0) {
+		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+		unsigned char *data = (amx->data != 0) ? amx->data : (amx->base + hdr->dat);
+		return *reinterpret_cast<cell*>(data + frame + 2*sizeof(cell)) / sizeof(cell);
+	}
+	return -1;
+}
+
 static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::size_t size) {
 	std::pair<std::string, bool> result = std::make_pair("", false);
 
@@ -181,9 +191,14 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 }
 
 void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
-	if (debugInfo.IsLoaded()) {
-		isPublic_ = IsPublicFunction(amx, functionAddress_);
+	std::stringstream protoStream;
 
+	isPublic_ = IsPublicFunction(amx, functionAddress_);
+	if (isPublic_ && functionName_ != "main") {
+		protoStream << "public ";
+	}
+
+	if (debugInfo.IsLoaded()) {
 		if (callAddress_ != 0) {		
 			fileName_ = debugInfo.GetFileName(callAddress_); 
 			lineNumber_ = debugInfo.GetLineNumber(callAddress_);
@@ -207,8 +222,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 		}
 
 		// Get function name
-		functionName_ = debugInfo.GetFunctionName(functionAddress_);
-		
+		functionName_ = debugInfo.GetFunctionName(functionAddress_);		
 
 		// Get parameters
 		std::remove_copy_if(
@@ -292,35 +306,36 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 			}
 		}	
 
-		// The function prototype is of the following form:
-		// [public ][tag:]name([arg1=value1[, arg2=value2, [...]]])
-		if (isPublic_ && functionName_ != "main") {
-			functionPrototype_.append("public ");
+		int numArgs = static_cast<int>(arguments_.size());
+		int numVarArgs = GetNumArgs(amx, frameAddress_) - numArgs;
+
+		if (numVarArgs > 0) {
+			// Have variable (unnamed) arguments.	
+			argStream << ", ... <" << numVarArgs << " variable ";
+			if (numVarArgs == 1) {
+				argStream << "argument";
+			} else {
+				argStream << "arguments";
+			}
+			argStream << ">";
 		}
-		functionPrototype_
-			.append(functionResultTag_)
-			.append(functionName_)
-			.append("(")
-			.append(argStream.str())
-			.append(")");
+
+		protoStream << functionResultTag_ << functionName_;
+		protoStream << "(";
+		protoStream << argStream.str();
+		protoStream << ")";	
 	} else {
 		// No debug info available...
 		const char *name = GetPublicFunctionName(amx, functionAddress_);
 		if (name != 0) {
-			functionName_.assign(name);			
-			if (strcmp(name, "main") != 0) {
-				functionPrototype_.append("public ");
-			}
-			functionPrototype_.append(name).append("()");
-			isPublic_ = true;
+			functionName_.assign(name);	
+			protoStream << name << "()";
 		} else {
-			std::stringstream ss;
-			ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << functionAddress_;
-			functionName_.assign(ss.str());	
-			functionPrototype_.append(ss.str()).append("()");
-			isPublic_ = false;
+			protoStream << "0x" << std::hex << std::setw(8) << std::setfill('0') << functionAddress_ << "()";
 		}
 	}
+
+	functionPrototype_ = protoStream.str();
 }
 
 AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame) {
