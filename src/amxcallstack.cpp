@@ -63,6 +63,10 @@ private:
 static inline const char *GetPublicFunctionName(AMX *amx, ucell address) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
+	if (address == hdr->cip) {
+		return "main";
+	}
+
 	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->publics);
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx->base + hdr->natives);
 
@@ -177,9 +181,9 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 }
 
 void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
-	isPublic_ = IsPublicFunction(amx, functionAddress_);
-
 	if (debugInfo.IsLoaded()) {
+		isPublic_ = IsPublicFunction(amx, functionAddress_);
+
 		if (callAddress_ != 0) {		
 			fileName_ = debugInfo.GetFileName(callAddress_); 
 			lineNumber_ = debugInfo.GetLineNumber(callAddress_);
@@ -290,7 +294,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 
 		// The function prototype is of the following form:
 		// [public ][tag:]name([arg1=value1[, arg2=value2, [...]]])
-		if (IsPublic()) {
+		if (isPublic_ && functionName_ != "main") {
 			functionPrototype_.append("public ");
 		}
 		functionPrototype_
@@ -303,7 +307,18 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 		// No debug info available...
 		const char *name = GetPublicFunctionName(amx, functionAddress_);
 		if (name != 0) {
-			functionName_.assign(name);
+			functionName_.assign(name);			
+			if (strcmp(name, "main") != 0) {
+				functionPrototype_.append("public ");
+			}
+			functionPrototype_.append(name).append("()");
+			isPublic_ = true;
+		} else {
+			std::stringstream ss;
+			ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << functionAddress_;
+			functionName_.assign(ss.str());	
+			functionPrototype_.append(ss.str()).append("()");
+			isPublic_ = false;
 		}
 	}
 }
@@ -337,8 +352,8 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFra
 			frames_.back() = AMXStackFrame(amx, frames_.back().GetFrameAddress(), 0, epAddr, debugInfo);
 		}
 	} else {
-		// Can't fetch the address
 		if (!frames_.empty()) {
+			// Can't fetch the address...
 			frames_.back() = AMXStackFrame(amx, 0, 0, 0);
 		}
 	}
