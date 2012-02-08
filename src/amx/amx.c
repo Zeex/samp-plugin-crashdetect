@@ -2812,11 +2812,19 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       alt= * (cell *)(data+(int)offs);
       break;
     case OP_LREF_S_PRI:
+	  /* crashdetect: sync important registers and cip before doing this unsafe operation */
+	  amx->frm = frm;
+	  amx->stk = stk;
+	  amx->cip = (cell)cip - (cell)code;
       GETPARAM(offs);
       offs= * (cell *)(data+(int)frm+(int)offs);
       pri= * (cell *)(data+(int)offs);
       break;
     case OP_LREF_S_ALT:
+	  /* crashdetect: sync important registers and cip before doing this unsafe operation */
+	  amx->frm = frm;
+	  amx->stk = stk;
+	  amx->cip = (cell)cip - (cell)code;
       GETPARAM(offs);
       offs= * (cell *)(data+(int)frm+(int)offs);
       alt= * (cell *)(data+(int)offs);
@@ -2875,11 +2883,19 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       *(cell *)(data+(int)frm+(int)offs)=alt;
       break;
     case OP_SREF_PRI:
+	  /* crashdetect: sync important registers and cip before doing this unsafe operation */
+	  amx->frm = frm;
+	  amx->stk = stk;
+	  amx->cip = (cell)cip - (cell)code;
       GETPARAM(offs);
       offs= * (cell *)(data+(int)offs);
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_ALT:
+	  /* crashdetect: sync important registers and cip before doing this unsafe operation */
+	  amx->frm = frm;
+	  amx->stk = stk;
+	  amx->cip = (cell)cip - (cell)code;
       GETPARAM(offs);
       offs= * (cell *)(data+(int)offs);
       *(cell *)(data+(int)offs)=alt;
