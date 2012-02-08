@@ -3082,10 +3082,6 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       PUSH(((unsigned char *)cip-code)+sizeof(cell));/* skip address */
       cip=JUMPABS(code, cip);                   /* jump to the address */
       break;
-    case OP_CALL_PRI:
-      PUSH((unsigned char *)cip-code);
-      cip=(cell *)(code+(int)pri);
-      break;
     case OP_JUMP:
       /* since the GETPARAM() macro modifies cip, you cannot
        * do GETPARAM(cip) directly */
@@ -3489,9 +3485,6 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       break;
     case OP_SYMTAG:
       SKIPPARAM(1);
-      break;
-    case OP_JUMP_PRI:
-      cip=(cell *)(code+(int)pri);
       break;
     case OP_SWITCH: {
       cell *cptr;
