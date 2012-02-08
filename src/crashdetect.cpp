@@ -358,16 +358,18 @@ void crashdetect::PrintBacktrace() const {
 
 			if (debugInfo.IsLoaded()) {
 				for (size_t i = 0; i < frames.size(); i++) {								
-					AMXStackFrame &frame = frames[i];
+					AMXStackFrame &frame = frames[i];					
 					if (i > 0) {
 						AMXStackFrame &prevFrame = frames[i - 1];
-						logprintf("[debug] #%-2d %s at %s:%ld ", depth,
-								frame.GetFunctionPrototype().c_str(), 
+						logprintf("[debug] #%-2d %s+0x%x at %s:%ld ", depth,
+								frame.GetFunctionPrototype().c_str(),
+								prevFrame.GetCallAddress() - frame.GetFunctionAddress(),
 								StripDirs(frame.GetSourceFileName()).c_str(), 
 								debugInfo.GetLineNumber(prevFrame.GetCallAddress()));
 					} else {
-						logprintf("[debug] #%-2d %s at %s:%ld", depth,
+						logprintf("[debug] #%-2d %s+0x%x at %s:%ld", depth,
 								frame.GetFunctionPrototype().c_str(),
+								call.amx()->cip - frame.GetFunctionAddress(),
 								StripDirs(debugInfo.GetFileName(call.amx()->cip)).c_str(),
 								debugInfo.GetLineNumber(call.amx()->cip));
 					}
