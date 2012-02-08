@@ -6,8 +6,8 @@ This plugin helps in debugging of SA-MP server crashes and runtime AMX errors.
 Usage Notes
 -----------
 
-To get as much helpful output as possible (e.g. line numbers) you need to tell the Pawn compiler to 
-produce debugging information by passing either -d2 or -d3 flag on the command line or through *pawn.cfg*.
+To get source file names, line numbers, etc in backtrace compile your script with full 
+debug information by using either `-d2` or `-d3` flag of pawncc.
 
 Plugin Options
 --------------
@@ -30,6 +30,4 @@ To build crashdetect from source you will need:
 
 	http://www.cmake.org/cmake/resources/software.html
 	
-	or
-	
-	GNU make (Linux only)
+	or GNU make (Linux only)
