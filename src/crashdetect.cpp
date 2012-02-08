@@ -312,6 +312,12 @@ void crashdetect::HandleInterrupt() {
 	PrintBacktrace();
 }
 
+#define UNKNOWN_THING "??"
+#define UNKNOWN_PUBLIC "<unknown public>"
+#define UNKNOWN_NATIVE "<unknown native>"
+#define UNKNOWN_MODULE "<unknown module>"
+#define UNKNOWN_SCRIPT "<unknown script>"
+
 void crashdetect::PrintBacktrace() const {
 	if (npCalls_.empty()) 
 		return;
@@ -328,19 +334,16 @@ void crashdetect::PrintBacktrace() const {
 
 		if (call.type() == NativePublicCall::NATIVE) {			
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
-			if (address == 0) {
-				logprintf("[debug] #%-2d native ??", depth);
-			} else {				
+			if (address != 0) {				
 				std::string module = StripDirs(os::GetModuleNameBySymbol((void*)address));
 				if (module.empty()) {
-					module.assign("<unknown module>");
+					module.assign(UNKNOWN_MODULE);
 				}
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
-				if (name != 0) {
-					logprintf("[debug] #%-2d native %s() from %s", depth, name, module.c_str());
-				} else {
-					logprintf("[debug] #%-2d native ?? from %s", depth, name, module.c_str());
+				if (name == 0) {
+					name = UNKNOWN_NATIVE;
 				}
+				logprintf("[debug] #%-2d native %s() from %s", depth, name, module.c_str());
 			}
 			++depth;
 		} 
@@ -349,7 +352,7 @@ void crashdetect::PrintBacktrace() const {
 
 			std::string &amxName = instances_[call.amx()]->amxName_;
 			if (amxName.empty()) {
-				amxName.assign("<unknown script>");
+				amxName.assign(UNKNOWN_SCRIPT);
 			}
 
 			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
@@ -360,7 +363,7 @@ void crashdetect::PrintBacktrace() const {
 				} else {
 					const char *epName = amxutils::GetPublicName(call.amx(), call.index());
 					if (epName == 0) {
-						epName = "<unknown public>";
+						epName = UNKNOWN_PUBLIC;
 					}
 					logprintf("[debug] #%-2d public %s() from %s", depth, epName, amxName.c_str());
 				}
@@ -405,7 +408,7 @@ void crashdetect::PrintBacktrace() const {
 								} else {
 									const char *epName = amxutils::GetPublicName(call.amx(), call.index());
 									if (epName == 0) {
-										epName = "<unknown public>";
+										epName = UNKNOWN_PUBLIC;
 									}
 									logprintf("[debug] #%-2d public %s()+0x%x from %s", depth, epName, offset, amxName.c_str());
 								}
