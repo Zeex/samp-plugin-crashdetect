@@ -83,6 +83,11 @@ static inline bool IsPublicFunction(AMX *amx, ucell address) {
 	return GetPublicFunctionName(amx, address) != 0;
 }
 
+static inline bool IsMain(AMX *amx, ucell address) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	return static_cast<cell>(address) == hdr->cip;
+}
+
 AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, const AMXDebugInfo &debugInfo)
 	: isPublic_(false)
 	, frameAddress_(frameAddress)
@@ -194,7 +199,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 	std::stringstream protoStream;
 
 	isPublic_ = IsPublicFunction(amx, functionAddress_);
-	if (isPublic_ && functionName_ != "main") {
+	if (isPublic_ && !IsMain(amx, functionAddress_)) {
 		protoStream << "public ";
 	}
 
