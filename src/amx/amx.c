@@ -1655,17 +1655,16 @@ int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char
 #define SKIPPARAM(n)    ( cip=(cell *)cip+(n) )
 #define PUSH(v)         ( stk-=sizeof(cell), *(cell *)(data+(int)stk)=v )
 #define POP(v)          ( v=*(cell *)(data+(int)stk), stk+=sizeof(cell) )
-#define ABORT(amx,v)    { (amx)->cip=(cell)(cip-1)-(cell)code;\
-                          (amx)->pri = pri;\
+#define ABORT(amx,v)    { (amx)->pri = pri;\
 						  (amx)->stk = stk;\
 						  (amx)->hea = hea;\
 						  (amx)->frm = frm;\
 						  amx_Error(amx, index, v);\
                           (amx)->stk=reset_stk; (amx)->hea=reset_hea; return v; }
 
-#define CHKMARGIN()     if (hea+STKMARGIN>stk) return AMX_ERR_STACKERR
-#define CHKSTACK()      if (stk>amx->stp) return AMX_ERR_STACKLOW
-#define CHKHEAP()       if (hea<amx->hlw) return AMX_ERR_HEAPLOW
+#define CHKMARGIN()     if (hea+STKMARGIN>stk) ABORT(amx, AMX_ERR_STACKERR)
+#define CHKSTACK()      if (stk>amx->stp) ABORT(amx, AMX_ERR_STACKLOW)
+#define CHKHEAP()       if (hea<amx->hlw) ABORT(amx, AMX_ERR_HEAPLOW)
 
 #if defined __GNUC__ && !(defined ASM32 || defined JIT)
     /* GNU C version uses the "labels as values" extension to create
@@ -2783,8 +2782,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 #else
 
   for ( ;; ) {
-    /* crashdetect: sync CIP on each instruction */
-	amx->cip = (cell)cip - (cell)code;
+	amx->cip=(cell)cip-(cell)code;
     op=(OPCODE) *cip++;
     switch (op) {
     case OP_LOAD_PRI:
@@ -2814,17 +2812,15 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       alt= * (cell *)(data+(int)offs);
       break;
     case OP_LREF_S_PRI:
-      /* crashdetect: sync important registers before doing this unsafe operation */
-      amx->frm = frm;
-      amx->stk = stk;
+      amx->frm=frm;
+      amx->stk=stk;
       GETPARAM(offs);
       offs= * (cell *)(data+(int)frm+(int)offs);
       pri= * (cell *)(data+(int)offs);
       break;
     case OP_LREF_S_ALT:
-      /* crashdetect: sync important registers before doing this unsafe operation */
-      amx->frm = frm;
-      amx->stk = stk;  
+      amx->frm=frm;
+      amx->stk=stk;  
       GETPARAM(offs);
       offs= * (cell *)(data+(int)frm+(int)offs);
       alt= * (cell *)(data+(int)offs);
@@ -2883,15 +2879,13 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       *(cell *)(data+(int)frm+(int)offs)=alt;
       break;
     case OP_SREF_PRI:
-      /* crashdetect: sync important registers before doing this unsafe operation */
-      amx->frm = frm;
-      amx->stk = stk;
+      amx->frm=frm;
+      amx->stk=stk;
       GETPARAM(offs);
       offs= * (cell *)(data+(int)offs);
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_ALT:
-      /* crashdetect: sync important registers before doing this unsafe operation */
       amx->frm = frm;
       amx->stk = stk;
       GETPARAM(offs);

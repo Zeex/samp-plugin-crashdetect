@@ -357,7 +357,7 @@ void crashdetect::PrintBacktrace() const {
 			}
 
 			if (debugInfo.IsLoaded()) {
-				for (size_t i = 0; i < frames.size(); i++) {								
+				for (size_t i = 0; i < frames.size(); i++) { 
 					AMXStackFrame &frame = frames[i];					
 					if (i > 0) {
 						AMXStackFrame &prevFrame = frames[i - 1];
@@ -378,7 +378,7 @@ void crashdetect::PrintBacktrace() const {
 			} else { 
 				// Have no debug info. This means we don't know line numbers/source files, function names
 				// work only for publics, etc.
-				for (size_t i = 0; i < frames.size(); i++) {								
+				for (size_t i = 0; i < frames.size(); i++) {
 					AMXStackFrame frame = frames[i];
 					ucell offset = 0;
 					if (i > 0) {
