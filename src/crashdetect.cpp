@@ -319,8 +319,9 @@ void crashdetect::PrintBacktrace() const {
 
 	logprintf("[debug] Backtrace (most recent call first):");
 
-	std::stack<NativePublicCall> npCallStack = npCalls_;
-	int depth = 0;
+	std::stack<NativePublicCall> npCallStack = npCalls_;	
+	int depth = 0;	
+	bool firstPublic = true;
 
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();		
@@ -339,7 +340,7 @@ void crashdetect::PrintBacktrace() const {
 					logprintf("[debug] #%-2d native %08x() from %s", depth, address, module.c_str());
 				}				
 			}
-			++depth;
+			++depth;			
 		} 
 		else if (call.type() == NativePublicCall::PUBLIC) {
 			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
@@ -349,9 +350,12 @@ void crashdetect::PrintBacktrace() const {
 				amxName.assign("??");
 			}
 
-			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, call.amx()->frm).GetFrames();
+			std::vector<AMXStackFrame> frames;
+			if (firstPublic) {
+				frames = AMXCallStack(call.amx(), debugInfo, amx_->frm).GetFrames();
+				firstPublic = false;
+			}
 			if (frames.empty()) {
-				logprintf("[debug]: No frames found");
 				AMXStackFrame fakeFrame(call.amx(), 0, 0,
 					amxutils::GetPublicAddress(call.amx(), call.index()), debugInfo);
 				frames.push_back(fakeFrame);
@@ -359,7 +363,7 @@ void crashdetect::PrintBacktrace() const {
 
 			if (debugInfo.IsLoaded()) {
 				for (size_t i = 0; i < frames.size(); i++) { 
-					AMXStackFrame &frame = frames[i];					
+					AMXStackFrame &frame = frames[i];
 					if (i > 0) {
 						AMXStackFrame &prevFrame = frames[i - 1];
 						logprintf("[debug] #%-2d %s+0x%x at %s:%ld ", depth,
@@ -406,7 +410,7 @@ void crashdetect::PrintBacktrace() const {
 					logprintf("[debug] #%-2d %s+0x%x from %s", depth,
 							frame.GetFunctionPrototype().c_str(), offset, amxName.c_str());
 					++depth;
-				}				
+				}
 			}
 		}
 		npCallStack.pop();		
