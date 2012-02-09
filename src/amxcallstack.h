@@ -97,7 +97,7 @@ private:
 
 // static
 inline bool AMXStackFrame::IsOnStack(cell address, AMX *amx) {
-	return (address >= amx->stk && address <= amx->stp);
+	return (address >= amx->hlw && address < amx->stp);
 }
 
 #endif // !AMXCALLSTACK_H

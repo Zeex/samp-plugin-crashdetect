@@ -352,7 +352,7 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFra
 		frm = amx->frm;
 	}
 
-	while (frm >= static_cast<ucell>(amx->stk)) {
+	while (frm < static_cast<ucell>(amx->stp)) {
 		AMXStackFrame frame(amx, frm, debugInfo);
 		frames_.push_back(frame);
 		if (frame.GetFunctionAddress() == 0) {
