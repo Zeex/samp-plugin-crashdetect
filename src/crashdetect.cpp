@@ -351,6 +351,7 @@ void crashdetect::PrintBacktrace() const {
 
 			std::vector<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, call.amx()->frm).GetFrames();
 			if (frames.empty()) {
+				logprintf("[debug]: No frames found");
 				AMXStackFrame fakeFrame(call.amx(), 0, 0,
 					amxutils::GetPublicAddress(call.amx(), call.index()), debugInfo);
 				frames.push_back(fakeFrame);
