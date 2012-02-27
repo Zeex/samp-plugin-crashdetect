@@ -261,7 +261,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 		logprintf("[debug] Run time error %d: \"%s\"", error, aux_StrError(error));
 		switch (error) {
 			case AMX_ERR_BOUNDS: {
-				cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
+				cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod + sizeof(cell)));
 				cell index = amx_->pri;
 				if (index < 0) {
 					logprintf("[debug]   Accessing element at negative index %d", index);
