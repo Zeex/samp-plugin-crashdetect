@@ -40,7 +40,11 @@
 #include "amx/amxaux.h" // for amx_StrError()
 
 static inline std::string StripDirs(const std::string &filename) {
+#if BOOST_VERSION >= 104600 || BOOST_FILESYSTEM_VERSION == 3
 	return boost::filesystem::path(filename).filename().string();
+#else
+	return boost::filesystem::path(filename).filename();
+#endif
 }
 
 bool crashdetect::errorCaught_ = false;
@@ -162,9 +166,13 @@ crashdetect::crashdetect(AMX *amx)
 	pathFinder.AddSearchPath("filterscripts/");
 
 	boost::filesystem::path path;
-	if (pathFinder.FindAMX(amx, path)) {		
+	if (pathFinder.FindAMX(amx, path)) {
 		amxPath_ = path.string();
+#if BOOST_VERSION >= 104600 || BOOST_FILESYSTEM_VERSION == 3
 		amxName_ = path.filename().string();
+#else
+		amxName_ = path.filename();
+#endif
 	}
 
 	if (!amxPath_.empty()) {

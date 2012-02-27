@@ -25,7 +25,7 @@ if(HAVE_STDINT_H)
 	add_definitions(-DHAVE_STDINT_H)
 endif()
 
-find_package(Boost 1.47 REQUIRED COMPONENTS filesystem system)
+find_package(Boost 1.40 REQUIRED COMPONENTS filesystem system)
 
 include_directories(src)
 include_directories(src/amx) 
