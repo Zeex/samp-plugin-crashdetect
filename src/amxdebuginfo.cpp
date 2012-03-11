@@ -127,7 +127,9 @@ AMXDebugInfo::Symbol AMXDebugInfo::GetFunction(ucell address) const {
 	Symbol function;
 	SymbolTable symbols = GetSymbols();
 	for (SymbolTable::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
-		if (!it->IsFunction() || it->GetAddress() != address) 
+		if (!it->IsFunction())
+			continue;
+		if (it->GetCodeStartAddress() > address || it->GetCodeEndAddress() <= address)
 			continue;
 		if (IsBuggedForward(it->GetPOD())) 
 			continue;
@@ -190,20 +192,6 @@ ucell AMXDebugInfo::GetFunctionAddress(const std::string &functionName, const st
 	ucell functionAddress;
 	dbg_GetFunctionAddress(amxdbgPtr_.get(), functionName.c_str(), fileName.c_str(), &functionAddress);
 	return functionAddress;
-}
-
-ucell AMXDebugInfo::GetFunctionStartAddress(ucell address) const {
-	SymbolTable symbols = GetSymbols();
-	for (SymbolTable::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
-		if (!it->IsFunction())
-			continue;
-		if (it->GetCodeStartAddress() > address || it->GetCodeEndAddress() <= address)
-			continue;
-		if (IsBuggedForward(it->GetPOD())) 
-			continue;
-		return it->GetCodeStartAddress();
-	}
-	return 0;
 }
 
 ucell AMXDebugInfo::GetLineAddress(long line, const std::string &fileName) const {

@@ -13,13 +13,13 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <deque>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <sstream>
 #include <string>
-#include <vector>
 #include <utility>
 
 #include "amxcallstack.h"
@@ -34,12 +34,11 @@ static bool IsFunctionArgument(const AMXDebugInfo::Symbol &symbol, ucell functio
 
 class IsArgumentOf : public std::unary_function<AMXDebugInfo::Symbol, bool> {
 public:
-	IsArgumentOf(ucell function) : function_(function) {}
-
+	IsArgumentOf(ucell function) 
+		: function_(function) {}
 	bool operator()(AMXDebugInfo::Symbol symbol) const {
 		return symbol.IsLocal() && symbol.GetCodeStartAddress() == function_;
 	}
-
 private:
 	ucell function_;
 };
@@ -48,14 +47,25 @@ static inline bool CompareArguments(const AMXDebugInfo::Symbol &left, const AMXD
 	return left.GetAddress() < right.GetAddress();
 }
 
-class IsFunctionAt : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
+class AddressBelongsToFunction : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
 public:
-	IsFunctionAt(ucell address) : address_(address) {}
-
+	AddressBelongsToFunction(ucell address) 
+		: address_(address) {}
 	bool operator()(const AMXDebugInfo::Symbol &symbol) const {
-		return symbol.IsFunction() && symbol.GetAddress() == address_;
+		return symbol.IsFunction() &&
+			address_ >= symbol.GetCodeStartAddress() && address_ <= symbol.GetCodeEndAddress();
 	}
+private:
+	ucell address_;
+};
 
+class IsFunction : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
+public:
+	IsFunction(ucell address) 
+		: address_(address) {}
+	bool operator()(const AMXDebugInfo::Symbol &symbol) const {
+		return symbol.IsFunction();
+	}
 private:
 	ucell address_;
 };
@@ -88,34 +98,32 @@ static inline bool IsMain(AMX *amx, ucell address) {
 	return static_cast<cell>(address) == hdr->cip;
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, const AMXDebugInfo &debugInfo)
-	: isPublic_(false)
-	, frameAddress_(frameAddress)
-	, callAddress_(0)
-	, functionAddress_(0)
+static inline bool IsAddrOnStack(ucell address, AMX *amx) {
+	return (static_cast<cell>(address) >= amx->hlw 
+	     && static_cast<cell>(address) <  amx->stp);
+}
+
+static inline bool IsInCode(ucell address, AMX *amx) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	return static_cast<cell>(address) < hdr->dat - hdr->cod;
+}
+
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, const AMXDebugInfo &debugInfo)
+	: frameAddr_(frameAddr), retAddr_(0), funAddr_(0)
 {
-	if (IsOnStack(frameAddress_, amx)) {
+	if (IsAddrOnStack(frameAddr_, amx)) {
 		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 		ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
 		ucell code = reinterpret_cast<ucell>(amx->base) + hdr->cod;
 
-		callAddress_ = *(reinterpret_cast<ucell*>(data + frameAddress_) + 1) - 2*sizeof(cell);
-		if (callAddress_ >= 0 && callAddress_ < static_cast<ucell>(hdr->dat - hdr->cod)) {
-			functionAddress_ = *reinterpret_cast<ucell*>(callAddress_ + sizeof(cell) + code) - code;			
-			Init(amx, debugInfo);
-		} else {
-			callAddress_ = 0;
-		}		
+		retAddr_ = *(reinterpret_cast<ucell*>(data + frameAddr_) + 1);
+		Init(amx, debugInfo);
 	}
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddress, ucell callAddress, 
-		ucell functionAddress, const AMXDebugInfo &debugInfo)
-	: isPublic_(false)
-	, frameAddress_(frameAddress)
-	, callAddress_(callAddress)
-	, functionAddress_(functionAddress)
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, const AMXDebugInfo &debugInfo)
+	: frameAddr_(frameAddr), retAddr_(retAddr), funAddr_(0)
 {
 	Init(amx, debugInfo);
 }
@@ -196,151 +204,165 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 }
 
 void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
-	std::stringstream protoStream;
+	std::stringstream stream;
 
-	isPublic_ = IsPublicFunction(amx, functionAddress_);
-	if (isPublic_ && !IsMain(amx, functionAddress_)) {
-		protoStream << "public ";
+	AMXDebugInfo::Symbol funSymbol;
+	if (debugInfo.IsLoaded()) {
+		funSymbol = debugInfo.GetFunction(retAddr_);
 	}
 
-	if (debugInfo.IsLoaded()) {
-		if (callAddress_ != 0) {		
-			fileName_ = debugInfo.GetFileName(callAddress_); 
-			lineNumber_ = debugInfo.GetLineNumber(callAddress_);
+	if (funSymbol) {
+		funAddr_ = funSymbol.GetCodeStartAddress();
+	} else {
+		// Match return address against something in public table.
+		if (GetPublicFunctionName(amx, retAddr_) != 0) {
+			funAddr_ = retAddr_;
+		}
+	}
+
+	if (retAddr_ == funAddr_) {
+		// The return address isn't real...
+		stream << "???????? in ";
+	} else {
+		stream << std::hex << std::setw(8) << std::setfill('0') 
+			<< retAddr_ << std::dec << " in ";
+	}
+
+	if (funSymbol) {
+		if (IsPublicFunction(amx, funAddr_) && !IsMain(amx, funAddr_)) {
+			stream << "public ";
+		}
+		std::string funTag = debugInfo.GetTagName((funSymbol).GetTag());
+		if (!funTag.empty() && funTag != "_") {
+			stream << funTag << ":";
+		}		
+		stream << debugInfo.GetFunctionName(funAddr_);		
+	} else {		
+		const char *name = GetPublicFunctionName(amx, funAddr_);
+		if (name != 0) {
+			stream << name;
 		} else {
-			// Entry point		
-			fileName_ = debugInfo.GetFileName(functionAddress_);
-			lineNumber_ = debugInfo.GetLineNumber(functionAddress_);
+			stream << "??"; // unknown function
 		}
+	}
 
-		// Get function return value tag
-		AMXDebugInfo::SymbolTable::const_iterator it = std::find_if(
-			debugInfo.GetSymbols().begin(), 
-			debugInfo.GetSymbols().end(), 
-			IsFunctionAt(functionAddress_)
-		);
-		if (it != debugInfo.GetSymbols().end()) {
-			functionResultTag_ = debugInfo.GetTagName((*it).GetTag()) + ":";
-			if (functionResultTag_ == "_:") {
-				functionResultTag_.clear();
-			}
-		}
+	stream << " (";
 
-		// Get function name
-		functionName_ = debugInfo.GetFunctionName(functionAddress_);		
-
-		// Get parameters
+	if (funSymbol) {
+		// Get function parameters.
+		std::vector<AMXDebugInfo::Symbol> arguments;
 		std::remove_copy_if(
 			debugInfo.GetSymbols().begin(), 
 			debugInfo.GetSymbols().end(), 
-			std::back_inserter(arguments_), 
-			std::not1(IsArgumentOf(functionAddress_))
+			std::back_inserter(arguments), 
+			std::not1(IsArgumentOf(funSymbol.GetCodeStartAddress()))
 		);
 
-		// Order them by address
-		std::sort(arguments_.begin(), arguments_.end(), CompareArguments);
+		// Order them by address.
+		std::sort(arguments.begin(), arguments.end(), CompareArguments);
 
-		// Build a comma-separated list of arguments and their values
-		std::stringstream argStream;
-		for (std::vector<AMXDebugInfo::Symbol>::const_iterator arg = arguments_.begin();
-				arg != arguments_.end(); ++arg) {		
-			if (arg != arguments_.begin()) {
-				argStream << ", ";
+		// Build a comma-separated list of arguments and their values.
+		for (std::vector<AMXDebugInfo::Symbol>::const_iterator arg = arguments.begin();
+				arg != arguments.end(); ++arg) {		
+			if (arg != arguments.begin()) {
+				stream << ", ";
 			}
 
-			// For reference parameters, print the '&' sign in front of their tag
+			// For reference parameters, print the '&' sign in front of their tag.
 			if (arg->IsReference()) {
-				argStream << "&";
+				stream << "&";
 			}		
 
-			// Get parameter's tag 
+			// Get parameter's tag .
 			std::string tag = debugInfo.GetTag(arg->GetTag()).GetName() + ":";
 			if (tag != "_:") {
-				argStream << tag;
+				stream << tag;
 			}
 
-			// Get parameter name
-			argStream << arg->GetName();
+			// Get parameter name.
+			stream << arg->GetName();
 
 			cell value = arg->GetValue(amx);	
 			if (arg->IsVariable()) {
 				// Value arguments
 				if (tag == "bool:") {
-					argStream << "=" << value ? "true" : "false";
+					stream << "=" << value ? "true" : "false";
 				} else if (tag == "Float:") {
-					argStream << "=" << std::fixed << std::setprecision(5) << amx_ctof(value);
+					stream << "=" << std::fixed << std::setprecision(5) << amx_ctof(value);
 				} else {
-					argStream << "=" << value;
+					stream << "=" << value;
 				}
 			} else {
-				// Reference arguments
+				// Reference arguments.
 				std::vector<AMXDebugInfo::SymbolDim> dims = arg->GetDims();
 
-				// Show array dimensions 
+				// Show array dimensions.
 				if (arg->IsArray() || arg->IsArrayRef()) {
 					for (std::size_t i = 0; i < dims.size(); ++i) {
 						if (dims[i].GetSize() == 0) {
-							argStream << "[]";
+							stream << "[]";
 						} else {
 							std::string tag = debugInfo.GetTagName(dims[i].GetTag()) + ":";
 							if (tag == "_:") tag.clear();
-							argStream << "[" << tag << dims[i].GetSize() << "]";
+							stream << "[" << tag << dims[i].GetSize() << "]";
 						}
 					}
 				}
 
-				argStream << "=@0x" << std::hex << std::setw(8) << std::setfill('0') << value << std::dec;
+				stream << "=@0x" << std::hex << std::setw(8) << std::setfill('0') << value << std::dec;
 
-				// If this is a string argument, get the text
+				// If this is a string argument, get the text.
 				if (arg->IsArray() || arg->IsArrayRef() 
 						&& dims.size() == 1
 						&& tag == "_:"
 						&& debugInfo.GetTagName(dims[0].GetTag()) == "_") 
 				{
 					std::pair<std::string, bool> s = GetAMXString(amx, value, dims[0].GetSize());
-					argStream << " ";
+					stream << " ";
 					if (s.second) {
-						argStream << "!"; // packed string
+						stream << "!"; // packed string
 					}
 					if (s.first.length() > kMaxString) {
 						// The text is too long.
 						s.first.replace(kMaxString, s.first.length() - kMaxString, "...");
 					}
-					argStream << "\"" << s.first << "\"";
+					stream << "\"" << s.first << "\"";
 				}
 			}
 		}	
 
-		int numArgs = static_cast<int>(arguments_.size());
-		int numVarArgs = GetNumArgs(amx, frameAddress_) - numArgs;
+		int numArgs = static_cast<int>(arguments.size());
+		int numVarArgs = GetNumArgs(amx, frameAddr_) - numArgs;
 
 		if (numVarArgs > 0) {
-			// Have variable (unnamed) arguments.	
-			argStream << ", ... <" << numVarArgs << " variable ";
-			if (numVarArgs == 1) {
-				argStream << "argument";
-			} else {
-				argStream << "arguments";
+			// Have variable (unnamed) arguments.
+			if (numArgs != 0) {
+				stream << ". ";
 			}
-			argStream << ">";
-		}
+			stream << "... <" << numVarArgs << " variable ";
+			if (numVarArgs == 1) {
+				stream << "argument";
+			} else {
+				stream << "arguments";
+			}
+			stream << ">";
+		}		
+	}
 
-		protoStream << functionResultTag_ << functionName_;
-		protoStream << "(";
-		protoStream << argStream.str();
-		protoStream << ")";	
-	} else {
-		// No debug info available...
-		const char *name = GetPublicFunctionName(amx, functionAddress_);
-		if (name != 0) {
-			functionName_.assign(name);	
-			protoStream << name << "()";
-		} else {
-			protoStream << "0x" << std::hex << std::setw(8) << std::setfill('0') << functionAddress_ << "()";
+	stream << ")";
+
+	if (debugInfo.IsLoaded()) {
+		std::string fileName = debugInfo.GetFileName(retAddr_);
+		if (!fileName.empty()) {
+			stream << " at " << fileName;
+		}
+		long line = debugInfo.GetLineNumber(retAddr_);
+		if (line != 0) {
+			stream << ":" << line;
 		}
 	}
 
-	functionPrototype_ = protoStream.str();
+	string_ = stream.str();
 }
 
 AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame) {
@@ -353,28 +375,11 @@ AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFra
 	}
 
 	while (frm < static_cast<ucell>(amx->stp)) {
-		AMXStackFrame frame(amx, frm, debugInfo);
-		frames_.push_back(frame);
-		if (frame.GetFunctionAddress() == 0) {
-			// Invalid frame address
+		AMXStackFrame frame(amx, frm, debugInfo);		
+		if (frame.GetReturnAddress() == 0) {
 			break;
 		}
+		frames_.push_back(frame);
 		frm = *reinterpret_cast<ucell*>(data + frm);
 	} 
-
-	// Correct entry point address (it's not on the stack)
-	if (debugInfo.IsLoaded()) {		
-		if (frames_.size() > 1) {
-			ucell epAddr = debugInfo.GetFunctionStartAddress(frames_[frames_.size() - 2].GetCallAddress());
-			frames_.back() = AMXStackFrame(amx, frames_.back().GetFrameAddress(), 0, epAddr, debugInfo);
-		} else if (frames_.size() != 0) {
-			ucell epAddr = debugInfo.GetFunctionStartAddress(amx->cip);
-			frames_.back() = AMXStackFrame(amx, frames_.back().GetFrameAddress(), 0, epAddr, debugInfo);
-		}
-	} else {
-		if (!frames_.empty()) {
-			// Can't fetch the address...
-			frames_.back() = AMXStackFrame(amx, 0, 0, 0);
-		}
-	}
 }

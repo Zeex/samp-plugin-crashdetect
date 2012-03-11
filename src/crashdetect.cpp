@@ -328,8 +328,8 @@ void crashdetect::PrintBacktrace() const {
 	logprintf("[debug] Backtrace (most recent call first):");
 
 	std::stack<NativePublicCall> npCallStack = npCalls_;	
-	int depth = 0;	
-	bool firstPublic = true;
+	ucell frm = amx_->frm;
+	int depth = 0;
 
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();		
@@ -343,9 +343,9 @@ void crashdetect::PrintBacktrace() const {
 				}
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
-					logprintf("[debug] #%-2d native %s() from %s", depth, name, module.c_str());
+					logprintf("[debug] #%-2d ???????? in native %s () from %s", depth, name, module.c_str());
 				} else {
-					logprintf("[debug] #%-2d native %08x() from %s", depth, address, module.c_str());
+					logprintf("[debug] #%-2d ???????? in native %08x () from %s", depth, address, module.c_str());
 				}				
 			}
 			++depth;			
@@ -358,68 +358,24 @@ void crashdetect::PrintBacktrace() const {
 				amxName.assign("??");
 			}
 
-			std::vector<AMXStackFrame> frames;
-			if (firstPublic) {
-				frames = AMXCallStack(call.amx(), debugInfo, amx_->frm).GetFrames();
-				firstPublic = false;
-			}
-			if (frames.empty()) {
-				AMXStackFrame fakeFrame(call.amx(), 0, 0,
-					amxutils::GetPublicAddress(call.amx(), call.index()), debugInfo);
-				frames.push_back(fakeFrame);
+			std::deque<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
+
+			if (frm == amx_->frm) {
+				AMXStackFrame top(call.amx(), frm, amx_->cip, debugInfo);
+				frames.push_front(top);				
 			}
 
-			if (debugInfo.IsLoaded()) {
-				for (size_t i = 0; i < frames.size(); i++) { 
-					AMXStackFrame &frame = frames[i];
-					if (i > 0) {
-						AMXStackFrame &prevFrame = frames[i - 1];
-						logprintf("[debug] #%-2d %s+0x%x at %s:%ld ", depth,
-								frame.GetFunctionPrototype().c_str(),
-								prevFrame.GetCallAddress() - frame.GetFunctionAddress(),
-								StripDirs(frame.GetSourceFileName()).c_str(), 
-								debugInfo.GetLineNumber(prevFrame.GetCallAddress()));
-					} else {
-						logprintf("[debug] #%-2d %s+0x%x at %s:%ld", depth,
-								frame.GetFunctionPrototype().c_str(),
-								call.amx()->cip - frame.GetFunctionAddress(),
-								StripDirs(debugInfo.GetFileName(call.amx()->cip)).c_str(),
-								debugInfo.GetLineNumber(call.amx()->cip));
-					}
-					++depth;
-				}
-			} else { 
-				// Have no debug info. This means we don't know line numbers/source files, function names
-				// work only for publics, etc.
-				for (size_t i = 0; i < frames.size(); i++) {
-					AMXStackFrame frame = frames[i];
-					ucell offset = 0;
-					if (i > 0) {
-						AMXStackFrame &prevFrame = frames[i - 1];
-						offset = prevFrame.GetCallAddress() - frame.GetFunctionAddress();
-						if (frame.GetFunctionAddress() == 0) {
-							if (i == frames.size() - 1) {
-								// Reached the top frame (entry point).
-								frame = AMXStackFrame(call.amx(), 0, 0, 
-										amxutils::GetPublicAddress(call.amx(), call.index()));
-							} else {
-								logprintf("[debug] Stack corrupted");
-								break;
-							}
-						}
-					} else {
-						offset = call.amx()->cip - frame.GetFunctionAddress();
-						if (frames.size() == 1) {
-							// This is the first and the only frame.
-							frame = AMXStackFrame(call.amx(), 0, 0, 
-									amxutils::GetPublicAddress(call.amx(), call.index()));						
-						}
-					}
-					logprintf("[debug] #%-2d %s+0x%x from %s", depth,
-							frame.GetFunctionPrototype().c_str(), offset, amxName.c_str());
-					++depth;
-				}
+			if (frames.empty()) {
+				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
+				AMXStackFrame bottom(call.amx(), frm, epAddr, debugInfo);
+				frames.push_back(bottom);
 			}
+
+			for (size_t i = 0; i < frames.size(); i++) {
+				logprintf("[debug] #%-2d %s from %s", depth++, frames[i].GetString().c_str(), amxName.c_str());
+			}
+
+			frm = call.frm();
 		}
 		npCallStack.pop();		
 	}

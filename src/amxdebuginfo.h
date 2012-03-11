@@ -228,7 +228,6 @@ public:
 	std::string GetTagName(ucell address) const;
 
 	ucell GetFunctionAddress(const std::string &functionName, const std::string &fileName) const;
-	ucell GetFunctionStartAddress(ucell address) const;
 	ucell GetLineAddress(long line, const std::string &fileName) const;
 
 	typedef Table<AMX_DBG_FILE*, File> FileTable;
