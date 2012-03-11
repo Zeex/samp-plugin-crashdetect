@@ -1,5 +1,5 @@
-crashdetect plugin
-==================
+crashdetect
+===========
 
 This plugin helps in debugging of SA-MP server crashes and runtime AMX errors.
 
