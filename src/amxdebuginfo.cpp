@@ -120,7 +120,7 @@ AMXDebugInfo::File AMXDebugInfo::GetFile(ucell address) const {
 }
 
 static bool IsBuggedForward(const AMX_DBG_SYMBOL *symbol) {
-	return (symbol->name[0] == '@' && symbol->codestart == 0x8 && symbol->codeend == 0x928);
+	return (symbol->name[0] == '@' && symbol->codestart == 0x8);
 }
 
 AMXDebugInfo::Symbol AMXDebugInfo::GetFunction(ucell address) const {
