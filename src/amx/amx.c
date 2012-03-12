@@ -23,7 +23,7 @@
 
 /* This is a slightly modified version of the original file, specially for crashdetect.
  *   - ABORT() synchronizes AMX registers with amx_Exec()'s local variables
- *   - ABORT() calls an externally defined function amx_Error(AMX *amx, cell index, int error),
+ *   - ABORT() calls external error handler amx_Error(AMX *amx, cell index, int error),
  *     where "error" is the error code and "index" is the index of the current public
  *   - CHKSTACK(), CHKMARGIN() and CHKHEAP() now use the ABORT() macro instead of return
  *   - The CIP register (amx->cip) is updated on each iteration of the instruction dispatch loop
@@ -1671,7 +1671,9 @@ int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char
 						  (amx)->hea = hea;\
 						  (amx)->frm = frm;\
 						  amx_Error(amx, index, v);\
-                          (amx)->stk=reset_stk; (amx)->hea=reset_hea; return v; }
+                          (amx)->stk=reset_stk;\
+                          (amx)->hea=reset_hea;\
+                          return v; }
 
 #define CHKMARGIN()     if (hea+STKMARGIN>stk) ABORT(amx, AMX_ERR_STACKERR)
 #define CHKSTACK()      if (stk>amx->stp) ABORT(amx, AMX_ERR_STACKLOW)
@@ -1682,7 +1684,7 @@ int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char
      * fast "indirect threaded" interpreter.
      */
 
-#define NEXT(cip)       goto **cip++
+#define NEXT(cip)       do { (amx)->cip=(cell)cip-(cell)code; goto **cip++; } while (0)
 
 int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 {
@@ -2792,8 +2794,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 
 #else
 
-  for ( ;; ) {
-	amx->cip=(cell)cip-(cell)code;
+  for ( ;; ) {	
+    amx->cip=(cell)cip-(cell)code;
     op=(OPCODE) *cip++;
     switch (op) {
     case OP_LOAD_PRI:

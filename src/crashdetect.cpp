@@ -294,7 +294,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				break;
 			case AMX_ERR_INVINSTR: {
 				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
-				logprintf("[debug]   Invalid opcode 0x%X at address 0x%X", opcode , amx_->cip - sizeof(cell));
+				logprintf("[debug]   Unknown opcode 0x%x at address 0x%08X", opcode , amx_->cip);
 				break;
 			}
 		}
