@@ -27,6 +27,8 @@
 // Compatibility with GDK
 #define AMX_EXEC_GDK (-10) 
 
+class AMXStackFrame;
+
 class crashdetect {
 public:	
 	// SA-MP plugin acrhitecture, called from plugin.cpp
@@ -60,8 +62,10 @@ public:
 	int HandleAmxCallback(cell index, cell *result, cell *params);
 	int HandleAmxExec(cell *retval, int index);
 
-	// Prints a call stack, including inter-AMX calls like CallRemoteFunction().
+	// Prints the call stack.
 	void PrintBacktrace() const;
+	// Print a single frame, used by PrintBacktrace().
+	void PrintFrame(int level, const AMXStackFrame &frame, const std::string &amxName) const;
 
 private:
 	explicit crashdetect(AMX *amx);
@@ -91,8 +95,8 @@ private:
 			PUBLIC
 		};
 
-		NativePublicCall(Type type, AMX *amx, cell index, ucell frm)
-			: type_(type), amx_(amx), index_(index), frm_(frm) {}
+		NativePublicCall(Type type, AMX *amx, cell index, cell frm, cell cip)
+			: type_(type), amx_(amx), index_(index), frm_(frm), cip_(cip) {}
 
 		Type type() const 
 			{ return type_; }
@@ -100,13 +104,16 @@ private:
 			{ return amx_; }
 		cell index() const 
 			{ return index_; }
-		ucell frm() const 
+		cell frm() const 
 			{ return frm_; }
+		cell cip() const
+			{ return cip_; }
 
 	private:
 		Type  type_;
 		AMX   *amx_;
-		ucell frm_;
+		cell  frm_;
+		cell  cip_;
 		cell  index_;
 	};
 

@@ -128,6 +128,12 @@ AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, const AMX
 	Init(amx, debugInfo);
 }
 
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo)
+	: frameAddr_(frameAddr), retAddr_(retAddr), funAddr_(funAddr)
+{
+	Init(amx, debugInfo);
+}
+
 static inline char ToASCII(char c) {
 	if (c >= 32 && c <= 126) {
 		return c;
@@ -211,12 +217,14 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 		funSymbol = debugInfo.GetFunction(retAddr_);
 	}
 
-	if (funSymbol) {
-		funAddr_ = funSymbol.GetCodeStartAddress();
-	} else {
-		// Match return address against something in public table.
-		if (GetPublicFunctionName(amx, retAddr_) != 0) {
-			funAddr_ = retAddr_;
+	if (funAddr_ == 0) {
+		if (funSymbol) {
+			funAddr_ = funSymbol.GetCodeStartAddress();
+		} else {
+			// Match return address against something in public table.
+			if (GetPublicFunctionName(amx, retAddr_) != 0) {
+				funAddr_ = retAddr_;
+			}
 		}
 	}
 

@@ -27,6 +27,7 @@ public:
 
 	AMXStackFrame(AMX *amx, ucell frameAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
 	AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
+	AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
 
 	inline ucell GetFramAddress() const 
 		{ return frameAddr_; }

@@ -203,7 +203,7 @@ int crashdetect::HandleAmxDebug() {
 
 int crashdetect::HandleAmxExec(cell *retval, int index) {
 	npCalls_.push(NativePublicCall(
-		NativePublicCall::PUBLIC, amx_, index, amx_->frm));
+		NativePublicCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
 
 	int retcode = ::amx_Exec(amx_, retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
@@ -218,7 +218,7 @@ int crashdetect::HandleAmxExec(cell *retval, int index) {
 
 int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
 	npCalls_.push(NativePublicCall(
-		NativePublicCall::NATIVE, amx_, index, amx_->frm));
+		NativePublicCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
 
 	// Reset error
 	amx_->error = AMX_ERR_NONE;
@@ -328,11 +328,12 @@ void crashdetect::PrintBacktrace() const {
 	logprintf("[debug] Backtrace (most recent call first):");
 
 	std::stack<NativePublicCall> npCallStack = npCalls_;	
-	ucell frm = amx_->frm;
-	int depth = 0;
+	cell frm = amx_->frm;
+	cell cip = amx_->cip;
+	int level = 0;
 
 	while (!npCallStack.empty()) {
-		NativePublicCall call = npCallStack.top();		
+		NativePublicCall call = npCallStack.top();
 
 		if (call.type() == NativePublicCall::NATIVE) {			
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
@@ -343,12 +344,11 @@ void crashdetect::PrintBacktrace() const {
 				}
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
-					logprintf("[debug] #%-2d ???????? in native %s () from %s", depth, name, module.c_str());
+					logprintf("[debug] #%-2d ???????? in native %s () from %s", level++, name, module.c_str());
 				} else {
-					logprintf("[debug] #%-2d ???????? in native %08x () from %s", depth, address, module.c_str());
-				}				
+					logprintf("[debug] #%-2d ???????? in native %08x () from %s", level++, address, module.c_str());
+				}
 			}
-			++depth;			
 		} 
 		else if (call.type() == NativePublicCall::PUBLIC) {
 			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
@@ -360,24 +360,35 @@ void crashdetect::PrintBacktrace() const {
 
 			std::deque<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
 
-			if (frm == amx_->frm) {
-				AMXStackFrame top(call.amx(), frm, amx_->cip, debugInfo);
-				frames.push_front(top);				
-			}
-
+			// Prepend a fake frame to show from which place the upper 
+			// item (native/public) was called.
 			if (frames.empty()) {
 				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
-				AMXStackFrame bottom(call.amx(), frm, epAddr, debugInfo);
-				frames.push_back(bottom);
+				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
+			} else {
+				frames.push_front(AMXStackFrame(call.amx(), frm, cip, debugInfo));
+				if (!debugInfo.IsLoaded()) {
+					AMXStackFrame &bottom = frames.back();
+					bottom = AMXStackFrame(call.amx(), 
+						bottom.GetFramAddress(), 
+						bottom.GetReturnAddress(),
+						amxutils::GetPublicAddress(call.amx(), call.index()),
+						debugInfo);
+				}
 			}
 
+			// Print true frames stored on the stack.
 			for (size_t i = 0; i < frames.size(); i++) {
-				logprintf("[debug] #%-2d %s from %s", depth++, frames[i].GetString().c_str(), amxName.c_str());
+				logprintf("[debug] #%-2d %s from %s", level++, frames[i].GetString().c_str(), amxName.c_str());
 			}
 
 			frm = call.frm();
+			cip = call.cip();
 		}
 		npCallStack.pop();		
 	}
 }
 
+void crashdetect::PrintFrame(int level, const AMXStackFrame &frame, const std::string &amxName) const {
+	
+}
