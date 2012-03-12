@@ -64,8 +64,6 @@ public:
 
 	// Prints the call stack.
 	void PrintBacktrace() const;
-	// Print a single frame, used by PrintBacktrace().
-	void PrintFrame(int level, const AMXStackFrame &frame, const std::string &amxName) const;
 
 private:
 	explicit crashdetect(AMX *amx);

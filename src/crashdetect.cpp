@@ -387,7 +387,3 @@ void crashdetect::PrintBacktrace() const {
 		npCallStack.pop();		
 	}
 }
-
-void crashdetect::PrintFrame(int level, const AMXStackFrame &frame, const std::string &amxName) const {
-	
-}
