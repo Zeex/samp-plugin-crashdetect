@@ -339,14 +339,15 @@ void crashdetect::PrintBacktrace() const {
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address != 0) {				
 				std::string module = StripDirs(os::GetModuleNameBySymbol((void*)address));
+				std::string from = " from " + module;
 				if (module.empty()) {
-					module.assign("??");
-				}
+					from.clear();
+				}				
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
-					logprintf("[debug] #%-2d ???????? in native %s () from %s", level++, name, module.c_str());
+					logprintf("[debug] #%-2d ???????? in native %s ()%s", level++, name, from.c_str());
 				} else {
-					logprintf("[debug] #%-2d ???????? in native %08x () from %s", level++, address, module.c_str());
+					logprintf("[debug] #%-2d ???????? in native %08x ()%s", level++, address, from.c_str());
 				}
 			}
 		} 
