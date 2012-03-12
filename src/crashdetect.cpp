@@ -353,15 +353,9 @@ void crashdetect::PrintBacktrace() const {
 		else if (call.type() == NativePublicCall::PUBLIC) {
 			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
 
-			std::string &amxName = instances_[call.amx()]->amxName_;
-			if (amxName.empty()) {
-				amxName.assign("??");
-			}
+			AMXCallStack callStack(call.amx(), debugInfo, frm);
+			std::deque<AMXStackFrame> frames = callStack.GetFrames();
 
-			std::deque<AMXStackFrame> frames = AMXCallStack(call.amx(), debugInfo, frm).GetFrames();
-
-			// Prepend a fake frame to show from which place the upper 
-			// item (native/public) was called.
 			if (frames.empty()) {
 				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
 				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
@@ -375,11 +369,15 @@ void crashdetect::PrintBacktrace() const {
 						amxutils::GetPublicAddress(call.amx(), call.index()),
 						debugInfo);
 				}
-			}
+			}			
 
-			// Print true frames stored on the stack.
+			std::string &amxName = instances_[call.amx()]->amxName_;
 			for (size_t i = 0; i < frames.size(); i++) {
-				logprintf("[debug] #%-2d %s from %s", level++, frames[i].GetString().c_str(), amxName.c_str());
+				if (!amxName.empty()) {
+					logprintf("[debug] #%-2d %s from %s", level++, frames[i].GetString().c_str(), amxName.c_str());
+				} else {
+					logprintf("[debug] #%-2d %s", level++, frames[i].GetString().c_str());
+				}
 			}
 
 			frm = call.frm();
