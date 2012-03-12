@@ -171,7 +171,6 @@ static inline std::string GetUnpackedAMXString(AMX *amx, cell *string, std::size
 	return s;
 }
 
-// Read the number of arguments passed from the stack.
 static inline int GetNumArgs(AMX *amx, ucell frame) {
 	if (frame > 0) {
 		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
@@ -339,22 +338,21 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 			}
 		}	
 
-		int numArgs = static_cast<int>(arguments.size());
-		int numVarArgs = GetNumArgs(amx, frameAddr_) - numArgs;
+		//int numArgs = static_cast<int>(arguments.size());
+		//int numVarArgs = GetNumArgs(amx, frameAddr_) - numArgs;
 
-		if (numVarArgs > 0) {
-			// Have variable (unnamed) arguments.
-			if (numArgs != 0) {
-				stream << ". ";
-			}
-			stream << "... <" << numVarArgs << " variable ";
-			if (numVarArgs == 1) {
-				stream << "argument";
-			} else {
-				stream << "arguments";
-			}
-			stream << ">";
-		}		
+		//if (numVarArgs > 0) {
+		//	if (numArgs != 0) {
+		//		stream << ". ";
+		//	}
+		//	stream << "... <" << numVarArgs << " variable ";
+		//	if (numVarArgs == 1) {
+		//		stream << "argument";
+		//	} else {
+		//		stream << "arguments";
+		//	}
+		//	stream << ">";
+		//}
 	}
 
 	stream << ")";
