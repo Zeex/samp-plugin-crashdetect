@@ -380,11 +380,11 @@ void crashdetect::PrintBacktrace() const {
 
 			std::string &amxName = instances_[call.amx()]->amxName_;
 			for (size_t i = 0; i < frames.size(); i++) {
-				if (!amxName.empty()) {
-					logprintf("[debug] #%-2d %s from %s", level++, frames[i].GetString().c_str(), amxName.c_str());
-				} else {
-					logprintf("[debug] #%-2d %s", level++, frames[i].GetString().c_str());
+				std::string from = " from " + amxName;
+				if (amxName.empty() || debugInfo.IsLoaded()) {
+					from.clear();
 				}
+				logprintf("[debug] #%-2d %s%s", level++, frames[i].GetString().c_str(), from.c_str());
 			}
 
 			frm = call.frm();
