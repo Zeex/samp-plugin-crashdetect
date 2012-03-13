@@ -335,6 +335,12 @@ void crashdetect::PrintBacktrace() const {
 	while (!npCallStack.empty()) {
 		NativePublicCall call = npCallStack.top();
 
+		if (call.amx() != amx_) {
+			// Ignore inter-amx calls e.g. CallRemoteFunction().
+			assert(level != 0);
+			break;
+		}
+
 		if (call.type() == NativePublicCall::NATIVE) {			
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address != 0) {				
