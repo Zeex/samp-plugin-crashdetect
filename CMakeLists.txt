@@ -157,8 +157,13 @@ message(STATUS "You're going to build crashdetect v${version}")
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
 install(FILES README.md DESTINATION ".")
 
+if(MSVC)
+	# Copy the .pdb file 
+	set(PDB_NAME "crashdetect.pdb")
+	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
+	install(FILES ${PDB_PATH} DESTINATION ".")
+endif()
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
-
 if(WIN32)
 	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-win32")
 	set(CPACK_GENERATOR ZIP)
@@ -166,6 +171,5 @@ elseif(UNIX)
 	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-linux")
 	set(CPACK_GENERATOR TGZ)
 endif()
-
 include(CPack)
 
