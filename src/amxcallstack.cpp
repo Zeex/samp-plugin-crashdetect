@@ -21,6 +21,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
@@ -211,14 +212,13 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 	std::stringstream stream;
 
-	AMXDebugInfo::Symbol funSymbol;
 	if (debugInfo.IsLoaded()) {
-		funSymbol = debugInfo.GetFunction(retAddr_);
+		fun_ = debugInfo.GetFunction(retAddr_);
 	}
 
 	if (funAddr_ == 0) {
-		if (funSymbol) {
-			funAddr_ = funSymbol.GetCodeStartAddress();
+		if (fun_) {
+			funAddr_ = fun_.GetCodeStartAddress();
 		} else {
 			// Match return address against something in public table.
 			if (GetPublicFunctionName(amx, retAddr_) != 0) {
@@ -235,11 +235,11 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 			<< retAddr_ << std::dec << " in ";
 	}
 
-	if (funSymbol) {
+	if (fun_) {
 		if (IsPublicFunction(amx, funAddr_) && !IsMain(amx, funAddr_)) {
 			stream << "public ";
 		}
-		std::string funTag = debugInfo.GetTagName((funSymbol).GetTag());
+		std::string funTag = debugInfo.GetTagName((fun_).GetTag());
 		if (!funTag.empty() && funTag != "_") {
 			stream << funTag << ":";
 		}		
@@ -255,23 +255,22 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 
 	stream << " (";
 
-	if (funSymbol) {
+	if (fun_) {
 		// Get function parameters.
-		std::vector<AMXDebugInfo::Symbol> arguments;
 		std::remove_copy_if(
 			debugInfo.GetSymbols().begin(), 
 			debugInfo.GetSymbols().end(), 
-			std::back_inserter(arguments), 
-			std::not1(IsArgumentOf(funSymbol.GetCodeStartAddress()))
+			std::back_inserter(args_), 
+			std::not1(IsArgumentOf(fun_.GetCodeStartAddress()))
 		);
 
 		// Order them by address.
-		std::sort(arguments.begin(), arguments.end(), CompareArguments);
+		std::sort(args_.begin(), args_.end(), CompareArguments);
 
-		// Build a comma-separated list of arguments and their values.
-		for (std::vector<AMXDebugInfo::Symbol>::const_iterator arg = arguments.begin();
-				arg != arguments.end(); ++arg) {		
-			if (arg != arguments.begin()) {
+		// Build a comma-separated list of args_ and their values.
+		for (std::vector<AMXDebugInfo::Symbol>::const_iterator arg = args_.begin();
+				arg != args_.end(); ++arg) {		
+			if (arg != args_.begin()) {
 				stream << ", ";
 			}
 
@@ -291,7 +290,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 
 			cell value = arg->GetValue(amx);	
 			if (arg->IsVariable()) {
-				// Value arguments
+				// Value args_
 				if (tag == "bool:") {
 					stream << "=" << value ? "true" : "false";
 				} else if (tag == "Float:") {
@@ -300,7 +299,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 					stream << "=" << value;
 				}
 			} else {
-				// Reference arguments.
+				// Reference args_.
 				std::vector<AMXDebugInfo::SymbolDim> dims = arg->GetDims();
 
 				// Show array dimensions.
@@ -338,7 +337,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 			}
 		}	
 
-		//int numArgs = static_cast<int>(arguments.size());
+		//int numArgs = static_cast<int>(args_.size());
 		//int numVarArgs = GetNumArgs(amx, frameAddr_) - numArgs;
 
 		//if (numVarArgs > 0) {
@@ -349,7 +348,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 		//	if (numVarArgs == 1) {
 		//		stream << "argument";
 		//	} else {
-		//		stream << "arguments";
+		//		stream << "args_";
 		//	}
 		//	stream << ">";
 		//}

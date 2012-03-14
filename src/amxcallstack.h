@@ -17,6 +17,7 @@
 
 #include <string>
 #include <deque>
+#include <vector>
 
 #include "amx/amx.h"
 #include "amxdebuginfo.h"
@@ -37,6 +38,10 @@ public:
 		{ return funAddr_; }
 	inline std::string GetString() const 
 		{ return string_; }
+	inline AMXDebugInfo::Symbol GetFunction() const
+		{ return fun_; }
+	inline std::vector<AMXDebugInfo::Symbol> GetArguments() const
+		{ return args_; }
 
 private:
 	void Init(AMX *amx, const AMXDebugInfo &debugInfo);
@@ -44,6 +49,9 @@ private:
 	ucell frameAddr_;
 	ucell retAddr_;
 	ucell funAddr_;
+
+	AMXDebugInfo::Symbol fun_;
+	std::vector<AMXDebugInfo::Symbol> args_;
 
 	std::string string_;
 };
