@@ -31,7 +31,7 @@ std::vector<AMXDebugInfo::SymbolDim> AMXDebugInfo::Symbol::GetDims() const {
 	return dims;
 }
 
-cell AMXDebugInfo::Symbol::GetValue(AMX *amx) const {
+cell AMXDebugInfo::Symbol::GetValue(AMX *amx, ucell frm) const {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	unsigned char *data = reinterpret_cast<unsigned char*>(amx->base + hdr->dat);
@@ -48,7 +48,10 @@ cell AMXDebugInfo::Symbol::GetValue(AMX *amx) const {
 			&& address < static_cast<ucell>(hdr->cod)) {
 		return *reinterpret_cast<cell*>(data + address);
 	} else {
-		return *reinterpret_cast<cell*>(data + amx->frm + address);
+		if (frm == 0) {
+			frm = amx->frm;
+		}
+		return *reinterpret_cast<cell*>(data + frm + address);
 	}	
 }
 

@@ -58,7 +58,7 @@ private:
 
 class AMXCallStack {
 public:
-	AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell frame = 0);
+	AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame = 0);
 
 	std::deque<AMXStackFrame> GetFrames() const { return frames_; }
 

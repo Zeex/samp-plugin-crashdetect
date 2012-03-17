@@ -367,7 +367,15 @@ void crashdetect::PrintBacktrace() const {
 				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
 				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
 			} else {
-				frames.push_front(AMXStackFrame(call.amx(), frm, cip, debugInfo));
+				// HACK: Construct a fake frame to indicate current position in code
+				// or the place where a native function has been called from.
+				amx_Push(call.amx(), frm);
+				frames.push_front(AMXStackFrame(call.amx(), call.amx()->stk, cip, debugInfo));
+				call.amx()->stk += sizeof(cell);
+
+				// ANOTHER HACK (OMG!): Since there's no way for AMXCallStack to know entry point 
+				// address without debug info and we surely know it (thanks to npCallStack) we kinda
+				// "edit" the last frame a bit.
 				if (!debugInfo.IsLoaded()) {
 					AMXStackFrame &bottom = frames.back();
 					bottom = AMXStackFrame(call.amx(), 

@@ -209,6 +209,24 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 	return result;
 }
 
+static cell GetArgument(AMX *amx, int index, cell frame) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	unsigned char *data = amx->data;
+	if (data == 0) {
+		data = amx->base + hdr->dat;
+	}
+	return *reinterpret_cast<cell*>(data + frame + (3 + index) * sizeof(cell));
+}
+
+static cell NextFrame(AMX *amx, cell frame) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	unsigned char *data = amx->data;
+	if (data == 0) {
+		data = amx->base + hdr->dat;
+	}
+	return *reinterpret_cast<cell*>(data + frame);
+}
+
 void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 	std::stringstream stream;
 
@@ -268,42 +286,43 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 		std::sort(args_.begin(), args_.end(), CompareArguments);
 
 		// Build a comma-separated list of args_ and their values.
-		for (std::vector<AMXDebugInfo::Symbol>::const_iterator arg = args_.begin();
-				arg != args_.end(); ++arg) {		
-			if (arg != args_.begin()) {
+		for (std::size_t i = 0; i < args_.size(); i++) {
+			AMXDebugInfo::Symbol &arg = args_[i];
+
+			// Argument separator.
+			if (i != 0) {
 				stream << ", ";
 			}
 
-			// For reference parameters, print the '&' sign in front of their tag.
-			if (arg->IsReference()) {
+			// For reference arguments print the "&" sign.
+			if (arg.IsReference()) {
 				stream << "&";
-			}		
-
-			// Get parameter's tag .
-			std::string tag = debugInfo.GetTag(arg->GetTag()).GetName() + ":";
-			if (tag != "_:") {
-				stream << tag;
 			}
 
-			// Get parameter name.
-			stream << arg->GetName();
+			// Print either "tag:name" or just "name" it has no tag.
+			std::string tag = debugInfo.GetTag(arg.GetTag()).GetName() + ":";
+			if (tag == "_:") {
+				stream << arg.GetName();
+			} else {
+				stream << tag << arg.GetName();
+			}
 
-			cell value = arg->GetValue(amx);	
-			if (arg->IsVariable()) {
-				// Value args_
+			// Print argument's value depending on its type and tag.
+			cell value = GetArgument(amx, i, NextFrame(amx, frameAddr_));
+			if (arg.IsVariable()) {
 				if (tag == "bool:") {
+					// Boolean.
 					stream << "=" << value ? "true" : "false";
 				} else if (tag == "Float:") {
+					// Floating-point number.
 					stream << "=" << std::fixed << std::setprecision(5) << amx_ctof(value);
 				} else {
+					// Something other...
 					stream << "=" << value;
 				}
 			} else {
-				// Reference args_.
-				std::vector<AMXDebugInfo::SymbolDim> dims = arg->GetDims();
-
-				// Show array dimensions.
-				if (arg->IsArray() || arg->IsArrayRef()) {
+				std::vector<AMXDebugInfo::SymbolDim> dims = arg.GetDims();
+				if (arg.IsArray() || arg.IsArrayRef()) {
 					for (std::size_t i = 0; i < dims.size(); ++i) {
 						if (dims[i].GetSize() == 0) {
 							stream << "[]";
@@ -315,10 +334,11 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 					}
 				}
 
+				// For arrays/references we print their AMX address.
 				stream << "=@0x" << std::hex << std::setw(8) << std::setfill('0') << value << std::dec;
 
 				// If this is a string argument, get the text.
-				if (arg->IsArray() || arg->IsArrayRef() 
+				if (arg.IsArray() || arg.IsArrayRef() 
 						&& dims.size() == 1
 						&& tag == "_:"
 						&& debugInfo.GetTagName(dims[0].GetTag()) == "_") 
@@ -371,20 +391,20 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 }
 
 AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
-
 	ucell frm = topFrame;
 	if (frm == 0) {
 		frm = amx->frm;
 	}
 
-	while (frm < static_cast<ucell>(amx->stp)) {
-		AMXStackFrame frame(amx, frm, debugInfo);		
+	while (frm < static_cast<ucell>(amx->stp) 
+			&& frm >= static_cast<ucell>(amx->hlw)) 
+	{
+		AMXStackFrame frame(amx, frm, debugInfo);
 		if (frame.GetReturnAddress() == 0) {
 			break;
+		} else {
+			frames_.push_back(frame);
+			frm = NextFrame(amx, frm);
 		}
-		frames_.push_back(frame);
-		frm = *reinterpret_cast<ucell*>(data + frm);
 	} 
 }
