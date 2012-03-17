@@ -22,7 +22,7 @@ Build Requirements
 
 To build crashdetect from source you will need:
 
-*	Boost 1.47+
+*	Boost 1.40+
 
 	http://www.boost.org/users/download/
 
