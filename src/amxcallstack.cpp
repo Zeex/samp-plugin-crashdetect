@@ -265,7 +265,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 	} else {		
 		const char *name = GetPublicFunctionName(amx, funAddr_);
 		if (name != 0) {
-			stream << name;
+			stream << "public " << name;
 		} else {
 			stream << "??"; // unknown function
 		}
