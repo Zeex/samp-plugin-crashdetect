@@ -351,7 +351,7 @@ void crashdetect::PrintBacktrace() const {
 				}				
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
-					logprintf("[debug] #%-2d ???????? in native %s ()%s", level++, name, from.c_str());
+					logprintf("[debug] #%-2d native %s ()%s", level++, name, from.c_str());
 				}
 			}
 		} 
