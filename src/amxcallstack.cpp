@@ -330,21 +330,21 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 			}
 		}	
 
-		//int numArgs = static_cast<int>(args_.size());
-		//int numVarArgs = GetNumArgs(amx, frameAddr_) - numArgs;
+		int numArgs = static_cast<int>(args_.size());
+		int numVarArgs = GetNumArgs(amx, NextFrame(amx, frameAddr_)) - numArgs;
 
-		//if (numVarArgs > 0) {
-		//	if (numArgs != 0) {
-		//		stream << ". ";
-		//	}
-		//	stream << "... <" << numVarArgs << " variable ";
-		//	if (numVarArgs == 1) {
-		//		stream << "argument";
-		//	} else {
-		//		stream << "args_";
-		//	}
-		//	stream << ">";
-		//}
+		if (numVarArgs > 0) {
+			if (numArgs != 0) {
+				stream << ", ";
+			}
+			stream << "... <" << numVarArgs << " variable ";
+			if (numVarArgs == 1) {
+				stream << "argument";
+			} else {
+				stream << "arguments";
+			}
+			stream << ">";
+		}
 	}
 
 	stream << ")";
