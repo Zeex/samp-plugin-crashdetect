@@ -295,6 +295,19 @@ void crashdetect::HandleInterrupt() {
 	PrintBacktrace();
 }
 
+void crashdetect::PushAmxStack(cell value) const {
+	unsigned char *data = amx_->data;
+	if (data == 0) {
+		data = amx_->base + amxhdr_->dat;
+	}
+	amx_->stk -= sizeof(cell);
+	*reinterpret_cast<cell*>(data + amx_->stk) = value;
+}
+
+void crashdetect::PopAmxStack(int ncells) const {
+	amx_->stk += ncells * sizeof(cell);
+}
+
 void crashdetect::PrintBacktrace() const {
 	if (npCalls_.empty()) {
 		return;
@@ -337,18 +350,17 @@ void crashdetect::PrintBacktrace() const {
 			std::deque<AMXStackFrame> frames = callStack.GetFrames();
 
 			if (frames.empty()) {
-				//logprintf("[debug] No frames obtained - stack could be corrupted");
 				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
 				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
 			} else {
 				// HACK: Construct a fake frame to indicate current position in code
 				// or the place where a native function has been called from.				
-				amx_Push(call.amx(), frm);
+				PushAmxStack(frm);
 				AMXStackFrame top(call.amx(), call.amx()->stk, cip, debugInfo);
 				if (top.GetReturnAddress() != 0) {
 					frames.push_front(top);
 				}
-				call.amx()->stk += sizeof(cell);
+				PopAmxStack();
 
 				// ANOTHER HACK (OMG!): Since there's no way for AMXCallStack to know entry point 
 				// address without debug info and we surely know it (thanks to npCallStack) we kinda

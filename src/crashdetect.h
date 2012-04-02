@@ -67,6 +67,9 @@ public:
 private:
 	explicit crashdetect(AMX *amx);
 
+	void PushAmxStack(cell value) const;
+	void PopAmxStack(int ncells = 1) const;
+
 private:
 	// The corresponding AMX instance and its header.
 	AMX         *amx_;
