@@ -352,7 +352,7 @@ void crashdetect::PrintBacktrace() const {
 				if (!debugInfo.IsLoaded()) {
 					AMXStackFrame &bottom = frames.back();
 					bottom = AMXStackFrame(call.amx(), 
-						bottom.GetFramAddress(), 
+						bottom.GetFrameAddress(), 
 						bottom.GetReturnAddress(),
 						amxutils::GetPublicAddress(call.amx(), call.index()),
 						debugInfo);
