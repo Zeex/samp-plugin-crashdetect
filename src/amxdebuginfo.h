@@ -261,4 +261,8 @@ private:
 	boost::shared_ptr<AMX_DBG> amxdbgPtr_;
 };
 
+static inline bool operator<(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {
+	return left.GetAddress() < right.GetAddress();
+}
+
 #endif // !AMXDEBUGINFO_H
