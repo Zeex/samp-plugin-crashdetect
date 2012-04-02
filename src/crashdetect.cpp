@@ -217,39 +217,14 @@ int crashdetect::HandleAmxExec(cell *retval, int index) {
 }
 
 int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
-	npCalls_.push(NativePublicCall(
-		NativePublicCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
+	npCalls_.push(NativePublicCall(NativePublicCall::NATIVE, 
+			amx_, index, amx_->frm, amx_->cip));
 
-	// Reset error
-	amx_->error = AMX_ERR_NONE;
-
-	// Call any previously set callback (amx_Callback by default)
+	// Call any previously set callback (amx_Callback by default).
 	int retcode = prevCallback_(amx_, index, result, params);	
-
-	// Check if the AMX_ERR_NATIVE error is set
-	if (amx_->error == AMX_ERR_NATIVE) {
-		HandleNativeError(index);
-	}
-
-	// Reset error again
-	amx_->error = AMX_ERR_NONE;
 
 	npCalls_.pop();
 	return retcode;
-}
-
-void crashdetect::HandleNativeError(int index) {
-	const char *name = amxutils::GetNativeName(amx_, index);
-	if (name == 0) {
-		name = "<unknown native>";
-	}		
-	if (debugInfo_.IsLoaded()) {
-		logprintf("[debug] Native function %s() failed (AMX_ERR_NATIVE is set)", name);
-	} else {
-		logprintf("[debug] Native function %s() failed (AMX_ERR_NATIVE is set)", name);
-	}
-	PrintBacktrace();
-	ExitOnError();
 }
 
 void crashdetect::HandleRuntimeError(int index, int error) {

@@ -53,7 +53,6 @@ public:
 
 	// Instance-specific event handlers, called by the global ones (see above).
 	void HandleCrash();
-	void HandleNativeError(int index);
 	void HandleRuntimeError(int index, int error);
 	void HandleInterrupt();
 
