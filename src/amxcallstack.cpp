@@ -72,7 +72,7 @@ static inline bool IsMain(AMX *amx, ucell address) {
 	return static_cast<cell>(address) == hdr->cip;
 }
 
-static inline bool IsAddrOnStack(ucell address, AMX *amx) {
+static inline bool IsOnStack(ucell address, AMX *amx) {
 	return (static_cast<cell>(address) >= amx->hlw 
 	     && static_cast<cell>(address) <  amx->stp);
 }
@@ -82,30 +82,41 @@ static inline bool IsInCode(ucell address, AMX *amx) {
 	return static_cast<cell>(address) < hdr->dat - hdr->cod;
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, const AMXDebugInfo &debugInfo)
-	: frameAddr_(frameAddr), retAddr_(0), funAddr_(0)
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo &debugInfo) 
+	: frmAddr_(0), retAddr_(0), funAddr_(0)
 {
-	if (IsAddrOnStack(frameAddr_, amx)) {
+	if (IsOnStack(frmAddr, amx)) {
 		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 		ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
 		ucell code = reinterpret_cast<ucell>(amx->base) + hdr->cod;
 
-		retAddr_ = *(reinterpret_cast<ucell*>(data + frameAddr_) + 1);
-		Init(amx, debugInfo);
+		ucell retAddr = *(reinterpret_cast<ucell*>(data + frmAddr) + 1);
+		if (IsInCode(retAddr, amx)) {
+			Init(amx, frmAddr, retAddr, 0, debugInfo);
+		}
 	}
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, const AMXDebugInfo &debugInfo)
-	: frameAddr_(frameAddr), retAddr_(retAddr), funAddr_(0)
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo &debugInfo) 
+	: frmAddr_(0), retAddr_(0), funAddr_(0)
 {
-	Init(amx, debugInfo);
+	if (IsInCode(retAddr, amx) && 
+	    IsOnStack(frmAddr, amx)) 
+	{
+		Init(amx, frmAddr, retAddr, 0, debugInfo);
+	}
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo)
-	: frameAddr_(frameAddr), retAddr_(retAddr), funAddr_(funAddr)
+AMXStackFrame::AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo) 
+	: frmAddr_(0), retAddr_(0), funAddr_(0)
 {
-	Init(amx, debugInfo);
+	if (IsInCode(retAddr, amx) && 
+	    IsInCode(funAddr, amx) && 
+	    IsOnStack(frmAddr, amx)) 
+	{
+		Init(amx, frmAddr, retAddr, funAddr, debugInfo);
+	}
 }
 
 static inline char ToASCII(char c) {
@@ -200,7 +211,12 @@ static cell NextFrame(AMX *amx, cell frame) {
 	return *reinterpret_cast<cell*>(data + frame);
 }
 
-void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
+void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo) {
+	// Initialize member variables.
+	frmAddr_ = frmAddr;
+	retAddr_ = retAddr;
+	funAddr_ = funAddr;
+
 	std::stringstream stream;
 
 	if (debugInfo.IsLoaded()) {
@@ -281,7 +297,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 			}
 
 			// Print argument's value depending on its type and tag.
-			cell value = GetArgument(amx, i, NextFrame(amx, frameAddr_));
+			cell value = GetArgument(amx, i, NextFrame(amx, frmAddr_));
 			if (arg.IsVariable()) {
 				if (tag == "bool:") {
 					// Boolean.
@@ -331,7 +347,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 		}	
 
 		int numArgs = static_cast<int>(args_.size());
-		int numVarArgs = GetNumArgs(amx, NextFrame(amx, frameAddr_)) - numArgs;
+		int numVarArgs = GetNumArgs(amx, NextFrame(amx, frmAddr_)) - numArgs;
 
 		if (numVarArgs > 0) {
 			if (numArgs != 0) {

@@ -26,12 +26,12 @@ class AMXStackFrame {
 public:
 	static const int kMaxString = 30;
 
-	AMXStackFrame(AMX *amx, ucell frameAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
-	AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
-	AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
+	AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
+	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
+	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
 
 	inline ucell GetFrameAddress() const 
-		{ return frameAddr_; }
+		{ return frmAddr_; }
 	inline ucell GetReturnAddress() const 
 		{ return retAddr_; }
 	inline ucell GetFunctionAddress() const
@@ -44,9 +44,9 @@ public:
 		{ return args_; }
 
 private:
-	void Init(AMX *amx, const AMXDebugInfo &debugInfo);
+	void Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo);
 
-	ucell frameAddr_;
+	ucell frmAddr_;
 	ucell retAddr_;
 	ucell funAddr_;
 
