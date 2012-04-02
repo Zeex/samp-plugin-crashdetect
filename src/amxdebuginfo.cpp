@@ -123,7 +123,10 @@ AMXDebugInfo::File AMXDebugInfo::GetFile(ucell address) const {
 }
 
 static bool IsBuggedForward(const AMX_DBG_SYMBOL *symbol) {
-	return (symbol->name[0] == '@' && symbol->codestart == 0x8);
+	// There seems to be a bug in Pawn compiler 3.2.3664 that adds
+	// forwarded publics to symbol table even if they are not implemented.
+	// Luckily it "works" only for those publics that start with '@'.
+	return (symbol->name[0] == '@');
 }
 
 AMXDebugInfo::Symbol AMXDebugInfo::GetFunction(ucell address) const {
