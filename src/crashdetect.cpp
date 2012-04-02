@@ -337,13 +337,17 @@ void crashdetect::PrintBacktrace() const {
 			std::deque<AMXStackFrame> frames = callStack.GetFrames();
 
 			if (frames.empty()) {
+				//logprintf("[debug] No frames obtained - stack could be corrupted");
 				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
 				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
 			} else {
 				// HACK: Construct a fake frame to indicate current position in code
-				// or the place where a native function has been called from.
+				// or the place where a native function has been called from.				
 				amx_Push(call.amx(), frm);
-				frames.push_front(AMXStackFrame(call.amx(), call.amx()->stk, cip, debugInfo));
+				AMXStackFrame top(call.amx(), call.amx()->stk, cip, debugInfo);
+				if (top.GetReturnAddress() != 0) {
+					frames.push_front(top);
+				}
 				call.amx()->stk += sizeof(cell);
 
 				// ANOTHER HACK (OMG!): Since there's no way for AMXCallStack to know entry point 
