@@ -44,33 +44,6 @@ private:
 	ucell function_;
 };
 
-static inline bool CompareArguments(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {
-	return left.GetAddress() < right.GetAddress();
-}
-
-class AddressBelongsToFunction : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
-public:
-	AddressBelongsToFunction(ucell address) 
-		: address_(address) {}
-	bool operator()(const AMXDebugInfo::Symbol &symbol) const {
-		return symbol.IsFunction() &&
-			address_ >= symbol.GetCodeStartAddress() && address_ <= symbol.GetCodeEndAddress();
-	}
-private:
-	ucell address_;
-};
-
-class IsFunction : public std::unary_function<const AMXDebugInfo::Symbol&, bool> {
-public:
-	IsFunction(ucell address) 
-		: address_(address) {}
-	bool operator()(const AMXDebugInfo::Symbol &symbol) const {
-		return symbol.IsFunction();
-	}
-private:
-	ucell address_;
-};
-
 static inline const char *GetPublicFunctionName(AMX *amx, ucell address) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
@@ -283,7 +256,7 @@ void AMXStackFrame::Init(AMX *amx, const AMXDebugInfo &debugInfo) {
 		);
 
 		// Order them by address.
-		std::sort(args_.begin(), args_.end(), CompareArguments);
+		std::sort(args_.begin(), args_.end());
 
 		// Build a comma-separated list of args_ and their values.
 		for (std::size_t i = 0; i < args_.size(); i++) {
