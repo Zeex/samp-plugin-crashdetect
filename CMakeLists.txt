@@ -80,6 +80,8 @@ set(SOURCES
 	src/plugin.cpp
 	src/plugin.rc
 	src/plugincommon.h
+	src/x86callstack.cpp
+	src/x86callstack.h
 )
 
 if(WIN32)
