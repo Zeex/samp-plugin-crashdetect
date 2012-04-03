@@ -350,7 +350,6 @@ void crashdetect::PrintBacktrace() const {
 			std::deque<AMXStackFrame> frames = callStack.GetFrames();
 
 			if (frames.empty()) {
-				logprintf("[debug] No frames obtained - stack could be corrupted");
 				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
 				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
 			} else {
