@@ -39,6 +39,8 @@
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
 
+#define AMX_EXEC_GDK (-10)
+
 static inline std::string StripDirs(const std::string &filename) {
 #if BOOST_VERSION >= 104600 || BOOST_FILESYSTEM_VERSION == 3
 	return boost::filesystem::path(filename).filename().string();
@@ -48,16 +50,13 @@ static inline std::string StripDirs(const std::string &filename) {
 }
 
 bool crashdetect::errorCaught_ = false;
-std::stack<crashdetect::NativePublicCall> crashdetect::npCalls_;
+std::stack<crashdetect::NPCall> crashdetect::npCalls_;
 ConfigReader crashdetect::serverCfg("server.cfg");
 boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > crashdetect::instances_;
 
 // static
 bool crashdetect::Load(void **ppPluginData) {
-	// Hook amx_Exec to catch execution errors
 	void *amxExecPtr = ((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
-
-	// But first make sure it's not already hooked by someone else
 	void *funAddr = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
 	if (funAddr == 0) {
 		new JumpX86(amxExecPtr, (void*)AmxExec);
@@ -69,10 +68,7 @@ bool crashdetect::Load(void **ppPluginData) {
 		}
 	}
 
-	// Set crash handler
 	os::SetCrashHandler(crashdetect::Crash);
-
-	// Set Ctrl-C signal handler
 	os::SetInterruptHandler(crashdetect::Interrupt);
 
 	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
@@ -160,7 +156,6 @@ crashdetect::crashdetect(AMX *amx)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 {
-	// Try to determine .amx file name.
 	AMXPathFinder pathFinder;
 	pathFinder.AddSearchPath("gamemodes/");
 	pathFinder.AddSearchPath("filterscripts/");
@@ -183,10 +178,8 @@ crashdetect::crashdetect(AMX *amx)
 		}
 	}
 
-	// Disable overriding of SYSREQ.C opcodes by SYSREQ.D
 	amx_->sysreq_d = 0;
 
-	// Remember previously set callback and debug hook
 	prevDebugHook_ = amx_->debug;
 	prevCallback_ = amx_->callback;
 
@@ -202,8 +195,8 @@ int crashdetect::HandleAmxDebug() {
 }
 
 int crashdetect::HandleAmxExec(cell *retval, int index) {
-	npCalls_.push(NativePublicCall(
-		NativePublicCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
+	npCalls_.push(NPCall(
+		NPCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
 
 	int retcode = ::amx_Exec(amx_, retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
@@ -217,12 +210,8 @@ int crashdetect::HandleAmxExec(cell *retval, int index) {
 }
 
 int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
-	npCalls_.push(NativePublicCall(NativePublicCall::NATIVE, 
-			amx_, index, amx_->frm, amx_->cip));
-
-	// Call any previously set callback (amx_Callback by default).
+	npCalls_.push(NPCall(NPCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
 	int retcode = prevCallback_(amx_, index, result, params);	
-
 	npCalls_.pop();
 	return retcode;
 }
@@ -230,7 +219,6 @@ int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
 void crashdetect::HandleRuntimeError(int index, int error) {
 	crashdetect::errorCaught_ = true;
 	if (error == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
-		// Fail silently as this public doesn't really exist
 		error = AMX_ERR_NONE;
 	} else {
 		logprintf("[debug] Run time error %d: \"%s\"", error, aux_StrError(error));
@@ -273,7 +261,6 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				break;
 			}
 		}
-		// Do not print backtrace on certain errors as it has no effect.
 		if (error != AMX_ERR_NOTFOUND &&
 		    error != AMX_ERR_INDEX &&
 		    error != AMX_ERR_CALLBACK &&
@@ -295,7 +282,7 @@ void crashdetect::HandleInterrupt() {
 	PrintBacktrace();
 }
 
-void crashdetect::PushAmxStack(cell value) const {
+void crashdetect::StackPush(cell value) const {
 	unsigned char *data = amx_->data;
 	if (data == 0) {
 		data = amx_->base + amxhdr_->dat;
@@ -304,7 +291,7 @@ void crashdetect::PushAmxStack(cell value) const {
 	*reinterpret_cast<cell*>(data + amx_->stk) = value;
 }
 
-void crashdetect::PopAmxStack(int ncells) const {
+void crashdetect::StackPop(int ncells) const {
 	amx_->stk += ncells * sizeof(cell);
 }
 
@@ -315,21 +302,20 @@ void crashdetect::PrintBacktrace() const {
 
 	logprintf("[debug] Backtrace (most recent call first):");
 
-	std::stack<NativePublicCall> npCallStack = npCalls_;	
+	std::stack<NPCall> npCallStack = npCalls_;	
 	cell frm = amx_->frm;
 	cell cip = amx_->cip;
 	int level = 0;
 
 	while (!npCallStack.empty()) {
-		NativePublicCall call = npCallStack.top();
+		NPCall call = npCallStack.top();
 
 		if (call.amx() != amx_) {
-			// Ignore inter-amx calls e.g. CallRemoteFunction().
 			assert(level != 0);
 			break;
 		}
 
-		if (call.type() == NativePublicCall::NATIVE) {			
+		if (call.type() == NPCall::NATIVE) {			
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address != 0) {				
 				std::string module = StripDirs(os::GetModuleNameBySymbol((void*)address));
@@ -342,8 +328,7 @@ void crashdetect::PrintBacktrace() const {
 					logprintf("[debug] #%-2d native %s ()%s", level++, name, from.c_str());
 				}
 			}
-		} 
-		else if (call.type() == NativePublicCall::PUBLIC) {
+		} else if (call.type() == NPCall::PUBLIC) {
 			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
 
 			AMXCallStack callStack(call.amx(), debugInfo, frm);
@@ -355,14 +340,14 @@ void crashdetect::PrintBacktrace() const {
 			} else {
 				// HACK: Construct a fake frame to indicate current position in code
 				// or the place where a native function has been called from.				
-				PushAmxStack(frm);
+				StackPush(frm);
 				AMXStackFrame top(call.amx(), call.amx()->stk, cip, debugInfo);
 				if (top.GetReturnAddress() != 0) {
 					frames.push_front(top);
 				}
-				PopAmxStack();
+				StackPop(1);
 
-				// ANOTHER HACK (OMG!): Since there's no way for AMXCallStack to know entry point 
+				// ANOTHER HACK: Since there's no way for AMXCallStack to know entry point 
 				// address without debug info and we surely know it (thanks to npCallStack) we kinda
 				// "edit" the last frame a bit.
 				if (!debugInfo.IsLoaded()) {
