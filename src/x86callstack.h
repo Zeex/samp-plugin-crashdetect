@@ -15,11 +15,16 @@
 #ifndef X86CALLSTACK_H
 #define X86CALLSTACK_H
 
-#include <vector>
+#include <deque>
 
 class X86StackFrame {
 public:
 	X86StackFrame(void *frmAddr, void *retAddr_);
+
+	inline void *GetFrameAddress() const 
+		{ return frmAddr_; }
+	inline void *GetReturnAddress() const 
+		{ return retAddr_; }
 
 private:
 	void *frmAddr_;
@@ -30,12 +35,12 @@ class X86CallStack {
 public:
 	X86CallStack();
 
-	inline std::vector<X86StackFrame> GetFrames() const {
+	inline std::deque<X86StackFrame> GetFrames() const {
 		return frames_;
 	}
 
 private:
-	std::vector<X86StackFrame> frames_;
+	std::deque<X86StackFrame> frames_;
 };
 
 #endif // !X86CALLSTACK_H

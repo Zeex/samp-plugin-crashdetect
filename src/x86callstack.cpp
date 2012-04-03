@@ -19,3 +19,34 @@ X86StackFrame::X86StackFrame(void *frmAddr, void *retAddr)
 {
 
 }
+
+static inline void *GetReturnAddress(void *frmAddr) {
+	return *reinterpret_cast<void**>(reinterpret_cast<char*>(frmAddr) + 4);
+}
+
+static inline void *GetNextFrame(void *frmAddr) {
+	return *reinterpret_cast<void**>(frmAddr);
+}
+
+X86CallStack::X86CallStack()
+	: frames_()
+{
+	void *frmAddr;
+	void *retAddr;
+
+	#if defined _MSC_VER
+		__asm mov dword ptr [frmAddr], ebp
+	#elif defined __GNUC__
+		__asm__ __volatile__(
+			"movl %%ebp, %0;" : "=r"(frmAddr) : : );
+	#endif	
+
+	do {
+		retAddr = GetReturnAddress(frmAddr);
+		if (retAddr == 0) {
+			break;
+		}
+		frmAddr = GetNextFrame(frmAddr);
+		frames_.push_back(X86StackFrame(frmAddr, retAddr));
+	} while (true);
+}

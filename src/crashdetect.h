@@ -24,8 +24,6 @@
 #include "amxdebuginfo.h"
 #include "configreader.h"
 
-class AMXStackFrame;
-
 class crashdetect {
 public:	
 	static bool Load(void **ppPluginData);
@@ -53,6 +51,7 @@ public:
 	int HandleAmxExec(cell *retval, int index);
 
 	void PrintBacktrace() const;
+	void PrintThreadBacktrace() const;
 
 private:
 	explicit crashdetect(AMX *amx);

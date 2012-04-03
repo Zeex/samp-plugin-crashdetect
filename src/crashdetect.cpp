@@ -35,6 +35,7 @@
 #include "os.h"
 #include "plugincommon.h"
 #include "version.h"
+#include "x86callstack.h"
 
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
@@ -275,6 +276,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 void crashdetect::HandleCrash() {
 	logprintf("[debug] Server crashed while executing %s", amxName_.c_str());
 	PrintBacktrace();
+	PrintThreadBacktrace();
 }
 
 void crashdetect::HandleInterrupt() {
@@ -300,7 +302,7 @@ void crashdetect::PrintBacktrace() const {
 		return;
 	}
 
-	logprintf("[debug] Backtrace (most recent call first):");
+	logprintf("[debug] Backtrace:");
 
 	std::stack<NPCall> npCallStack = npCalls_;	
 	cell frm = amx_->frm;
@@ -373,5 +375,25 @@ void crashdetect::PrintBacktrace() const {
 			cip = call.cip();
 		}
 		npCallStack.pop();		
+	}
+}
+
+void crashdetect::PrintThreadBacktrace() const {
+	logprintf("[debug] Thread backtrace:");
+
+	int level = 0;
+
+	std::deque<X86StackFrame> frames = X86CallStack().GetFrames();	
+	for (std::deque<X86StackFrame>::const_iterator iterator = frames.begin();
+			iterator != frames.end(); ++iterator) {
+		const X86StackFrame &frame = *iterator;
+
+		std::string module = StripDirs(os::GetModuleNameBySymbol(frame.GetReturnAddress()));
+		std::string from = " from " + module;
+		if (module.empty()) {
+			from.clear();
+		}
+
+		logprintf("[debug] #%-2d %08x in ?? ()%s", level++, frame.GetReturnAddress(), from.c_str());
 	}
 }
