@@ -43,15 +43,26 @@ X86CallStack::X86CallStack()
 	void *frmAddr;
 	void *retAddr;
 
+	void *stackTop = 0;
+	void *stackBot = 0;
+
 	#if defined _MSC_VER
-		__asm mov dword ptr [frmAddr], ebp
+		__asm {
+			mov dword ptr [frmAddr], ebp
+			mov eax, fs:[0x04]
+			mov dword ptr [stackTop], eax
+			mov eax, fs:[0x08]
+			mov dword ptr [stackBot], eax			
+		}
 	#elif defined __GNUC__
 		__asm__ __volatile__(
 			"movl %%ebp, %0;" : "=r"(frmAddr) : : );
 	#endif	
 
 	do {
-		if (frmAddr == 0) {
+		if ((frmAddr == 0)
+			|| (frmAddr >= stackTop && stackTop != 0)
+		    || (frmAddr < stackBot && stackBot != 0)) {
 			break;
 		}
 		retAddr = GetReturnAddress(frmAddr);
