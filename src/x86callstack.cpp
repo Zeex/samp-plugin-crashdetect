@@ -51,6 +51,9 @@ X86CallStack::X86CallStack()
 	#endif	
 
 	do {
+		if (frmAddr == 0) {
+			break;
+		}
 		retAddr = GetReturnAddress(frmAddr);
 		if (retAddr == 0) {
 			break;
