@@ -323,7 +323,7 @@ void crashdetect::PrintBacktrace() const {
 				}				
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
-					logprintf("[debug] #%-2d native %s [%08x] ()%s", level++, name, address, from.c_str());
+					logprintf("[debug] #%-2d native %s ()%s", level++, name, from.c_str());
 				}
 			}
 		} else if (call.type() == NPCall::PUBLIC) {
