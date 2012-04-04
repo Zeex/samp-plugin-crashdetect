@@ -136,6 +136,7 @@ void crashdetect::Crash() {
 		// Server/plugin internal error (in another thread?)
 		logprintf("[debug] Server crashed due to an unknown error");
 	}
+	PrintThreadBacktrace();
 }
 
 // static
@@ -274,7 +275,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 		    error != AMX_ERR_CALLBACK &&
 		    error != AMX_ERR_INIT) 
 		{
-			PrintBacktrace();
+			PrintBacktrace();			
 		}
 		ExitOnError();
 	}
@@ -283,7 +284,6 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 void crashdetect::HandleCrash() {
 	logprintf("[debug] Server crashed while executing %s", amxName_.c_str());
 	PrintBacktrace();
-	PrintThreadBacktrace();
 }
 
 void crashdetect::HandleInterrupt() {
@@ -363,7 +363,8 @@ void crashdetect::PrintBacktrace() const {
 	}
 }
 
-void crashdetect::PrintThreadBacktrace() const {
+// static
+void crashdetect::PrintThreadBacktrace() {
 	logprintf("[debug] Thread backtrace:");
 
 	int level = 0;

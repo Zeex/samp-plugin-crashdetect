@@ -60,7 +60,7 @@ public:
 	int HandleAmxExec(cell *retval, int index);
 
 	void PrintBacktrace() const;
-	void PrintThreadBacktrace() const;
+	static void PrintThreadBacktrace();
 
 private:
 	explicit crashdetect(AMX *amx);
