@@ -148,8 +148,6 @@ void crashdetect::Interrupt() {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleInterrupt();
-	} else {
-		logprintf("[debug] Keyboard interrupt");
 	}
 	ExitOnError();
 }
