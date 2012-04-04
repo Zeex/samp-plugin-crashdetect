@@ -28,17 +28,18 @@
 
 namespace amxutils {
 
-// Returns the name of a native function.
 const char *GetNativeName(AMX *amx, cell index);
-
-// Returns the address of a native function.
 AMX_NATIVE GetNativeAddress(AMX *amx, cell index);
 
-// Returns the address of a public function.
 ucell GetPublicAddress(AMX *amx, cell index);
-
-// Returns the name of a public funtion.
 const char *GetPublicName(AMX *amx, cell index);
+
+unsigned char *GetDataPtr(AMX *amx);
+unsigned char *GetCodePtr(AMX *amx);
+
+void PushStack(AMX *amx, cell value);
+cell PopStack(AMX *amx);
+void PopStack(AMX *amx, int ncells);
 
 } // namespace amxutils
 

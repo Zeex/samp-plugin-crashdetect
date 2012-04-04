@@ -65,4 +65,34 @@ const char *GetPublicName(AMX *amx, cell index) {
 	return 0;
 }
 
+unsigned char *GetDataPtr(AMX *amx) {
+	unsigned char *data = amx->data;
+	if (data == 0) {
+		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+		data = amx->base + hdr->dat;
+	}
+	return data;
+}
+
+unsigned char *GetCodePtr(AMX *amx) {
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+	unsigned char *code = amx->base + hdr->cod;
+	return code;
+}
+
+void PushStack(AMX *amx, cell value) {
+	amx->stk -= sizeof(cell);
+	*reinterpret_cast<cell*>(GetDataPtr(amx) + amx->stk) = value;
+}
+
+cell PopStack(AMX *amx) {
+	cell value = *reinterpret_cast<cell*>(GetDataPtr(amx) + amx->stk);
+	amx->stk += sizeof(cell);
+	return value;
+}
+
+void PopStack(AMX *amx, int ncells) {
+	amx->stk += sizeof(cell) * ncells;
+}
+
 } // namespace amxutils

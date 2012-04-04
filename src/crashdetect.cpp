@@ -293,19 +293,6 @@ void crashdetect::HandleInterrupt() {
 	PrintBacktrace();
 }
 
-void crashdetect::StackPush(cell value) const {
-	unsigned char *data = amx_->data;
-	if (data == 0) {
-		data = amx_->base + amxhdr_->dat;
-	}
-	amx_->stk -= sizeof(cell);
-	*reinterpret_cast<cell*>(data + amx_->stk) = value;
-}
-
-void crashdetect::StackPop(int ncells) const {
-	amx_->stk += ncells * sizeof(cell);
-}
-
 void crashdetect::PrintBacktrace() const {
 	if (npCalls_.empty()) {
 		return;
@@ -342,34 +329,25 @@ void crashdetect::PrintBacktrace() const {
 		} else if (call.type() == NPCall::PUBLIC) {
 			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
 
+			amxutils::PushStack(call.amx(), cip); // push return address
+			amxutils::PushStack(call.amx(), frm); // push frame pointer
+			frm = call.amx()->stk;
+
 			AMXCallStack callStack(call.amx(), debugInfo, frm);
 			std::deque<AMXStackFrame> frames = callStack.GetFrames();
 
-			if (frames.empty()) {
-				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
-				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
-			} else {
-				// HACK: Construct a fake frame to indicate current position in code
-				// or the place where a native function has been called from.				
-				StackPush(frm);
-				AMXStackFrame top(call.amx(), call.amx()->stk, cip, debugInfo);
-				if (top.GetReturnAddress() != 0) {
-					frames.push_front(top);
-				}
-				StackPop(1);
+			frm = amxutils::PopStack(call.amx()); // pop frame pointer
+			cip = amxutils::PopStack(call.amx()); // pop return address
 
-				// ANOTHER HACK: Since there's no way for AMXCallStack to know entry point 
-				// address without debug info and we surely know it (thanks to npCallStack) we kinda
-				// "edit" the last frame a bit.
-				if (!debugInfo.IsLoaded()) {
-					AMXStackFrame &bottom = frames.back();
-					bottom = AMXStackFrame(call.amx(), 
-						bottom.GetFrameAddress(), 
-						bottom.GetReturnAddress(),
-						amxutils::GetPublicAddress(call.amx(), call.index()),
-						debugInfo);
-				}
-			}			
+			if (!debugInfo.IsLoaded()) {
+				// Edit address of entry point.
+				AMXStackFrame &bottom = frames.back();
+				bottom = AMXStackFrame(call.amx(), 
+					bottom.GetFrameAddress(), 
+					bottom.GetReturnAddress(),
+					amxutils::GetPublicAddress(call.amx(), call.index()),
+					debugInfo);
+			}
 
 			std::string &amxName = instances_[call.amx()]->amxName_;
 			for (size_t i = 0; i < frames.size(); i++) {

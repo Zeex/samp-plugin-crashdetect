@@ -65,9 +65,6 @@ public:
 private:
 	explicit crashdetect(AMX *amx);
 
-	void StackPush(cell value) const;
-	void StackPop(int ncells) const;
-
 	AMX         *amx_;
 	AMX_HEADER  *amxhdr_;
 
