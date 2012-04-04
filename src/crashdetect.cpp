@@ -397,7 +397,7 @@ void crashdetect::PrintThreadBacktrace() const {
 			iterator != frames.end(); ++iterator) {
 		const X86StackFrame &frame = *iterator;
 
-		std::string module = StripDirs(os::GetModuleNameBySymbol(frame.GetReturnAddress()));
+		std::string module = os::GetModuleNameBySymbol(frame.GetReturnAddress());
 		std::string from = " from " + module;
 		if (module.empty()) {
 			from.clear();
