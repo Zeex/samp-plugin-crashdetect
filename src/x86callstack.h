@@ -28,7 +28,7 @@
 
 class X86StackFrame {
 public:
-	X86StackFrame(void *frmAddr, void *retAddr_);
+	X86StackFrame(void *frmAddr, void *retAddr);
 
 	inline void *GetFrameAddress() const 
 		{ return frmAddr_; }
