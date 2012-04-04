@@ -77,7 +77,8 @@ objects = src/amx/amx.c.o \
           src/crashdetect.cpp.o \
           src/jump-x86.cpp.o \
 	  src/logprintf.cpp.o \
-          src/plugin.cpp.o
+          src/plugin.cpp.o \
+          src/x86callstack.cpp.o
 
 ifeq ($(os),windows)
 objects += src/os-win32.cpp.o
@@ -154,6 +155,9 @@ src/plugin.rc.o: src/plugin.rc src/version.h
 src/version.h:
 	echo "Generating $@..."
 	sh ./version.h.sh > $@
+
+src/x86callstack.cpp.o: src/x86callstack.cpp src/x86callstack.h
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -vf $(objects) $(binary)
