@@ -380,6 +380,6 @@ void crashdetect::PrintThreadBacktrace() {
 			from.clear();
 		}
 
-		logprintf("[debug] #%-2d %08x in ?? ()%s", level++, frame.GetReturnAddress(), from.c_str());
+		logprintf("[debug] #%-2d %s%s", level++, frame.GetString().c_str(), from.c_str());
 	}
 }

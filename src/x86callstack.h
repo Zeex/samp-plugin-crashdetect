@@ -25,19 +25,24 @@
 #define X86CALLSTACK_H
 
 #include <deque>
+#include <string>
 
 class X86StackFrame {
 public:
-	X86StackFrame(void *frmAddr, void *retAddr);
+	X86StackFrame(void *frmAddr, void *retAddr, const std::string &name = std::string());
 
 	inline void *GetFrameAddress() const 
 		{ return frmAddr_; }
 	inline void *GetReturnAddress() const 
 		{ return retAddr_; }
+	inline std::string GetFunctionName() const
+		{ return name_; }
+	std::string GetString() const;
 
 private:
 	void *frmAddr_;
 	void *retAddr_;
+	std::string name_;
 };
 
 class X86CallStack {
