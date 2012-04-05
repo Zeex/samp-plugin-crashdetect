@@ -337,14 +337,18 @@ void crashdetect::PrintBacktrace() const {
 			frm = amxutils::PopStack(call.amx()); // pop frame pointer
 			cip = amxutils::PopStack(call.amx()); // pop return address
 
-			if (!debugInfo.IsLoaded()) {
-				// Edit address of entry point.
-				AMXStackFrame &bottom = frames.back();
-				bottom = AMXStackFrame(call.amx(), 
-					bottom.GetFrameAddress(), 
-					bottom.GetReturnAddress(),
-					amxutils::GetPublicAddress(call.amx(), call.index()),
-					debugInfo);
+			if (frames.empty()) {
+				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
+				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
+			} else {
+				if (!debugInfo.IsLoaded()) {
+					AMXStackFrame &bottom = frames.back();
+					bottom = AMXStackFrame(call.amx(), 
+						bottom.GetFrameAddress(), 
+						bottom.GetReturnAddress(),
+						amxutils::GetPublicAddress(call.amx(), call.index()),
+						debugInfo);
+				}
 			}
 
 			std::string &amxName = instances_[call.amx()]->amxName_;
