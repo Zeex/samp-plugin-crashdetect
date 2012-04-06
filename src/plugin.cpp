@@ -55,15 +55,19 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 
-	void *amxExecPtr = ((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
-	void *funAddr = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
+	void **exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
+	void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
+
+	// Make sure amx_Exec() is not hooked by someone else, e.g. sampgdk or profiler.
+	// In that case we can break an existing hook chain.
+	void *funAddr = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
 	if (funAddr == 0) {
-		new JumpX86(amxExecPtr, (void*)AmxExec);
+		new JumpX86(amx_Exec_ptr, (void*)AmxExec);
 	} else {
 		std::string module = fileutils::GetFileName(os::GetModulePath(funAddr));
 		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
-			logprintf("  crashdetect must be loaded before %s", module.c_str());
-			return false;
+			logprintf("  Warning: Runtime error detection will not work during this run because ");
+			logprintf("           %s has been loaded before crashdetect.", module.c_str());
 		}
 	}
 
