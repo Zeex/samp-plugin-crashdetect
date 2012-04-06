@@ -30,6 +30,10 @@
 #include <Windows.h>
 #include <DbgHelp.h>
 
+#if defined __GNUC__
+	#include <cxxabi.h>
+#endif
+
 #undef GetModulePath
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
@@ -149,6 +153,15 @@ std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 		dbgHelpDll.SymInitialize(process, NULL, TRUE);
 		dbgHelpDll.SymFromAddr(process, reinterpret_cast<DWORD64>(address), NULL, symbol);
 		name.assign(symbol->Name);
+
+		#if defined __GNUC__
+			if (!name.empty()) {
+				char *demangled_name = abi::__cxa_demangle(("_" + name).c_str(), 0, 0, 0);
+				if (demangled_name != 0) {
+					name.assign(demangled_name);
+				}
+			}
+		#endif
 
 		std::free(symbol);
 	}
