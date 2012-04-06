@@ -25,11 +25,13 @@
 #define OS_H
 
 #include <cstddef>
+#include <cstdio>
 #include <string>
 
 namespace os {
 
-const std::size_t kMaxModulePathLength = 256;
+const std::size_t kMaxModulePathLength = FILENAME_MAX;
+const std::size_t kMaxSymbolNameLength = 256;
 
 // GetModuleNameByAddress finds which module (executable/DLL) a given 
 // address belongs to.
@@ -42,6 +44,9 @@ void SetCrashHandler(void (*handler)());
 // SetInterruptHandler sets a global Ctrl+C event handler on Windows
 // and SIGINT signal handler on Linux.
 void SetInterruptHandler(void (*handler)());
+
+// GetSymbolName finds symbol name by address.
+std::string GetSymbolName(void *address, std::size_t maxLength = kMaxSymbolNameLength);
 
 } // namespace os
 

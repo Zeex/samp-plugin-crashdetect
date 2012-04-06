@@ -27,6 +27,7 @@
 #include <string>
 
 #include <Windows.h>
+#include <DbgHelp.h>
 
 #undef GetModulePath
 
@@ -84,4 +85,21 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 void os::SetInterruptHandler(void (*handler)()) {
 	::interruptHandler = handler;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
+}
+
+std::string os::GetSymbolName(void *address, std::size_t maxLength) {
+	SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
+			std::calloc(sizeof(*symbol) + maxLength, 1));
+
+	symbol->SizeOfStruct = sizeof(*symbol);
+	symbol->MaxNameLen = maxLength;
+
+	HANDLE process = GetCurrentProcess();
+
+	SymInitialize(process, NULL, TRUE);
+	SymFromAddr(process, reinterpret_cast<DWORD64>(address), NULL, symbol);
+	std::string name = symbol->Name;
+
+	std::free(symbol);
+	return name;
 }

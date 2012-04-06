@@ -25,7 +25,12 @@
 
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <string>
+
+#include <cxxabi.h>
+#include <execinfo.h>
 
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE 1 // for dladdr()
@@ -83,4 +88,27 @@ static void HandleSIGINT(int sig) {
 void os::SetInterruptHandler(void (*handler)()) {
 	::interruptHandler = handler;
 	::previousSIGINTHandler = signal(SIGINT, HandleSIGINT);
+}
+
+std::string os::GetSymbolName(void *address, std::size_t maxLength) {
+	char **symbols = backtrace_symbols(&address, 1);
+	std::string symbol(symbols[0]);
+	std::free(symbols);
+
+	std::string::size_type lp = symbol.find('(');
+	std::string::size_type rp = symbol.find_first_of(")+-");
+
+	std::string name;
+	if (lp != std::string::npos && rp != std::string::npos) {
+		name.assign(symbol.begin() + lp + 1, symbol.begin() + rp);
+	}
+
+	if (!name.empty()) {
+		char *demangled_name = abi::__cxa_demangle(name.c_str(), 0, 0, 0);
+		if (demangled_name != 0) {
+			name.assign(demangled_name);
+		}
+	}	
+
+	return name;
 }
