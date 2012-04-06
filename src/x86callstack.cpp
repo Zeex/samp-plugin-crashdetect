@@ -21,22 +21,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "os.h"
-#include "x86callstack.h"
-
-#ifdef WIN32
-	#include <Windows.h>
-	#include <DbgHelp.h>
-#else
-	#include <cxxabi.h>
-	#include <execinfo.h>	
-#endif
-
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#include "os.h"
+#include "x86callstack.h"
 
 static const int kMaxSymbolNameLength = 256;
 
@@ -50,7 +42,7 @@ std::string X86StackFrame::GetString() const {
 
 	stream << std::hex << std::setw(8) << std::setfill('0') << retAddr_;
 	if (!name_.empty()) {
-	       stream << " in " << name_ << " ()";
+		stream << " in " << name_ << " ()";
 	} else {
 		stream << " in ?? ()";
 	}
