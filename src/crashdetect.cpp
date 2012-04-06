@@ -95,8 +95,10 @@ void crashdetect::Interrupt() {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleInterrupt();
-	}
-	ExitOnError();
+	} else {
+		logprintf("[debug] Server recieved interrupt signal");
+	}	
+	PrintThreadBacktrace(3);
 }
 
 // static
@@ -213,7 +215,7 @@ void crashdetect::HandleCrash() {
 }
 
 void crashdetect::HandleInterrupt() {
-	logprintf("[debug] Keyboard interrupt");
+	logprintf("[debug]: Server recieved interrupt signal while executing %s", amxName_.c_str());
 	PrintAmxBacktrace();
 }
 
