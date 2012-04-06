@@ -38,12 +38,12 @@
 #include "amxpathfinder.h"
 #include "amxutils.h"
 #include "crashdetect.h"
+#include "crashdetect_version.h"
 #include "configreader.h"
 #include "jump-x86.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
-#include "version.h"
 #include "x86callstack.h"
 
 #include "amx/amx.h"

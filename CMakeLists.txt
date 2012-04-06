@@ -143,14 +143,11 @@ if(version STREQUAL "")
 	string(STRIP ${version} version)
 endif()
 
-# Comma-separated version for RC
 string(REGEX REPLACE "[.-]" "," version_rc ${version})
-# Append one or two ",0" to the end to make windres happy
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
-# Generate version.h to be included from source files
-file(WRITE "src/version.h" 
+file(WRITE "src/crashdetect_version.h" 
 "/* This file is auto-generated, do not edit */
 #define CRASHDETECT_VERSION \"${version}\"
 #define CRASHDETECT_VERSION_RC ${version_rc}

@@ -1,5 +1,5 @@
 build
-src/version.h
+src/crashdetect_version.h
 
 _CPack_Packages
 CMakeFiles
