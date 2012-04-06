@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -32,7 +32,7 @@
 
 static const int kMaxSymbolNameLength = 256;
 
-X86StackFrame::X86StackFrame(void *frmAddr, void *retAddr, const std::string &name) 
+X86StackFrame::X86StackFrame(void *frmAddr, void *retAddr, const std::string &name)
 	: frmAddr_(frmAddr), retAddr_(retAddr), name_(name)
 {
 }
@@ -46,7 +46,7 @@ std::string X86StackFrame::GetString() const {
 	} else {
 		stream << " in ?? ()";
 	}
-	
+
 	return stream.str();
 }
 
@@ -73,12 +73,18 @@ X86CallStack::X86CallStack()
 			mov eax, fs:[0x04]
 			mov dword ptr [stackTop], eax
 			mov eax, fs:[0x08]
-			mov dword ptr [stackBot], eax			
+			mov dword ptr [stackBot], eax
 		}
 	#elif defined __GNUC__
 		__asm__ __volatile__(
 			"movl %%ebp, %0;" : "=r"(frmAddr) : : );
-	#endif	
+		#if defined WIN32
+			__asm__ __volatile__(
+				"movl %%fs:(0x04), %0;"
+				"movl %%fs:(0x08), %1;"
+				: "=r"(stackTop), "=r"(stackBot) : : );
+		#endif
+	#endif
 
 	do {
 		if ((frmAddr == 0)
