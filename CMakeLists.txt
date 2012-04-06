@@ -130,7 +130,6 @@ find_package(Git)
 if(GIT_FOUND)
 	# Get latest version tag from Git history
 	git_describe(description --match v[0-9]*.[0-9]**)
-	string(REGEX REPLACE "^.*\\-" "" commit ${description})
 	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
 	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
 endif()
@@ -145,10 +144,6 @@ endif()
 string(REGEX REPLACE "[.-]" "," version_rc ${version})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
-
-if(version MATCHES ".*\\-[0-9]*")
-	set(version "${version}-${commit}_unstable")
-endif()
 
 file(WRITE "src/crashdetect_version.h" 
 "/* This file is auto-generated, do not edit */
