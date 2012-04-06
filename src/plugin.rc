@@ -17,7 +17,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 			VALUE "FileVersion",      CRASHDETECT_VERSION
 			VALUE "ProductVersion",   CRASHDETECT_VERSION
 			VALUE "InternalName",     "crashdetect"
-			VALUE "LegalCopyright",   "Copyright (C) 2011 Zeex"
+			VALUE "LegalCopyright",   "Copyright (C) 2011-2012 Zeex"
 			VALUE "OriginalFilename", "crashdetect.dll"
 			VALUE "ProductName",      "SA-MP crashdetect plugin"
 		}
