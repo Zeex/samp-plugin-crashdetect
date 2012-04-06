@@ -21,6 +21,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include "os.h"
 #include "x86callstack.h"
 
 #ifdef WIN32
@@ -68,51 +69,36 @@ static inline void *GetNextFrame(void *frmAddr) {
 X86CallStack::X86CallStack()
 	: frames_()
 {
-	#ifdef WIN32
-		PVOID trace[62];
-		WORD nframes = CaptureStackBackTrace(0, 62, trace, NULL);
+	void *frmAddr;
+	void *retAddr;
 
-		SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
-				std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
+	void *stackTop = 0;
+	void *stackBot = 0;
 
-		symbol->SizeOfStruct = sizeof(*symbol);
-		symbol->MaxNameLen = kMaxSymbolNameLength;
-
-		SymInitialize(GetCurrentProcess(), NULL, TRUE);
-
-		for (WORD i = 1; i < nframes; i++) {
-			SymFromAddr(GetCurrentProcess(), reinterpret_cast<DWORD64>(trace[i]), NULL, symbol);
-			frames_.push_back(X86StackFrame(0, trace[i], symbol->Name));
+	#if defined _MSC_VER
+		__asm {
+			mov dword ptr [frmAddr], ebp
+			mov eax, fs:[0x04]
+			mov dword ptr [stackTop], eax
+			mov eax, fs:[0x08]
+			mov dword ptr [stackBot], eax			
 		}
+	#elif defined __GNUC__
+		__asm__ __volatile__(
+			"movl %%ebp, %0;" : "=r"(frmAddr) : : );
+	#endif	
 
-		std::free(symbol);
-	#else
-		void *trace[100];
-
-		std::size_t size = backtrace(trace, 100);
-		char **strings = backtrace_symbols(trace, size);
-
-		for (std::size_t i = 1; i < size; i++) {
-			std::string string(strings[i]);
-
-			std::string::size_type lp = string.find('(');
-			std::string::size_type rp = string.find_first_of(")+-");
-
-			std::string name;
-			if (lp != std::string::npos && rp != std::string::npos) {
-				name.assign(string.begin() + lp + 1, string.begin() + rp);
-			}
-
-			if (!name.empty()) {
-				char *demangled_name = abi::__cxa_demangle(name.c_str(), 0, 0, 0);
-				if (demangled_name != 0) {
-					name.assign(demangled_name);
-				}
-			}
-
-			frames_.push_back(X86StackFrame(0, trace[i], name));
+	do {
+		if ((frmAddr == 0)
+			|| (frmAddr >= stackTop && stackTop != 0)
+		    || (frmAddr < stackBot && stackBot != 0)) {
+			break;
 		}
-
-		std::free(strings);
-	#endif
+		retAddr = GetReturnAddress(frmAddr);
+		if (retAddr == 0) {
+			break;
+		}
+		frmAddr = GetNextFrame(frmAddr);
+		frames_.push_back(X86StackFrame(frmAddr, retAddr, os::GetSymbolName(retAddr)));
+	} while (true);
 }
