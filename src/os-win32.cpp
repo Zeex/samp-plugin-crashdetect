@@ -23,18 +23,21 @@
 
 #include "os.h"
 
+#include <cstddef>
+#include <string>
+
 #include <Windows.h>
 
-std::string os::GetModuleNameBySymbol(void *symbol) {
-	char module[FILENAME_MAX] = "";
+#undef GetModulePath
 
-	if (symbol != 0) {
+std::string os::GetModulePath(void *address, std::size_t maxLength) {
+	std::string name(maxLength, '\0');
+	if (address != 0) {
 		MEMORY_BASIC_INFORMATION mbi;
-		VirtualQuery(symbol, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, module, FILENAME_MAX);
-	}
-	
-	return std::string(module);
+		VirtualQuery(address, &mbi, sizeof(mbi));
+		GetModuleFileName((HMODULE)mbi.AllocationBase, const_cast<char*>(name.data()), maxLength);
+	}	
+	return name;
 }
 
 // The crash handler - it is set via SetCrashHandler()

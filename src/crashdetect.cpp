@@ -71,7 +71,7 @@ bool crashdetect::Load(void **ppPluginData) {
 	if (funAddr == 0) {
 		new JumpX86(amxExecPtr, (void*)AmxExec);
 	} else {
-		std::string module = StripDirs(os::GetModuleNameBySymbol(funAddr));
+		std::string module = StripDirs(os::GetModulePath(funAddr));
 		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
 			logprintf("  crashdetect must be loaded before %s", module.c_str());
 			return false;
@@ -314,7 +314,7 @@ void crashdetect::PrintBacktrace() const {
 		if (call.type() == NPCall::NATIVE) {			
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address != 0) {				
-				std::string module = StripDirs(os::GetModuleNameBySymbol((void*)address));
+				std::string module = StripDirs(os::GetModulePath((void*)address));
 				std::string from = " from " + module;
 				if (module.empty()) {
 					from.clear();
@@ -378,7 +378,7 @@ void crashdetect::PrintThreadBacktrace() {
 			iterator != frames.end(); ++iterator) {
 		const X86StackFrame &frame = *iterator;
 
-		std::string module = os::GetModuleNameBySymbol(frame.GetReturnAddress());
+		std::string module = os::GetModulePath(frame.GetReturnAddress());
 		std::string from = " from " + module;
 		if (module.empty()) {
 			from.clear();

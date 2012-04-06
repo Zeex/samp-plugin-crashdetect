@@ -24,18 +24,23 @@
 #ifndef OS_H
 #define OS_H
 
+#include <cstddef>
 #include <string>
 
-// OS abstractions
 namespace os {
 
-// Finds which module (DLL/shared library/executable) a given symbol belongs to.
-std::string GetModuleNameBySymbol(void *symbol);
+const std::size_t kMaxModulePathLength = 256;
 
-// Sets server crash handler.
+// GetModuleNameByAddress finds which module (executable/DLL) a given 
+// address belongs to.
+std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
+
+// SetCrashHandle sets a global exception handler on Windows and SIGSEGV
+// signal handler on Linux.
 void SetCrashHandler(void (*handler)());
 
-// Sets SIGINT/Ctrl-C handler.
+// SetInterruptHandler sets a global Ctrl+C event handler on Windows
+// and SIGINT signal handler on Linux.
 void SetInterruptHandler(void (*handler)());
 
 } // namespace os

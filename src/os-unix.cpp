@@ -32,16 +32,14 @@
 #endif
 #include <dlfcn.h> 
 
-std::string os::GetModuleNameBySymbol(void *symbol) {
-	char module[FILENAME_MAX] = "";
-
-	if (symbol != 0) {
+std::string os::GetModulePath(void *address, std::size_t maxLength) {
+	std::string name(maxLength, '\0');
+	if (address != 0) {
 		Dl_info info;
-		dladdr(symbol, &info);
-		strcpy(module, info.dli_fname);
-	}
-	
-	return std::string(module);
+		dladdr(address, &info);
+		strncpy(const_cast<char*>(name.data()), info.dli_fname, maxLength);
+	}	
+	return name;
 }
 
 // The crash handler - it is set via SetCrashHandler()
