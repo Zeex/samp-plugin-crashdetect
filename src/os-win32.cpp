@@ -37,13 +37,13 @@
 #undef GetModulePath
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
-	std::string name(maxLength, '\0');
+	char *name = reinterpret_cast<char*>(std::calloc(maxLength + 1, 1));
 	if (address != 0) {
 		MEMORY_BASIC_INFORMATION mbi;
 		VirtualQuery(address, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, const_cast<char*>(name.data()), maxLength);
+		GetModuleFileName((HMODULE)mbi.AllocationBase, name, maxLength);
 	}
-	return name;
+	return std::string(name);
 }
 
 // The crash handler - it is set via SetCrashHandler()

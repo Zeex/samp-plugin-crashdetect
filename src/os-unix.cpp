@@ -38,13 +38,13 @@
 #include <dlfcn.h> 
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
-	std::string name(maxLength, '\0');
+	char *name = reinterpret_cast<char*>(std::calloc(maxLength + 1, 1));
 	if (address != 0) {
 		Dl_info info;
 		dladdr(address, &info);
-		strncpy(const_cast<char*>(name.data()), info.dli_fname, maxLength);
+		strncpy(name, info.dli_fname, maxLength);
 	}	
-	return name;
+	return std::string(name);
 }
 
 // The crash handler - it is set via SetCrashHandler()
