@@ -88,19 +88,70 @@ void os::SetInterruptHandler(void (*handler)()) {
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }
 
+class DbgHelp {
+public:
+	DbgHelp();
+	~DbgHelp();
+
+	BOOL SymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess) const;
+	BOOL SymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const;
+
+	inline bool OK() const {
+		return module_ != 0;
+	}
+	inline operator bool() const {
+		return OK();
+	}
+
+private:
+	typedef BOOL (WINAPI *SymInitializeType)(HANDLE, PCSTR, BOOL);
+	SymInitializeType SymInitialize_;
+
+	typedef BOOL (WINAPI *SymFromAddrType)(HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
+	SymFromAddrType SymFromAddr_;
+
+	HMODULE module_;
+};
+
+DbgHelp::DbgHelp()
+	: module_(LoadLibrary("dbghelp.dll"))
+{
+	SymInitialize_ = (SymInitializeType)GetProcAddress(module_, "SymInitialize");
+	SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
+}
+
+DbgHelp::~DbgHelp() {
+	if (module_ != NULL) {
+		FreeLibrary(module_);
+	}
+}
+
+BOOL DbgHelp::SymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess) const {
+	return SymInitialize_(hProcess, UserSearchPath, fInvadeProcess);
+}
+
+BOOL DbgHelp::SymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
+	return SymFromAddr_(hProcess, Address, Displacement, Symbol);
+}
+
 std::string os::GetSymbolName(void *address, std::size_t maxLength) {
-	SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
-			std::calloc(sizeof(*symbol) + maxLength, 1));
+	std::string name;
 
-	symbol->SizeOfStruct = sizeof(*symbol);
-	symbol->MaxNameLen = maxLength;
+	DbgHelp dbgHelpDll;
+	if (dbgHelpDll) {
+		SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
+				std::calloc(sizeof(*symbol) + maxLength, 1));
+		symbol->SizeOfStruct = sizeof(*symbol);
+		symbol->MaxNameLen = maxLength;
 
-	HANDLE process = GetCurrentProcess();
+		HANDLE process = GetCurrentProcess();
 
-	SymInitialize(process, NULL, TRUE);
-	SymFromAddr(process, reinterpret_cast<DWORD64>(address), NULL, symbol);
-	std::string name = symbol->Name;
+		dbgHelpDll.SymInitialize(process, NULL, TRUE);
+		dbgHelpDll.SymFromAddr(process, reinterpret_cast<DWORD64>(address), NULL, symbol);
+		name.assign(symbol->Name);
 
-	std::free(symbol);
+		std::free(symbol);
+	}
+
 	return name;
 }

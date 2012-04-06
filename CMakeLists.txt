@@ -119,8 +119,6 @@ if(WIN32)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
 	endif()
-	set_property(TARGET crashdetect APPEND_STRING PROPERTY 
-		LINK_FLAGS " DbgHelp.lib")
 endif()
 
 target_link_Libraries(crashdetect ${Boost_LIBRARIES})
