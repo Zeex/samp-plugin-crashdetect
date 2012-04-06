@@ -47,7 +47,7 @@ private:
 
 class X86CallStack {
 public:
-	X86CallStack();
+	X86CallStack(int framesToSkip = 0);
 
 	inline std::deque<X86StackFrame> GetFrames() const {
 		return frames_;

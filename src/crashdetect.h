@@ -51,7 +51,7 @@ public:
 	void HandleInterrupt();
 
 	static void PrintAmxBacktrace();
-	static void PrintThreadBacktrace();
+	static void PrintThreadBacktrace(int framesToSkip = 0);
 
 private:
 	explicit crashdetect(AMX *amx);

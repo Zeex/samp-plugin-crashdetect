@@ -82,7 +82,7 @@ void crashdetect::Crash() {
 		// Server/plugin internal error (in another thread?)
 		logprintf("[debug] Server crashed due to an unknown error");
 	}
-	PrintThreadBacktrace();
+	PrintThreadBacktrace(4);
 }
 
 // static
@@ -295,12 +295,12 @@ void crashdetect::PrintAmxBacktrace() {
 }
 
 // static
-void crashdetect::PrintThreadBacktrace() {
+void crashdetect::PrintThreadBacktrace(int framesToSkip) {
 	logprintf("[debug] Thread backtrace:");
 
 	int level = 0;
 
-	std::deque<X86StackFrame> frames = X86CallStack().GetFrames();	
+	std::deque<X86StackFrame> frames = X86CallStack(framesToSkip).GetFrames();	
 	for (std::deque<X86StackFrame>::const_iterator iterator = frames.begin();
 			iterator != frames.end(); ++iterator) {
 		const X86StackFrame &frame = *iterator;

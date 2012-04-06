@@ -58,7 +58,7 @@ static inline void *GetNextFrame(void *frmAddr) {
 	return *reinterpret_cast<void**>(frmAddr);
 }
 
-X86CallStack::X86CallStack()
+X86CallStack::X86CallStack(int framesToSkip)
 	: frames_()
 {
 	void *frmAddr;
@@ -66,6 +66,8 @@ X86CallStack::X86CallStack()
 
 	void *stackTop = 0;
 	void *stackBot = 0;
+
+	int frameCount = 0;
 
 	#if defined _MSC_VER
 		__asm {
@@ -97,6 +99,9 @@ X86CallStack::X86CallStack()
 			break;
 		}
 		frmAddr = GetNextFrame(frmAddr);
+		if (++frameCount <= framesToSkip) {
+			continue;
+		}
 		frames_.push_back(X86StackFrame(frmAddr, retAddr, os::GetSymbolName(retAddr)));
 	} while (true);
 }
