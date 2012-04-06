@@ -22,9 +22,31 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "crashdetect.h"
+#include "crashdetect_version.h"
+#include "fileutils.h"
+#include "jump-x86.h"
 #include "logprintf.h"
+#include "os.h"
 #include "plugincommon.h"
 #include "amx/amx.h"
+
+#include <boost/filesystem.hpp>
+#include <boost/shared_ptr.hpp>
+
+extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
+	if (error != AMX_ERR_NONE) {
+		crashdetect::RuntimeError(amx, index, error);		
+	}
+	return AMX_ERR_NONE;
+}
+
+static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
+	return crashdetect::GetInstance(amx)->HandleAmxCallback(index, result, params);
+}
+
+static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
+	return crashdetect::GetInstance(amx)->HandleAmxExec(retval, index);
+}
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
@@ -32,13 +54,34 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
-	return crashdetect::Load(ppData);
+
+	void *amxExecPtr = ((void**)ppData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
+	void *funAddr = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
+	if (funAddr == 0) {
+		new JumpX86(amxExecPtr, (void*)AmxExec);
+	} else {
+		std::string module = fileutils::GetFileName(os::GetModulePath(funAddr));
+		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
+			logprintf("  crashdetect must be loaded before %s", module.c_str());
+			return false;
+		}
+	}
+
+	os::SetCrashHandler(crashdetect::Crash);
+	os::SetInterruptHandler(crashdetect::Interrupt);
+
+	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
+
+	return true;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	return crashdetect::AmxLoad(amx);
+	(void)crashdetect::GetInstance(amx); // force instance creation
+	amx_SetCallback(amx, AmxCallback);
+	return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	return crashdetect::AmxUnload(amx);
+	crashdetect::DestroyInstance(amx);	
+	return AMX_ERR_NONE;
 }

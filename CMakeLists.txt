@@ -63,7 +63,6 @@ set(SOURCES
 	src/amxcallstack.h
 	src/amxdebuginfo.cpp
 	src/amxdebuginfo.h
-	src/amxerror.cpp
 	src/amxpathfinder.cpp
 	src/amxpathfinder.h
 	src/amxutils.cpp
@@ -72,6 +71,7 @@ set(SOURCES
 	src/configreader.h
 	src/crashdetect.cpp
 	src/crashdetect.h
+	src/fileutils.h
 	src/jump-x86.cpp
 	src/jump-x86.h
 	src/logprintf.cpp

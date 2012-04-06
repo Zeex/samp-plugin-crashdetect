@@ -37,10 +37,9 @@
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
 #include "amxutils.h"
-#include "crashdetect.h"
-#include "crashdetect_version.h"
 #include "configreader.h"
-#include "jump-x86.h"
+#include "crashdetect.h"
+#include "fileutils.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
@@ -51,79 +50,26 @@
 
 #define AMX_EXEC_GDK (-10)
 
-static inline std::string StripDirs(const std::string &filename) {
-#if BOOST_VERSION >= 104600 || BOOST_FILESYSTEM_VERSION == 3
-	return boost::filesystem::path(filename).filename().string();
-#else
-	return boost::filesystem::path(filename).filename();
-#endif
-}
-
 bool crashdetect::errorCaught_ = false;
 std::stack<crashdetect::NPCall> crashdetect::npCalls_;
 ConfigReader crashdetect::serverCfg("server.cfg");
 boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > crashdetect::instances_;
 
 // static
-bool crashdetect::Load(void **ppPluginData) {
-	void *amxExecPtr = ((void**)ppPluginData[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Exec];
-	void *funAddr = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amxExecPtr));
-	if (funAddr == 0) {
-		new JumpX86(amxExecPtr, (void*)AmxExec);
-	} else {
-		std::string module = StripDirs(os::GetModulePath(funAddr));
-		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
-			logprintf("  crashdetect must be loaded before %s", module.c_str());
-			return false;
-		}
-	}
-
-	os::SetCrashHandler(crashdetect::Crash);
-	os::SetInterruptHandler(crashdetect::Interrupt);
-
-	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
-	return true;
-}
-
-// static
-int crashdetect::AmxLoad(AMX *amx) {
-	if (instances_.find(amx) == instances_.end()) {
-		instances_[amx].reset(new crashdetect(amx));
-	}
-	return AMX_ERR_NONE;
-}
-
-// static
-int crashdetect::AmxUnload(AMX *amx) {
-	instances_.erase(amx);
-	return AMX_ERR_NONE;
-}
-
-// static
-crashdetect *crashdetect::GetInstance(AMX *amx) {
+boost::shared_ptr<crashdetect> crashdetect::GetInstance(AMX *amx) {
 	boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> >::iterator 
 			iterator = instances_.find(amx);
 	if (iterator == instances_.end()) {
-		crashdetect *inst = new crashdetect(amx);
-		instances_.insert(std::make_pair(amx, boost::shared_ptr<crashdetect>(inst)));
+		boost::shared_ptr<crashdetect> inst(new crashdetect(amx));
+		instances_.insert(std::make_pair(amx, inst));
 		return inst;
 	} 
-	return iterator->second.get();
+	return iterator->second;
 }
 
 // static
-int AMXAPI crashdetect::AmxDebug(AMX *amx) {
-	return GetInstance(amx)->HandleAmxDebug();
-}
-
-// static
-int AMXAPI crashdetect::AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return GetInstance(amx)->HandleAmxCallback(index, result, params);
-}
-
-// static
-int AMXAPI crashdetect::AmxExec(AMX *amx, cell *retval, int index) {
-	return GetInstance(amx)->HandleAmxExec(retval, index);
+void crashdetect::DestroyInstance(AMX *amx) {
+	instances_.erase(amx);
 }
 
 // static
@@ -169,15 +115,8 @@ crashdetect::crashdetect(AMX *amx)
 	pathFinder.AddSearchPath("gamemodes/");
 	pathFinder.AddSearchPath("filterscripts/");
 
-	boost::filesystem::path path;
-	if (pathFinder.FindAMX(amx, path)) {
-		amxPath_ = path.string();
-#if BOOST_VERSION >= 104600 || BOOST_FILESYSTEM_VERSION == 3
-		amxName_ = path.filename().string();
-#else
-		amxName_ = path.filename();
-#endif
-	}
+	amxPath_ = pathFinder.FindAMX(amx);
+	amxName_ = fileutils::GetFileName(amxPath_);
 
 	if (!amxPath_.empty()) {
 		uint16_t flags;
@@ -188,24 +127,11 @@ crashdetect::crashdetect(AMX *amx)
 	}
 
 	amx_->sysreq_d = 0;
-
-	prevDebugHook_ = amx_->debug;
-	prevCallback_ = amx_->callback;
-
-	amx_SetDebugHook(amx, AmxDebug);
-	amx_SetCallback(amx, AmxCallback);
-}
-
-int crashdetect::HandleAmxDebug() {
-	if (prevDebugHook_ != 0) {
-		return prevDebugHook_(amx_);
-	}
-	return AMX_ERR_NONE;
+	prevCallback_ = amx_->callback;	
 }
 
 int crashdetect::HandleAmxExec(cell *retval, int index) {
-	npCalls_.push(NPCall(
-		NPCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
+	npCalls_.push(NPCall(NPCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
 
 	int retcode = ::amx_Exec(amx_, retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
@@ -315,7 +241,7 @@ void crashdetect::PrintAmxBacktrace() {
 		if (call.type() == NPCall::NATIVE) {			
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address != 0) {				
-				std::string module = StripDirs(os::GetModulePath((void*)address));
+				std::string module = fileutils::GetFileName(os::GetModulePath((void*)address));
 				std::string from = " from " + module;
 				if (module.empty()) {
 					from.clear();

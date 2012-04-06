@@ -35,29 +35,20 @@
 
 class crashdetect {
 public:	
-	static bool Load(void **ppPluginData);
-	static void Unload();
-	static int AmxLoad(AMX *amx);
-	static int AmxUnload(AMX *amx);
-
-	static crashdetect *GetInstance(AMX *amx);
-
-	static int AMXAPI AmxDebug(AMX *amx);
-	static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params);
-	static int AMXAPI AmxExec(AMX *amx, cell *retval, int index);
+	static boost::shared_ptr<crashdetect> GetInstance(AMX *amx);
+	static void DestroyInstance(AMX *amx);
 
 	static void Crash();
 	static void RuntimeError(AMX *amx, cell index, int error);
 	static void Interrupt();
 	static void ExitOnError();	
 
+	int HandleAmxCallback(cell index, cell *result, cell *params);
+	int HandleAmxExec(cell *retval, int index);
+
 	void HandleCrash();
 	void HandleRuntimeError(int index, int error);
 	void HandleInterrupt();
-
-	int HandleAmxDebug();
-	int HandleAmxCallback(cell index, cell *result, cell *params);
-	int HandleAmxExec(cell *retval, int index);
 
 	static void PrintAmxBacktrace();
 	static void PrintThreadBacktrace();
@@ -74,7 +65,6 @@ private:
 	std::string amxName_;
 
 	AMX_CALLBACK prevCallback_;
-	AMX_DEBUG    prevDebugHook_;
 
 	class NPCall {
 	public:
