@@ -275,7 +275,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 		    error != AMX_ERR_CALLBACK &&
 		    error != AMX_ERR_INIT) 
 		{
-			PrintBacktrace();			
+			PrintAmxBacktrace();			
 		}
 		ExitOnError();
 	}
@@ -283,30 +283,31 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 
 void crashdetect::HandleCrash() {
 	logprintf("[debug] Server crashed while executing %s", amxName_.c_str());
-	PrintBacktrace();
+	PrintAmxBacktrace();
 }
 
 void crashdetect::HandleInterrupt() {
 	logprintf("[debug] Keyboard interrupt");
-	PrintBacktrace();
+	PrintAmxBacktrace();
 }
 
-void crashdetect::PrintBacktrace() const {
+// static
+void crashdetect::PrintAmxBacktrace() {
 	if (npCalls_.empty()) {
 		return;
 	}
 
 	logprintf("[debug] Backtrace:");
 
-	std::stack<NPCall> npCallStack = npCalls_;	
-	cell frm = amx_->frm;
-	cell cip = amx_->cip;
+	std::stack<NPCall> npCallStack = npCalls_;
+	cell frm = npCallStack.top().amx()->frm;
+	cell cip = npCallStack.top().amx()->cip;
 	int level = 0;
 
 	while (!npCallStack.empty()) {
 		NPCall call = npCallStack.top();
 
-		if (call.amx() != amx_) {
+		if (call.amx() != npCallStack.top().amx()) {
 			assert(level != 0);
 			break;
 		}

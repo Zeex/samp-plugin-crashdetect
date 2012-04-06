@@ -59,7 +59,7 @@ public:
 	int HandleAmxCallback(cell index, cell *result, cell *params);
 	int HandleAmxExec(cell *retval, int index);
 
-	void PrintBacktrace() const;
+	static void PrintAmxBacktrace();
 	static void PrintThreadBacktrace();
 
 private:
