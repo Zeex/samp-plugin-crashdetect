@@ -57,8 +57,8 @@ std::string GetSymbolName(void *address, std::size_t maxLength = kMaxSymbolNameL
 // or no more files exist.
 void ListDirectoryFiles(const std::string &directory,
                         const std::string &pattern,
-					    bool (*callback)(const char *filename, void *userData),
-						void *userData);
+                        bool (*callback)(const char *filename, void *userData),
+                        void *userData);
 
 } // namespace os
 

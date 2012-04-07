@@ -123,8 +123,7 @@ void os::ListDirectoryFiles(const std::string &directory, const std::string &pat
 	if ((dp = opendir(directory.c_str())) != 0) {
 		struct dirent *dirp;
 		while ((dirp = readdir(dp)) != 0) {
-			if (!fnmatch(pattern.c_str(), dirp->d_name,
-							FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
+			if (!fnmatch(pattern.c_str(), dirp->d_name, FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
 				callback(dirp->d_name, userData);
 			}
 		}
