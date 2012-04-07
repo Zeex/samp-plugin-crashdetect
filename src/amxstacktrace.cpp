@@ -32,7 +32,7 @@
 #include <utility>
 #include <vector>
 
-#include "amxcallstack.h"
+#include "amxstacktrace.h"
 #include "amxdebuginfo.h"
 
 #include "amx/amx.h"
@@ -388,7 +388,7 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 	string_ = stream.str();
 }
 
-AMXCallStack::AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame) {
+AMXStackTrace::AMXStackTrace(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame) {
 	ucell frm = topFrame;
 	if (frm == 0) {
 		frm = amx->frm;

@@ -33,9 +33,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
-#include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
+#include "amxstacktrace.h"
 #include "amxutils.h"
 #include "configreader.h"
 #include "crashdetect.h"
@@ -43,7 +43,7 @@
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
-#include "x86callstack.h"
+#include "x86stacktrace.h"
 
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
@@ -260,8 +260,8 @@ void crashdetect::PrintAmxBacktrace() {
 			amxutils::PushStack(call.amx(), frm); // push frame pointer
 			frm = call.amx()->stk;
 
-			AMXCallStack callStack(call.amx(), debugInfo, frm);
-			std::deque<AMXStackFrame> frames = callStack.GetFrames();
+			AMXStackTrace trace(call.amx(), debugInfo, frm);
+			std::deque<AMXStackFrame> frames = trace.GetFrames();
 
 			frm = amxutils::PopStack(call.amx()); // pop frame pointer
 			cip = amxutils::PopStack(call.amx()); // pop return address
@@ -302,7 +302,7 @@ void crashdetect::PrintThreadBacktrace(int framesToSkip) {
 
 	int level = 0;
 
-	std::deque<X86StackFrame> frames = X86CallStack(framesToSkip).GetFrames();	
+	std::deque<X86StackFrame> frames = X86StackTrace(framesToSkip).GetFrames();	
 	for (std::deque<X86StackFrame>::const_iterator iterator = frames.begin();
 			iterator != frames.end(); ++iterator) {
 		const X86StackFrame &frame = *iterator;

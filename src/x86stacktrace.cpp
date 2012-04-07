@@ -28,7 +28,7 @@
 #include <string>
 
 #include "os.h"
-#include "x86callstack.h"
+#include "x86stacktrace.h"
 
 static const int kMaxSymbolNameLength = 256;
 
@@ -58,7 +58,7 @@ static inline void *GetNextFrame(void *frmAddr) {
 	return *reinterpret_cast<void**>(frmAddr);
 }
 
-X86CallStack::X86CallStack(int framesToSkip)
+X86StackTrace::X86StackTrace(int framesToSkip)
 	: frames_()
 {
 	void *frmAddr;

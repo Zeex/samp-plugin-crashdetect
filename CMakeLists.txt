@@ -59,12 +59,12 @@ set(SOURCES
 	src/amx/getch.h
 	src/amx/osdefs.h
 	src/amx/sclinux.h
-	src/amxcallstack.cpp
-	src/amxcallstack.h
 	src/amxdebuginfo.cpp
 	src/amxdebuginfo.h
 	src/amxpathfinder.cpp
 	src/amxpathfinder.h
+	src/amxstacktrace.cpp
+	src/amxstacktrace.h
 	src/amxutils.cpp
 	src/amxutils.h
 	src/configreader.cpp
@@ -80,8 +80,8 @@ set(SOURCES
 	src/plugin.cpp
 	src/plugin.rc
 	src/plugincommon.h
-	src/x86callstack.cpp
-	src/x86callstack.h
+	src/x86stacktrace.cpp
+	src/x86stacktrace.h
 )
 
 if(WIN32)

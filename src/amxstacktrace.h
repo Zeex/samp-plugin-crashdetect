@@ -21,7 +21,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 #ifndef AMXCALLSTACK_H
 #define AMXCALLSTACK_H
 
@@ -66,9 +65,9 @@ private:
 	std::string string_;
 };
 
-class AMXCallStack {
+class AMXStackTrace {
 public:
-	AMXCallStack(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame = 0);
+	AMXStackTrace(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame = 0);
 
 	std::deque<AMXStackFrame> GetFrames() const { return frames_; }
 

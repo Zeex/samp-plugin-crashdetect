@@ -45,9 +45,9 @@ private:
 	std::string name_;
 };
 
-class X86CallStack {
+class X86StackTrace {
 public:
-	X86CallStack(int framesToSkip = 0);
+	X86StackTrace(int framesToSkip = 0);
 
 	inline std::deque<X86StackFrame> GetFrames() const {
 		return frames_;
