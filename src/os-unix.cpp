@@ -119,6 +119,7 @@ std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 
 void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
 		bool (*callback)(const char *, void *), void *userData) 
+{
 	DIR *dp;
 	if ((dp = opendir(directory.c_str())) != 0) {
 		struct dirent *dirp;
