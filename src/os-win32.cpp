@@ -35,6 +35,8 @@
 	#include <cxxabi.h>
 #endif
 
+const char os::kDirSepChar = '\\';
+
 #undef GetModulePath
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {

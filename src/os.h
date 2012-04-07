@@ -30,6 +30,10 @@
 
 namespace os {
 
+// Platform-dependent directory separation character. It is usually defined as
+// a back slash ('\\') on Windows and a forth slash ('/') on *nix OSes.
+extern const char kDirSepChar;
+
 const std::size_t kMaxModulePathLength = FILENAME_MAX;
 const std::size_t kMaxSymbolNameLength = 256;
 

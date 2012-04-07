@@ -39,6 +39,8 @@
 #endif
 #include <dlfcn.h> 
 
+const char os::kDirSepChar = '/';
+
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	char *name = reinterpret_cast<char*>(std::calloc(maxLength + 1, 1));
 	if (address != 0) {

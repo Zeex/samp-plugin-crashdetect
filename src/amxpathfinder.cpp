@@ -29,6 +29,7 @@
 
 #include "amxpathfinder.h"
 #include "fileutils.h"
+#include "os.h"
 
 #include "amx/amx.h"
 #include "amx/amxaux.h"
@@ -84,7 +85,7 @@ std::string AMXPathFinder::FindAMX(AMX *amx) {
 		for (std::vector<std::string>::iterator fileIter = files.begin(); 
 				fileIter != files.end(); ++fileIter) 
 		{
-			std::string filename = *dirIter + "/" + *fileIter;
+			std::string filename = *dirIter + os::kDirSepChar + *fileIter;
 			std::time_t last_write = fileutils::GetModificationTime(filename);
 
 			StringToAMXFileMap::iterator script_it = stringToAMXFile_.find(filename);				
