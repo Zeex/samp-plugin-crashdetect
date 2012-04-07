@@ -24,18 +24,17 @@
 #ifndef CRASHDETECT_H
 #define CRASHDETECT_H
 
+#include <memory>
 #include <stack>
 #include <string>
-
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 #include "amxdebuginfo.h"
 #include "configreader.h"
 
 class crashdetect {
 public:	
-	static boost::shared_ptr<crashdetect> GetInstance(AMX *amx);
+	static std::shared_ptr<crashdetect> GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
 	static void Crash();
@@ -90,7 +89,9 @@ private:
 	static std::stack<NPCall> npCalls_;
 	static bool errorCaught_;
 	static ConfigReader serverCfg;
-	static boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > instances_;
+
+	typedef std::unordered_map<AMX*, std::shared_ptr<crashdetect>> InstanceMap;
+	static InstanceMap instances_;
 };
 
 #endif // !CRASHDETECT_H

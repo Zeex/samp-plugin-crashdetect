@@ -26,10 +26,9 @@
 
 #include <cassert>
 #include <iterator>
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "amx/amx.h"
 #include "amx/amxdbg.h"
@@ -267,7 +266,7 @@ private:
 	static bool HasDebugInfo(AMX *amx);
 	static void FreeAmxDbg(AMX_DBG *amxdbg);
 
-	boost::shared_ptr<AMX_DBG> amxdbgPtr_;
+	std::shared_ptr<AMX_DBG> amxdbgPtr_;
 };
 
 static inline bool operator<(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {

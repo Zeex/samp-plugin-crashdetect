@@ -21,92 +21,96 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstdlib>
 #include <cstring>
 #include <iterator>
-
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include <list>
+#include <vector>
 
 #include "amxpathfinder.h"
+#include "fileutils.h"
 
 #include "amx/amx.h"
 #include "amx/amxaux.h"
 
 AMXPathFinder::AMXFile::AMXFile(const std::string &name)
 	: name_(name)
-	, last_write_(boost::filesystem::last_write_time(name))
-	, amxPtr_(new AMX, FreeAmx)
+	, mtime_(fileutils::GetModificationTime(name))
+	, amx_(reinterpret_cast<AMX*>(std::malloc(sizeof(*amx_))))
 {
-	if (aux_LoadProgram(amxPtr_.get(), name.c_str(), 0) != AMX_ERR_NONE) {
-		amxPtr_.reset();
-	}	
+	if (amx_ != 0) {
+		if (aux_LoadProgram(amx_, name.c_str(), 0) != AMX_ERR_NONE) {
+			std::free(amx_);
+		}
+	}
 }
 
-void AMXPathFinder::AMXFile::FreeAmx(AMX *amx) {
-	aux_FreeProgram(amx);
-	delete amx;
+AMXPathFinder::AMXFile::~AMXFile() {
+	if (amx_ != 0) {
+		aux_FreeProgram(amx_);
+		std::free(amx_);
+	}
 }
 
-void AMXPathFinder::AddSearchPath(boost::filesystem::path path) {
+AMXPathFinder::~AMXPathFinder() {
+	for (StringToAMXFileMap::const_iterator mapIter = stringToAMXFile_.begin(); 
+			mapIter != stringToAMXFile_.end(); ++mapIter) 
+	{
+		delete mapIter->second;
+	}
+}
+
+void AMXPathFinder::AddSearchPath(const std::string &path) {
 	searchPaths_.push_back(path);
 }
 
-bool AMXPathFinder::FindAMX(AMX *amx, boost::filesystem::path &result) {
+std::string AMXPathFinder::FindAMX(AMX *amx) {
 	// Look up in cache first 
-	std::map<AMX*, std::string>::const_iterator it = foundNames_.find(amx);
-	if (it != foundNames_.end()) {
-		result = it->second;
-		return true;
+	AMXToStringMap::const_iterator it = amxToString_.find(amx);
+	if (it != amxToString_.end()) {
+		return it->second;
 	} 
 
-	// Get and load all .amx files in each of the current search paths (non-recursive)
-	for (std::list<boost::filesystem::path>::const_iterator dir = searchPaths_.begin(); 
-			dir != searchPaths_.end(); ++dir) {
-		if (!boost::filesystem::exists(*dir) || !boost::filesystem::is_directory(*dir)) {
-			continue;
-		}
-		for (boost::filesystem::directory_iterator file(*dir); 
-				file != boost::filesystem::directory_iterator(); ++file) {
-			if (!boost::filesystem::is_regular_file(file->path()) ||
-					!boost::algorithm::ends_with(file->path().string(), ".amx")) {
-				continue;
-			}
+	std::string result;
 
-			std::string filename = file->path().relative_path().string();
-			std::time_t last_write = boost::filesystem::last_write_time(filename);
+	// Load all .amx files in each of the current search paths (non-recursively)
+	for (std::list<std::string>::const_iterator dirIter = searchPaths_.begin(); 
+			dirIter != searchPaths_.end(); ++dirIter) 
+	{
+		std::vector<std::string> files;
+		fileutils::GetDirectoryFiles(*dirIter, "*.amx", files);
 
-			std::map<std::string, AMXFile>::iterator script_it = loadedScripts_.find(filename);				
+		for (std::vector<std::string>::iterator fileIter = files.begin(); 
+				fileIter != files.end(); ++fileIter) 
+		{
+			std::string filename = *fileIter;
+			std::time_t last_write = fileutils::GetModificationTime(filename);
 
-			if (script_it == loadedScripts_.end() || 
-					script_it->second.GetLastWriteTime() < last_write) {
-				if (script_it != loadedScripts_.end()) {
-					loadedScripts_.erase(script_it);
+			StringToAMXFileMap::iterator script_it = stringToAMXFile_.find(filename);				
+
+			if (script_it == stringToAMXFile_.end() || 
+					script_it->second->GetModificationTime() < last_write) {
+				if (script_it != stringToAMXFile_.end()) {
+					stringToAMXFile_.erase(script_it);
 				}
-				AMXFile script(filename);
-				if (script.IsLoaded()) {
-					loadedScripts_.insert(std::make_pair(filename, script));
+				AMXFile *script = new AMXFile(filename);
+				if (script != 0 && script->IsLoaded()) {
+					stringToAMXFile_.insert(std::make_pair(filename, script));
 				}
 			}
 		}
 	}	
 
-	for (std::map<std::string, AMXFile>::const_iterator iterator = loadedScripts_.begin(); 
-			iterator != loadedScripts_.end(); ++iterator) 
+	for (StringToAMXFileMap::const_iterator mapIter = stringToAMXFile_.begin(); 
+			mapIter != stringToAMXFile_.end(); ++mapIter) 
 	{
-		const AMX *otherAmx = iterator->second.GetAmx();
-		// Compare the two headers
+		const AMX *otherAmx = mapIter->second->GetAmx();
 		if (std::memcmp(amx->base, otherAmx->base, sizeof(AMX_HEADER)) == 0) {
-			result = boost::filesystem::path(iterator->first);
-			foundNames_.insert(std::make_pair(amx, result.string()));
-			return true;
+			result = mapIter->first;
+			amxToString_.insert(std::make_pair(amx, result));
+			break;
 		}
 	}
 
-	return false;
-}
-
-std::string AMXPathFinder::FindAMX(AMX *amx) {
-	boost::filesystem::path path;
-	FindAMX(amx, path);
-	return path.string();
+	return result;
 }

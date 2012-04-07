@@ -30,9 +30,6 @@
 #include "plugincommon.h"
 #include "amx/amx.h"
 
-#include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
-
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
 		crashdetect::RuntimeError(amx, index, error);		

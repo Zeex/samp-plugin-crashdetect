@@ -24,17 +24,21 @@
 #ifndef FILEUTILS_H
 #define FILEUTILS_H
 
-#include <boost/filesystem.hpp>
+#include <string>
+#include <vector>
+
+#include <ctime>
 
 namespace fileutils {
 
-static inline std::string GetFileName(const std::string &path) {
-#if BOOST_VERSION >= 104600 || BOOST_FILESYSTEM_VERSION == 3
-	return boost::filesystem::path(path).filename().string();
-#else
-	return boost::filesystem::path(path).filename();
-#endif
-}
+std::string GetFileName(const std::string &path);
+std::string GetExtenstion(const std::string &path);
+
+std::time_t GetModificationTime(const std::string &path);
+
+void GetDirectoryFiles(const std::string &directory,
+                       const std::string &pattern,
+                       std::vector<std::string> &files);
 
 } // namespace fileutils
 

@@ -25,14 +25,8 @@ if(HAVE_STDINT_H)
 	add_definitions(-DHAVE_STDINT_H)
 endif()
 
-find_package(Boost 1.40 REQUIRED COMPONENTS filesystem system)
-
 include_directories(src)
 include_directories(src/amx) 
-include_directories(${Boost_INCLUDE_DIRS})
-
-# Disable Boost auto-link feature 
-add_definitions(-DBOOST_ALL_NO_LIB)
 
 # AMX definitions
 add_definitions(
@@ -71,6 +65,7 @@ set(SOURCES
 	src/configreader.h
 	src/crashdetect.cpp
 	src/crashdetect.h
+	src/fileutils.cpp
 	src/fileutils.h
 	src/jump-x86.cpp
 	src/jump-x86.h
@@ -121,7 +116,6 @@ if(WIN32)
 	endif()
 endif()
 
-target_link_Libraries(crashdetect ${Boost_LIBRARIES})
 if(CMAKE_COMPILER_IS_GNUCXX)
 	target_link_Libraries(crashdetect -ldl)
 endif()

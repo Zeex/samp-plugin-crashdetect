@@ -26,12 +26,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <stack>
 #include <string>
 #include <vector>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
+#include <unordered_map>
 
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
@@ -53,16 +52,15 @@
 bool crashdetect::errorCaught_ = false;
 std::stack<crashdetect::NPCall> crashdetect::npCalls_;
 ConfigReader crashdetect::serverCfg("server.cfg");
-boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> > crashdetect::instances_;
+crashdetect::InstanceMap crashdetect::instances_;
 
 // static
-boost::shared_ptr<crashdetect> crashdetect::GetInstance(AMX *amx) {
-	boost::unordered_map<AMX*, boost::shared_ptr<crashdetect> >::iterator 
-			iterator = instances_.find(amx);
+std::shared_ptr<crashdetect> crashdetect::GetInstance(AMX *amx) {
+	InstanceMap::const_iterator iterator = instances_.find(amx);
 	if (iterator == instances_.end()) {
-		boost::shared_ptr<crashdetect> inst(new crashdetect(amx));
-		instances_.insert(std::make_pair(amx, inst));
-		return inst;
+		std::shared_ptr<crashdetect> instance(new crashdetect(amx));
+		instances_.insert(std::make_pair(amx, instance));
+		return instance;
 	} 
 	return iterator->second;
 }
