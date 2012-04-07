@@ -21,6 +21,8 @@
  *  Version: $Id: amx.h 3363 2005-07-23 09:03:29Z thiadmer $
  */
 
+#include <stddef.h>
+
 #if defined FREEBSD && !defined __FreeBSD__
   #define __FreeBSD__
 #endif

@@ -27,7 +27,7 @@
 #ifndef AMXDBG_H_INCLUDED
 #define AMXDBG_H_INCLUDED
 
-#include <stdio.h> // was missing stdio.h
+#include <stdio.h>
 
 #ifndef AMX_H_INCLUDED
   #include "amx.h"

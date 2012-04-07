@@ -37,7 +37,7 @@ AMXPathFinder::AMXFile::AMXFile(const std::string &name)
 	, last_write_(boost::filesystem::last_write_time(name))
 	, amxPtr_(new AMX, FreeAmx)
 {
-	if (aux_LoadProgram(amxPtr_.get(), const_cast<char*>(name.c_str()), 0) != AMX_ERR_NONE) {
+	if (aux_LoadProgram(amxPtr_.get(), name.c_str(), 0) != AMX_ERR_NONE) {
 		amxPtr_.reset();
 	}	
 }

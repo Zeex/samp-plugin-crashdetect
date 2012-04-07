@@ -1,20 +1,24 @@
 /*  Support routines for the Pawn Abstract Machine
  *
- *  Copyright (c) ITB CompuPhase, 2003-2009
+ *  Copyright (c) ITB CompuPhase, 2003-2005
  *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
- *  use this file except in compliance with the License. You may obtain a copy
- *  of the License at
+ *  This software is provided "as-is", without any express or implied warranty.
+ *  In no event will the authors be held liable for any damages arising from
+ *  the use of this software.
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
+ *  1.  The origin of this software must not be misrepresented; you must not
+ *      claim that you wrote the original software. If you use this software in
+ *      a product, an acknowledgment in the product documentation would be
+ *      appreciated but is not required.
+ *  2.  Altered source versions must be plainly marked as such, and must not be
+ *      misrepresented as being the original software.
+ *  3.  This notice may not be removed or altered from any source distribution.
  *
- *  Version: $Id: amxaux.c 4125 2009-06-15 16:51:06Z thiadmer $
+ *  Version: $Id: amxaux.c 3363 2005-07-23 09:03:29Z thiadmer $
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +26,7 @@
 #include "amx.h"
 #include "amxaux.h"
 
-size_t AMXAPI aux_ProgramSize(char *filename)
+size_t AMXAPI aux_ProgramSize(const char *filename)
 {
   FILE *fp;
   AMX_HEADER hdr;
@@ -37,7 +41,7 @@ size_t AMXAPI aux_ProgramSize(char *filename)
   return (hdr.magic==AMX_MAGIC) ? (size_t)hdr.stp : 0;
 }
 
-int AMXAPI aux_LoadProgram(AMX *amx, char *filename, void *memblock)
+int AMXAPI aux_LoadProgram(AMX *amx, const char *filename, void *memblock)
 {
   FILE *fp;
   AMX_HEADER hdr;
@@ -48,6 +52,7 @@ int AMXAPI aux_LoadProgram(AMX *amx, char *filename, void *memblock)
     return AMX_ERR_NOTFOUND;
   fread(&hdr, sizeof hdr, 1, fp);
   amx_Align16(&hdr.magic);
+  amx_Align16((uint16_t *)&hdr.flags);
   amx_Align32((uint32_t *)&hdr.size);
   amx_Align32((uint32_t *)&hdr.stp);
   if (hdr.magic != AMX_MAGIC) {
@@ -110,7 +115,7 @@ static char *messages[] = {
       /* AMX_ERR_NATIVE    */ "Native function failed",
       /* AMX_ERR_DIVIDE    */ "Divide by zero",
       /* AMX_ERR_SLEEP     */ "(sleep mode)",
-      /* AMX_ERR_INVSTATE  */ "Invalid state",
+      /* 13 */                "(reserved)",
       /* 14 */                "(reserved)",
       /* 15 */                "(reserved)",
       /* AMX_ERR_MEMORY    */ "Out of memory",
@@ -125,7 +130,6 @@ static char *messages[] = {
       /* AMX_ERR_PARAMS    */ "Parameter error",
       /* AMX_ERR_DOMAIN    */ "Domain error, expression result does not fit in range",
       /* AMX_ERR_GENERAL   */ "General error (unknown or unspecific error)",
-      /* AMX_ERR_OVERLAY   */ "Overlays are unsupported (JIT) or uninitialized",
     };
   if (errnum < 0 || errnum >= sizeof messages / sizeof messages[0])
     return "(unknown)";
