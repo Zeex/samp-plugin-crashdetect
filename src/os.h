@@ -48,6 +48,14 @@ void SetInterruptHandler(void (*handler)());
 // GetSymbolName finds symbol name by address.
 std::string GetSymbolName(void *address, std::size_t maxLength = kMaxSymbolNameLength);
 
+// ListDirectoryFiles enumerates directory files whose name matches a specific pattern
+// and calls a given function (callback) for each of them until the callback returns false
+// or no more files exist.
+void ListDirectoryFiles(const std::string &directory,
+                        const std::string &pattern,
+					    bool (*callback)(const char *filename, void *userData),
+						void *userData);
+
 } // namespace os
 
 #endif // !OS_H

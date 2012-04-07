@@ -41,6 +41,7 @@ AMXPathFinder::AMXFile::AMXFile(const std::string &name)
 	if (amx_ != 0) {
 		if (aux_LoadProgram(amx_, name.c_str(), 0) != AMX_ERR_NONE) {
 			std::free(amx_);
+			amx_ = 0;
 		}
 	}
 }
@@ -83,7 +84,7 @@ std::string AMXPathFinder::FindAMX(AMX *amx) {
 		for (std::vector<std::string>::iterator fileIter = files.begin(); 
 				fileIter != files.end(); ++fileIter) 
 		{
-			std::string filename = *fileIter;
+			std::string filename = *dirIter + "/" + *fileIter;
 			std::time_t last_write = fileutils::GetModificationTime(filename);
 
 			StringToAMXFileMap::iterator script_it = stringToAMXFile_.find(filename);				

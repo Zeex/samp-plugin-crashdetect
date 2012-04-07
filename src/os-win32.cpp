@@ -29,6 +29,7 @@
 
 #include <Windows.h>
 #include <DbgHelp.h>
+#include <sys/types.h>
 
 #if defined __GNUC__
 	#include <cxxabi.h>
@@ -167,4 +168,19 @@ std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 	}
 
 	return name;
+}
+
+void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
+		bool (*callback)(const char *, void *), void *userData) 
+{
+	WIN32_FIND_DATA findFileData;
+	HANDLE hFindFile = FindFirstFile((directory + "\\" + pattern).c_str(), &findFileData);
+	if (hFindFile != INVALID_HANDLE_VALUE) {
+		do {
+			if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				callback(findFileData.cFileName, userData);
+			}
+		} while (FindNextFile(hFindFile, &findFileData) != 0);
+		FindClose(hFindFile);
+	}
 }

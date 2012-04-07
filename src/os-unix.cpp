@@ -30,7 +30,9 @@
 #include <string>
 
 #include <cxxabi.h>
+#include <dirent.h>
 #include <execinfo.h>
+#include <fnmatch.h>
 
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE 1 // for dladdr()
@@ -111,4 +113,19 @@ std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 	}	
 
 	return name;
+}
+
+void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
+		bool (*callback)(const char *, void *), void *userData) 
+	DIR *dp;
+	if ((dp = opendir(directory.c_str())) != 0) {
+		struct dirent *dirp;
+		while ((dirp = readdir(dp)) != 0) {
+			if (!fnmatch(pattern.c_str(), dirp->d_name,
+							FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
+				callback(dirp->d_name, userData);
+			}
+		}
+		closedir(dp);
+	}
 }
