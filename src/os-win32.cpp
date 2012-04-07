@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #include <Windows.h>
 #include <DbgHelp.h>
@@ -40,13 +41,13 @@ const char os::kDirSepChar = '\\';
 #undef GetModulePath
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
-	char *name = reinterpret_cast<char*>(std::calloc(maxLength + 1, 1));
+	std::vector<char> name(maxLength + 1);
 	if (address != 0) {
 		MEMORY_BASIC_INFORMATION mbi;
 		VirtualQuery(address, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, name, maxLength);
+		GetModuleFileName((HMODULE)mbi.AllocationBase, name.data(), maxLength);
 	}
-	return std::string(name);
+	return std::string(name.data());
 }
 
 // The crash handler - it is set via SetCrashHandler()

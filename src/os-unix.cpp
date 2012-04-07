@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include <cxxabi.h>
 #include <dirent.h>
@@ -42,13 +43,13 @@
 const char os::kDirSepChar = '/';
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
-	char *name = reinterpret_cast<char*>(std::calloc(maxLength + 1, 1));
+	std::vector<char> name(maxLength + 1);
 	if (address != 0) {
 		Dl_info info;
 		dladdr(address, &info);
-		strncpy(name, info.dli_fname, maxLength);
+		strncpy(name.data(), info.dli_fname, maxLength);
 	}	
-	return std::string(name);
+	return std::string(name.data());
 }
 
 // The crash handler - it is set via SetCrashHandler()
