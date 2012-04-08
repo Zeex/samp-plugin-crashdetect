@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 2.8)
+
+project(amx)
+
+include(AMXDefines)
+
+include_directories(".")
+
+add_definitions(
+	-DAMX_ALIGN 
+	-DAMX_CLEANUP
+	-DAMX_EXEC 
+	-DAMX_FLAGS
+	-DAMX_INIT
+	-DAMX_REGISTER 
+	-DAMX_SETCALLBACK
+	-DAMX_SETDEBUGHOOK
+	-DAMX_XXXNATIVES
+	-DAMX_XXXPUBLICS
+	-DAMX_ANSIONLY
+	-DAMX_NODYNALOAD
+)
+
+add_library(amx STATIC
+	amx.c
+	amx.h
+	amxaux.c
+	amxaux.h
+	amxdbg.c
+	amxdbg.h
+	getch.h
+	osdefs.h
+	sclinux.h
+)
+

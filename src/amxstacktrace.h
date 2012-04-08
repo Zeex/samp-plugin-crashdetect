@@ -28,7 +28,8 @@
 #include <deque>
 #include <vector>
 
-#include "amx/amx.h"
+#include <amx/amx.h>
+
 #include "amxdebuginfo.h"
 
 class AMXStackFrame {

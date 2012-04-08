@@ -23,7 +23,7 @@
 
 #include <stddef.h> // for size_t in amx.h
 
-#include "amx/amx.h"
+#include <amx/amx.h>
 
 namespace amxutils {
 

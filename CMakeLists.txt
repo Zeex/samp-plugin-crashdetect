@@ -5,54 +5,16 @@ project(crashdetect)
 list(APPEND CMAKE_MODULE_PATH 
 	${crashdetect_SOURCE_DIR}/cmake/Modules)
 
-include(CheckIncludeFile)
+include(AMXDefines)
 include(GetGitRevisionDescription)
+include(RequireC++11)
 
-check_include_file(alloca.h HAVE_ALLOCA_H)
-if(HAVE_ALLOCA_H)
-	add_definitions(-DHAVE_ALLOCA_H)
-endif()
-check_include_file(inttypes.h HAVE_INTTYPES_H)
-if(HAVE_INTTYPES_H)
-	add_definitions(-DHAVE_INTTYPES_H)
-endif()
-check_include_file(malloc.h HAVE_MALLOC_H)
-if(HAVE_MALLOC_H)
-	add_definitions(-DHAVE_MALLOC_H)
-endif()
-check_include_file(stdint.h HAVE_STDINT_H)
-if(HAVE_STDINT_H)
-	add_definitions(-DHAVE_STDINT_H)
-endif()
+include_directories(".")
+include_directories("amx")
 
-include_directories(src)
-include_directories(src/amx) 
-
-# AMX definitions
-add_definitions(
-	-DAMX_ALIGN 
-	-DAMX_CLEANUP
-	-DAMX_EXEC 
-	-DAMX_FLAGS
-	-DAMX_INIT
-	-DAMX_REGISTER 
-	-DAMX_SETCALLBACK
-	-DAMX_SETDEBUGHOOK
-	-DAMX_XXXNATIVES
-	-DAMX_XXXPUBLICS
-	-DAMX_ANSIONLY
-	-DAMX_NODYNALOAD)
+add_subdirectory(amx)
 
 set(SOURCES
-	src/amx/amx.c
-	src/amx/amx.h
-	src/amx/amxaux.c
-	src/amx/amxaux.h
-	src/amx/amxdbg.c
-	src/amx/amxdbg.h
-	src/amx/getch.h
-	src/amx/osdefs.h
-	src/amx/sclinux.h
 	src/amxdebuginfo.cpp
 	src/amxdebuginfo.h
 	src/amxpathfinder.cpp
@@ -91,6 +53,8 @@ endif()
 
 add_library(crashdetect MODULE ${SOURCES})
 
+target_link_libraries(crashdetect amx)
+
 # Don't prefix the output .so with "lib" 
 set_property(TARGET crashdetect PROPERTY PREFIX "")
 
@@ -116,7 +80,7 @@ if(WIN32)
 	endif()
 endif()
 
-# Make sure we have proper C++11 support
+# Make sure the current compiler has proper C++11 support
 if(CMAKE_COMPILER_IS_GNUCXX)
 	execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
 	if(GCC_VERSION VERSION_LESS 4.4.1)
