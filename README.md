@@ -3,31 +3,62 @@ crashdetect
 
 This plugin helps in debugging of SA-MP server crashes and runtime AMX errors.
 
-Usage Notes
------------
-
-To get source file names, line numbers, etc in backtrace compile your script with full 
-debug information by using either `-d2` or `-d3` flag of pawncc.
-
-Plugin Options
+Notes on usage
 --------------
+
+crashdetect needs debugging information to display line numbers, file names, etc in AMX stack backtrace, so a script have to be compiled in debug mode. To do that pass `-d3` option to the Pawn compiler, either at the command line or through `pawn.cfg`.
+
+Settings
+--------
 
 You can configure crashdetect by changing the following settings in server.cfg:
 
 *	`die_on_error <0|1>` - Shut down the server on runtime or native error. 
-	By default this option is turned off.
+	Default value is `0`.
 
-Build Requirements
-------------------
 
-To build crashdetect from source you will need:
+How to compile
+--------------
 
-*	Boost 1.40+
+To build crashdetect from source you will need CMake 2.8.6 and newer: http://www.cmake.org/cmake/resources/software.html
 
-	http://www.boost.org/users/download/
+### Getting the source code ###
 
-*	CMake 2.8.6+ (Windows and Linux)
+You have two options:
 
-	http://www.cmake.org/cmake/resources/software.html
-	
-	or GNU make (Linux only)
+*	Download a tarball or zip from the **Downloads** section:
+
+	https://github.com/Zeex/samp-crashdetect-plugin/downloads
+
+*	Clone the Git repository:
+
+	git clone git://github.com/Zeex/samp-crashdetect-plugin.git
+
+### Building the plugin ###
+
+#### Linux ####
+
+Run these commands in terminal:
+
+	cd path/to/crashdetect/root
+	mkdir build
+	cd build
+	cmake ../
+	make
+
+#### Windows ####
+
+*	Ater installing CMake open CMake GUI frontend:
+
+	*Start Menu -> All Programs -> CMake 2.8 -> CMake (cmake-gui)*
+
+*	Set path to source and output directories, for example:
+
+	*	Where is the source code: `C:\Users\Zeex\samp-server\crashdetect`
+	*	Where to build binaries: `C:\Users\Zeex\samp-server\crashdetect\build`
+
+*	Press the *Configure* button. CMake will prompt you to choose a generator, select your favourite tool there (leaving "Use native compilers" selected).
+
+*	And finally, press the *Generate* button.
+
+OK! Now use the tool that you've specified to open/compile the project.
