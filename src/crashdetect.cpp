@@ -55,7 +55,7 @@ ConfigReader crashdetect::serverCfg("server.cfg");
 crashdetect::InstanceMap crashdetect::instances_;
 
 // static
-std::shared_ptr<crashdetect> crashdetect::GetInstance(AMX *amx) {
+std::weak_ptr<crashdetect> crashdetect::GetInstance(AMX *amx) {
 	InstanceMap::const_iterator iterator = instances_.find(amx);
 	if (iterator == instances_.end()) {
 		std::shared_ptr<crashdetect> instance(new crashdetect(amx));
@@ -75,7 +75,7 @@ void crashdetect::Crash() {
 	// Check if the last native/public call succeeded
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		GetInstance(amx)->HandleCrash();
+		GetInstance(amx).lock()->HandleCrash();
 	} else {
 		// Server/plugin internal error (in another thread?)
 		logprintf("[debug] Server crashed due to an unknown error");
@@ -85,14 +85,14 @@ void crashdetect::Crash() {
 
 // static
 void crashdetect::RuntimeError(AMX *amx, cell index, int error) {
-	GetInstance(amx)->HandleRuntimeError(index, error);
+	GetInstance(amx).lock()->HandleRuntimeError(index, error);
 }
 
 // static
 void crashdetect::Interrupt() {	
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		GetInstance(amx)->HandleInterrupt();
+		GetInstance(amx).lock()->HandleInterrupt();
 	} else {
 		logprintf("[debug] Server recieved interrupt signal");
 	}	

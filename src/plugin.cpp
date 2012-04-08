@@ -38,11 +38,11 @@ extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 }
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return crashdetect::GetInstance(amx)->HandleAmxCallback(index, result, params);
+	return crashdetect::GetInstance(amx).lock()->HandleAmxCallback(index, result, params);
 }
 
 static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
-	return crashdetect::GetInstance(amx)->HandleAmxExec(retval, index);
+	return crashdetect::GetInstance(amx).lock()->HandleAmxExec(retval, index);
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {

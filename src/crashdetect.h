@@ -34,7 +34,7 @@
 
 class crashdetect {
 public:	
-	static std::shared_ptr<crashdetect> GetInstance(AMX *amx);
+	static std::weak_ptr<crashdetect> GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
 	static void Crash();
