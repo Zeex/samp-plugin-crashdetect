@@ -7,7 +7,6 @@ list(APPEND CMAKE_MODULE_PATH
 
 include(AMXDefines)
 include(GetGitRevisionDescription)
-include(RequireC++11)
 
 include_directories(".")
 include_directories("amx")
