@@ -5,15 +5,16 @@ project(crashdetect)
 list(APPEND CMAKE_MODULE_PATH 
 	${crashdetect_SOURCE_DIR}/cmake/Modules)
 
+include(AmxConfig)
 include(GetGitRevisionDescription)
 include(RequireC++11)
 
-include_directories(.)
-include_directories(amx)
+include_directories(".")
+include_directories("amx")
 
 add_subdirectory(amx)
 
-set(PLUGIN_SOURCES
+set(SOURCES
 	src/amxdebuginfo.cpp
 	src/amxdebuginfo.h
 	src/amxpathfinder.cpp
@@ -41,27 +42,46 @@ set(PLUGIN_SOURCES
 )
 
 if(WIN32)
-	list(APPEND PLUGIN_SOURCES
+	set(SOURCES ${SOURCES}
 		src/os-win32.cpp
 	)
 elseif(UNIX)
-	list(APPEND PLUGIN_SOURCES
+	set(SOURCES ${SOURCES}
 		src/os-unix.cpp
 	)
 endif()
 
-include(SampPlugin)
+add_library(crashdetect MODULE ${SOURCES})
 
-target_link_libraries(${PLUGIN_TARGET} amx)
+target_link_libraries(crashdetect amx)
+
+# Don't prefix the output .so with "lib" 
+set_property(TARGET crashdetect PROPERTY PREFIX "")
 
 if(UNIX OR MINGW)
-	set_property(TARGET ${PLUGIN_TARGET} APPEND_STRING PROPERTY
+	set_property(TARGET crashdetect APPEND_STRING PROPERTY
 		COMPILE_FLAGS " -m32 -Wno-attributes")
-	set_property(TARGET ${PLUGIN_TARGET} APPEND_STRING PROPERTY
+	set_property(TARGET crashdetect APPEND_STRING PROPERTY
 		LINK_FLAGS " -m32 -Wl,--no-undefined")
 	if(UNIX)
 		add_definitions(-DLINUX)
 	endif()
+endif()
+
+if(WIN32)
+	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/plugin.def")
+	if(MSVC)
+		add_definitions(-D_CRT_SECURE_NO_WARNINGS) # Shut up security warnings
+		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
+			LINK_FLAGS " /DEF:${DEF_FILE}")
+	elseif(MINGW)
+		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
+			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
+	endif()
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+	target_link_Libraries(crashdetect -ldl)
 endif()
 
 find_package(Git)
@@ -91,7 +111,7 @@ file(WRITE "src/crashdetect_version.h"
 
 message(STATUS "You're going to build crashdetect v${version}")
 
-install(TARGETS ${PLUGIN_TARGET} LIBRARY DESTINATION ".")
+install(TARGETS crashdetect LIBRARY DESTINATION ".")
 install(FILES README.md DESTINATION ".")
 
 if(MSVC)
