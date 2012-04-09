@@ -1,5 +1,3 @@
-# AMX configuration
-
 include(CheckIncludeFile)
 
 check_include_file(alloca.h HAVE_ALLOCA_H)

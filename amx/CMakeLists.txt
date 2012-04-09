@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(amx)
 
-include(AmxConfig)
+include(AMXDefines)
 
 include_directories(".")
 
