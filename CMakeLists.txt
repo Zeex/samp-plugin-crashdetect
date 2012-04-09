@@ -5,7 +5,7 @@ project(crashdetect)
 list(APPEND CMAKE_MODULE_PATH 
 	${crashdetect_SOURCE_DIR}/cmake/Modules)
 
-include(AMXDefines)
+include(AmxConfig)
 include(GetGitRevisionDescription)
 include(RequireC++11)
 
