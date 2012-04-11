@@ -59,9 +59,9 @@ set_property(TARGET crashdetect PROPERTY PREFIX "")
 
 if(UNIX OR MINGW)
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
-		COMPILE_FLAGS " -m32 -Wno-attributes")
+		COMPILE_FLAGS " -Wno-attributes")
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
-		LINK_FLAGS " -m32 -Wl,--no-undefined")
+		LINK_FLAGS " -Wl,--no-undefined")
 	if(UNIX)
 		add_definitions(-DLINUX)
 	endif()
@@ -70,7 +70,7 @@ endif()
 if(WIN32)
 	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/plugin.def")
 	if(MSVC)
-		add_definitions(-D_CRT_SECURE_NO_WARNINGS) # Shut up security warnings
+		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " /DEF:${DEF_FILE}")
 	elseif(MINGW)
