@@ -59,7 +59,7 @@ set_property(TARGET crashdetect PROPERTY PREFIX "")
 
 if(UNIX OR MINGW)
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
-		COMPILE_FLAGS " -Wno-attributes")
+		COMPILE_FLAGS " -Wno-attributes -fno-omit-frame-pointer")
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
 		LINK_FLAGS " -Wl,--no-undefined")
 	if(UNIX)
@@ -71,7 +71,9 @@ if(WIN32)
 	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/plugin.def")
 	if(MSVC)
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
+		set_property(TARGET crashdetect APPEND_STRING PROPERTY
+			COMPILE_FLAGS " /Oy-")
+ 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " /DEF:${DEF_FILE}")
 	elseif(MINGW)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
