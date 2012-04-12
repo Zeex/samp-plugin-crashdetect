@@ -22,12 +22,12 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "crashdetect.h"
-#include "crashdetect_version.h"
 #include "fileutils.h"
 #include "jump-x86.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
+#include "version.h"
 #include "amx/amx.h"
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
@@ -71,7 +71,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	os::SetCrashHandler(crashdetect::Crash);
 	os::SetInterruptHandler(crashdetect::Interrupt);
 
-	logprintf("  crashdetect v"CRASHDETECT_VERSION" is OK.");
+	logprintf("  crashdetect v"PLUGIN_VERSION_STRING" is OK.");
 
 	return true;
 }

@@ -1,0 +1,28 @@
+#include <windows.h>
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+1 VERSIONINFO
+	FILEVERSION     @PLUGIN_VERSION_RC@
+	PRODUCTVERSION  @PLUGIN_VERSION_RC@
+	FILEOS         	VOS_NT_WINDOWS32
+	FILETYPE       	VFT_DLL
+{
+	BLOCK "StringFileInfo"
+	{
+		BLOCK "04090025"
+		{
+			VALUE "FileDescription",  "@PLUGIN_DESCRIPTION@"
+			VALUE "FileVersion",      "@PLUGIN_VERSION@"
+			VALUE "ProductVersion",   "@PLUGIN_VERSION@"
+			VALUE "InternalName",     "@PLUGIN_NAME@"
+			VALUE "LegalCopyright",   "@PLUGIN_COPYRIGHT@"
+			VALUE "OriginalFilename", "@PLUGIN_NAME@.dll"
+			VALUE "ProductName",      "@PLUGIN_NAME@"
+		}
+	}
+	BLOCK "VarFileInfo"
+	{
+		VALUE "Translation", 1033, 37
+	}
+}

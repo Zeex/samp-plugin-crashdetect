@@ -1,0 +1,6 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+#define PLUGIN_VERSION_STRING "@PLUGIN_VERSION@"
+
+#endif

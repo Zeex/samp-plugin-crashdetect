@@ -1,5 +1,4 @@
 build
-src/crashdetect_version.h
 
 _CPack_Packages
 CMakeFiles
@@ -31,4 +30,3 @@ lib/*.o
 lib/amx/*.o
 
 *.so
-

@@ -38,6 +38,7 @@ set(SOURCES
 	src/plugincommon.h
 	src/x86stacktrace.cpp
 	src/x86stacktrace.h
+	src/version.h
 )
 
 if(WIN32)
@@ -117,11 +118,22 @@ string(REGEX REPLACE "[.-]" "," version_rc ${version})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
-file(WRITE "src/crashdetect_version.h" 
-"/* This file is auto-generated, do not edit */
-#define CRASHDETECT_VERSION \"${version}\"
-#define CRASHDETECT_VERSION_RC ${version_rc}
-")
+set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
+set(PLUGIN_DESCRIPTION "crashdetect plugin for SA-MP server")
+set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
+set(PLUGIN_VERSION ${version})
+set(PLUGIN_VERSION_RC ${version_rc})
+
+configure_file(
+	"${crashdetect_SOURCE_DIR}/src/plugin.rc.in"
+	"${crashdetect_SOURCE_DIR}/src/plugin.rc"
+	@ONLY
+)
+configure_file(
+	"${crashdetect_SOURCE_DIR}/src/version.h.in"
+	"${crashdetect_SOURCE_DIR}/src/version.h"
+	@ONLY
+)
 
 message(STATUS "You're going to build crashdetect v${version}")
 
