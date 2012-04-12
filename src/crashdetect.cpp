@@ -80,7 +80,7 @@ void crashdetect::Crash() {
 		// Server/plugin internal error (in another thread?)
 		logprintf("[debug] Server crashed due to an unknown error");
 	}
-	PrintThreadBacktrace(4);
+	PrintThreadBacktrace();
 }
 
 // static
@@ -96,7 +96,7 @@ void crashdetect::Interrupt() {
 	} else {
 		logprintf("[debug] Server recieved interrupt signal");
 	}	
-	PrintThreadBacktrace(3);
+	PrintThreadBacktrace();
 }
 
 // static
