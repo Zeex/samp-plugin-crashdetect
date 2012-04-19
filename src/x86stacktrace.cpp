@@ -21,6 +21,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstdint>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -40,7 +41,8 @@ X86StackFrame::X86StackFrame(void *frmAddr, void *retAddr, const std::string &na
 std::string X86StackFrame::GetString() const {
 	std::stringstream stream;
 
-	stream << std::hex << std::setw(8) << std::setfill('0') << retAddr_;
+	stream << std::hex << std::setw(8) << std::setfill('0') 
+		<< reinterpret_cast<int32_t>(retAddr_) << std::dec;
 	if (!name_.empty()) {
 		stream << " in " << name_ << " ()";
 	} else {
