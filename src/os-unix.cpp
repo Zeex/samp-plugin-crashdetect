@@ -112,6 +112,12 @@ std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 		char *demangled_name = abi::__cxa_demangle(name.c_str(), 0, 0, 0);
 		if (demangled_name != 0) {
 			name.assign(demangled_name);
+
+			// Cut argment type information e.g. (int*, char*, void*).
+			std::string::size_type end = name.find('(');
+			if (end != std::string::npos) {
+				name.erase(end);
+			}
 		}
 	}	
 
