@@ -50,8 +50,6 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
-	logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
-
 	void **exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
 	void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
 
