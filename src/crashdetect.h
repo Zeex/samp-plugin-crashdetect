@@ -52,6 +52,8 @@ public:
 	static void PrintAmxBacktrace();
 	static void PrintThreadBacktrace(int framesToSkip = 0);
 
+	static void logprintf(const char *format, ...);
+
 private:
 	explicit crashdetect(AMX *amx);
 
