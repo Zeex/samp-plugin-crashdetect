@@ -30,9 +30,9 @@ You have two options:
 
 	https://github.com/Zeex/samp-crashdetect-plugin/downloads
 
-*	Clone the Git repository:
+*	Clone Git repository:
 
-	git clone git://github.com/Zeex/samp-crashdetect-plugin.git
+		git clone git://github.com/Zeex/samp-crashdetect-plugin.git crashdetect
 
 ### Building the plugin ###
 
@@ -57,8 +57,8 @@ Run these commands in terminal:
 	*	Where is the source code: `C:\Users\Zeex\samp-server\crashdetect`
 	*	Where to build binaries: `C:\Users\Zeex\samp-server\crashdetect\build`
 
-*	Press the *Configure* button. CMake will prompt you to choose a generator, select your favourite tool there (leaving "Use native compilers" selected).
+*	Hit *Configure*. CMake will ask you to choose a generator, select your favourite tool there (leaving "Use native compilers" as is).
 
 *	And finally, press the *Generate* button.
 
-OK! Now use the tool that you've specified to open/compile the project.
+OK! Now use the tool that you've specified to open/compile generated project(s).
