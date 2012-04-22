@@ -6,7 +6,9 @@ This plugin helps in debugging of SA-MP server crashes and runtime AMX errors.
 Notes on usage
 --------------
 
-crashdetect needs debugging information to display line numbers, file names, etc in AMX stack backtrace, so a script have to be compiled in debug mode. To do that pass `-d3` option to the Pawn compiler, either at the command line or through `pawn.cfg`.
+crashdetect needs debugging information to display line numbers, file names, etc in AMX stack backtrace,
+so if you want those compile your script in debug mode. To do that pass `-d3` option to the Pawn compiler,
+either at the command line or through `pawn.cfg`.
 
 Settings
 --------
