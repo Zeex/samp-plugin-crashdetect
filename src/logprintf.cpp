@@ -67,6 +67,9 @@ Log::Log()
 		if (server_cfg.GetOption("output", false)) {
 			dup_stdout_ = true;
 		}
+	#else
+		// But on Windows it always does.
+		dup_stdout_ = true;
 	#endif
 }
 
@@ -101,9 +104,11 @@ void Log::vprintf(const char *format, va_list args) {
 		std::fflush(fp_);
 	}
 
-	std::vfprintf(stdout, format, args);
-	std::fputs("\n", stdout);
-	std::fflush(stdout);
+	if (dup_stdout_) {
+		std::vfprintf(stdout, format, args);
+		std::fputs("\n", stdout);
+		std::fflush(stdout);
+	}
 }
 
 void vlogprintf(const char *format, std::va_list args) {
