@@ -65,17 +65,17 @@ extern  "C" {
 #endif
 
 typedef struct tagAMX_DBG_HDR {
-  uint32_t size          PACKED; /* size of the debug information chunk */
+  uint32_t size         PACKED; /* size of the debug information chunk */
   uint16_t magic        PACKED; /* signature, must be 0xf1ef */
   char    file_version  PACKED; /* file format version */
   char    amx_version   PACKED; /* required version of the AMX */
-  uint16_t flags         PACKED; /* currently unused */
-  uint16_t files         PACKED; /* number of entries in the "file" table */
-  uint16_t lines         PACKED; /* number of entries in the "line" table */
-  uint16_t symbols       PACKED; /* number of entries in the "symbol" table */
-  uint16_t tags          PACKED; /* number of entries in the "tag" table */
-  uint16_t automatons    PACKED; /* number of entries in the "automaton" table */
-  uint16_t states        PACKED; /* number of entries in the "state" table */
+  uint16_t flags        PACKED; /* currently unused */
+  uint16_t files        PACKED; /* number of entries in the "file" table */
+  uint16_t lines        PACKED; /* number of entries in the "line" table */
+  uint16_t symbols      PACKED; /* number of entries in the "symbol" table */
+  uint16_t tags         PACKED; /* number of entries in the "tag" table */
+  uint16_t automatons   PACKED; /* number of entries in the "automaton" table */
+  uint16_t states       PACKED; /* number of entries in the "state" table */
 } AMX_DBG_HDR           PACKED;
 #define AMX_DBG_MAGIC   0xf1ef
 
@@ -90,35 +90,35 @@ typedef struct tagAMX_DBG_LINE {
 } AMX_DBG_LINE          PACKED;
 
 typedef struct tagAMX_DBG_SYMBOL {
-  ucell    address       PACKED; /* address in the data segment or relative to the frame */
-  uint16_t tag           PACKED; /* tag for the symbol */
-  ucell    codestart     PACKED; /* address in the code segment from which this symbol is valid (in scope) */
-  ucell    codeend       PACKED; /* address in the code segment until which this symbol is valid (in scope) */
-  char     ident         PACKED; /* kind of symbol (function/variable) */
-  char     vclass        PACKED; /* class of symbol (global/local) */
-  uint16_t dim           PACKED; /* number of dimensions */
+  ucell    address      PACKED; /* address in the data segment or relative to the frame */
+  uint16_t tag          PACKED; /* tag for the symbol */
+  ucell    codestart    PACKED; /* address in the code segment from which this symbol is valid (in scope) */
+  ucell    codeend      PACKED; /* address in the code segment until which this symbol is valid (in scope) */
+  char     ident        PACKED; /* kind of symbol (function/variable) */
+  char     vclass       PACKED; /* class of symbol (global/local) */
+  uint16_t dim          PACKED; /* number of dimensions */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
 } AMX_DBG_SYMBOL        PACKED;
 
 typedef struct tagAMX_DBG_SYMDIM {
-  uint16_t tag           PACKED; /* tag for the array dimension */
-  ucell    size          PACKED; /* size of the array dimension */
+  uint16_t tag          PACKED; /* tag for the array dimension */
+  ucell    size         PACKED; /* size of the array dimension */
 } AMX_DBG_SYMDIM        PACKED;
 
 typedef struct tagAMX_DBG_TAG {
-  uint16_t tag           PACKED; /* tag id */
+  uint16_t tag          PACKED; /* tag id */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
 } AMX_DBG_TAG           PACKED;
 
 typedef struct tagAMX_DBG_MACHINE {
-  uint16_t automaton     PACKED; /* automaton id */
+  uint16_t automaton    PACKED; /* automaton id */
   ucell address         PACKED; /* address of state variable */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
 } AMX_DBG_MACHINE       PACKED;
 
 typedef struct tagAMX_DBG_STATE {
-  uint16_t state         PACKED; /* state id */
-  uint16_t automaton     PACKED; /* automaton id */
+  uint16_t state        PACKED; /* state id */
+  uint16_t automaton    PACKED; /* automaton id */
   const char name[1]    PACKED; /* ASCII string, zero-terminated */
 } AMX_DBG_STATE         PACKED;
 
