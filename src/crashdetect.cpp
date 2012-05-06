@@ -170,14 +170,13 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 				break;
 			}
 			case AMX_ERR_NOTFOUND: {
-				logprintf("  The following natives are not registered:");
 				AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
 				int numNatives = 0;
 				amx_NumNatives(amx_, &numNatives);
 				for (int i = 0; i < numNatives; ++i) {
 					if (natives[i].address == 0) {
 						char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
-						logprintf("    %s", name);
+						logprintf("  %s", name);
 					}
 				}
 				break;
