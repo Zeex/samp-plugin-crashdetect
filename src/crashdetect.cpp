@@ -81,7 +81,7 @@ void crashdetect::Crash() {
 		// Server/plugin internal error (in another thread?)
 		logprintf("Server crashed due to an unknown error");
 	}
-	PrintThreadBacktrace();
+	PrintNativeBacktrace();
 }
 
 // static
@@ -95,9 +95,9 @@ void crashdetect::Interrupt() {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx).lock()->HandleInterrupt();
 	} else {
-		logprintf("Server recieved interrupt signal");
+		logprintf("Server recieved an interrupt signal");
 	}	
-	PrintThreadBacktrace();
+	PrintNativeBacktrace();
 }
 
 // static
@@ -223,7 +223,7 @@ void crashdetect::PrintAmxBacktrace() {
 		return;
 	}
 
-	logprintf("Backtrace:");
+	logprintf("AMX backtrace:");
 
 	std::stack<NPCall> npCallStack = npCalls_;
 	cell frm = npCallStack.top().amx()->frm;
@@ -295,8 +295,8 @@ void crashdetect::PrintAmxBacktrace() {
 }
 
 // static
-void crashdetect::PrintThreadBacktrace(int framesToSkip) {
-	logprintf("Thread backtrace:");
+void crashdetect::PrintNativeBacktrace(int framesToSkip) {
+	logprintf("Native backtrace:");
 
 	int level = 0;
 

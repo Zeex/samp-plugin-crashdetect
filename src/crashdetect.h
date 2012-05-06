@@ -50,7 +50,7 @@ public:
 	void HandleInterrupt();
 
 	static void PrintAmxBacktrace();
-	static void PrintThreadBacktrace(int framesToSkip = 0);
+	static void PrintNativeBacktrace(int framesToSkip = 0);
 
 	static void logprintf(const char *format, ...);
 
