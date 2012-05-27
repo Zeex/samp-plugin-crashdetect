@@ -64,10 +64,19 @@ cell AMXDebugInfo::Symbol::GetValue(AMX *amx, ucell frm) const {
 	}	
 }
 
-AMXDebugInfo::AMXDebugInfo() {}
+AMXDebugInfo::AMXDebugInfo()
+	: amxdbg_(0)
+{
+}
 
-AMXDebugInfo::AMXDebugInfo(const std::string &filename) {
+AMXDebugInfo::AMXDebugInfo(const std::string &filename)
+	: amxdbg_(0)
+{
 	Load(filename);
+}
+
+AMXDebugInfo::~AMXDebugInfo() {
+	delete amxdbg_;
 }
 
 bool AMXDebugInfo::HasDebugInfo(AMX *amx) {
@@ -84,22 +93,22 @@ void AMXDebugInfo::FreeAmxDbg(AMX_DBG *amxdbg) {
 }
 
 bool AMXDebugInfo::IsLoaded() const {
-	return (amxdbgPtr_.get() != 0);
+	return (amxdbg_ != 0);
 }
 
 void AMXDebugInfo::Load(const std::string &filename) {
 	std::FILE* fp = std::fopen(filename.c_str(), "rb");
 	if (fp != 0) {
-		AMX_DBG *amxdbg = reinterpret_cast<AMX_DBG*>(std::malloc(sizeof(AMX_DBG)));
-		if (dbg_LoadInfo(amxdbg, fp) == AMX_ERR_NONE) {
-			amxdbgPtr_.reset(amxdbg, FreeAmxDbg);
+		AMX_DBG amxdbg;
+		if (dbg_LoadInfo(&amxdbg, fp) == AMX_ERR_NONE) {
+			amxdbg_ = new AMX_DBG(amxdbg);
 		}
 		fclose(fp);
 	}
 }
 
 void AMXDebugInfo::Free() {
-	amxdbgPtr_.reset();
+	delete amxdbg_;
 }
 
 AMXDebugInfo::Line AMXDebugInfo::GetLine(ucell address) const {
@@ -205,12 +214,12 @@ std::string AMXDebugInfo::GetTagName(ucell address) const {
 
 ucell AMXDebugInfo::GetFunctionAddress(const std::string &functionName, const std::string &fileName) const {
 	ucell functionAddress;
-	dbg_GetFunctionAddress(amxdbgPtr_.get(), functionName.c_str(), fileName.c_str(), &functionAddress);
+	dbg_GetFunctionAddress(amxdbg_, functionName.c_str(), fileName.c_str(), &functionAddress);
 	return functionAddress;
 }
 
 ucell AMXDebugInfo::GetLineAddress(long line, const std::string &fileName) const {
 	ucell lineAddress;
-	dbg_GetLineAddress(amxdbgPtr_.get(), line, fileName.c_str(), &lineAddress);
+	dbg_GetLineAddress(amxdbg_, line, fileName.c_str(), &lineAddress);
 	return lineAddress;
 }

@@ -25,25 +25,15 @@
 #define CRASHDETECT_H
 
 #include <map>
-#ifdef WIN32
-	#include <memory>
-#else
-	#include <tr1/memory>
-#endif
 #include <stack>
 #include <string>
 
 #include "amxdebuginfo.h"
 #include "configreader.h"
 
-namespace std {
-	using std::tr1::shared_ptr;
-	using std::tr1::weak_ptr;
-}
-
 class crashdetect {
 public:	
-	static std::weak_ptr<crashdetect> GetInstance(AMX *amx);
+	static crashdetect *GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
 	static void Crash();
@@ -101,7 +91,7 @@ private:
 	static bool errorCaught_;
 	static ConfigReader serverCfg;
 
-	typedef std::map<AMX*, std::shared_ptr<crashdetect> > InstanceMap;
+	typedef std::map<AMX*, crashdetect*> InstanceMap;
 	static InstanceMap instances_;
 };
 

@@ -26,20 +26,11 @@
 
 #include <cassert>
 #include <iterator>
-#ifdef WIN32
-	#include <memory>
-#else
-	#include <tr1/memory>
-#endif
 #include <string>
 #include <vector>
 
 #include "amx/amx.h"
 #include "amx/amxdbg.h"
-
-namespace std {
-	using std::tr1::shared_ptr;
-}
 
 class AMXDebugInfo {
 public:
@@ -228,6 +219,7 @@ public:
 
 	AMXDebugInfo();
 	explicit AMXDebugInfo(const std::string &filename);
+	~AMXDebugInfo();
 
 	void Load(const std::string &filename);
 	bool IsLoaded() const;
@@ -249,32 +241,32 @@ public:
 	typedef Table<AMX_DBG_FILE*, File> FileTable;
 
 	FileTable GetFiles() const { 
-		return FileTable(amxdbgPtr_->filetbl, amxdbgPtr_->hdr->files); 
+		return FileTable(amxdbg_->filetbl, amxdbg_->hdr->files); 
 	}
 
 	typedef Table<AMX_DBG_LINE, Line> LineTable;
 
 	LineTable GetLines() const { 
-		return LineTable(amxdbgPtr_->linetbl, amxdbgPtr_->hdr->lines);
+		return LineTable(amxdbg_->linetbl, amxdbg_->hdr->lines);
 	}
 
 	typedef Table<AMX_DBG_TAG*, Tag> TagTable;
 
 	TagTable GetTags() const {
-		return TagTable(amxdbgPtr_->tagtbl, amxdbgPtr_->hdr->tags);
+		return TagTable(amxdbg_->tagtbl, amxdbg_->hdr->tags);
 	}
 
 	typedef Table<AMX_DBG_SYMBOL*, Symbol> SymbolTable;
 
 	SymbolTable GetSymbols() const {
-		return SymbolTable(amxdbgPtr_->symboltbl, amxdbgPtr_->hdr->symbols);
+		return SymbolTable(amxdbg_->symboltbl, amxdbg_->hdr->symbols);
 	}
 
 private:
 	static bool HasDebugInfo(AMX *amx);
 	static void FreeAmxDbg(AMX_DBG *amxdbg);
 
-	std::tr1::shared_ptr<AMX_DBG> amxdbgPtr_;
+	AMX_DBG *amxdbg_;
 };
 
 static inline bool operator<(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {
