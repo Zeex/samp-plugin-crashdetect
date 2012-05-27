@@ -27,11 +27,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <stack>
 #include <string>
 #include <vector>
-#include <unordered_map>
 
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"

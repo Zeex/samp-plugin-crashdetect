@@ -26,12 +26,20 @@
 
 #include <cassert>
 #include <iterator>
-#include <memory>
+#ifdef WIN32
+	#include <memory>
+#else
+	#include <tr1/memory>
+#endif
 #include <string>
 #include <vector>
 
 #include "amx/amx.h"
 #include "amx/amxdbg.h"
+
+namespace std {
+	using std::tr1::shared_ptr;
+}
 
 class AMXDebugInfo {
 public:
@@ -266,7 +274,7 @@ private:
 	static bool HasDebugInfo(AMX *amx);
 	static void FreeAmxDbg(AMX_DBG *amxdbg);
 
-	std::shared_ptr<AMX_DBG> amxdbgPtr_;
+	std::tr1::shared_ptr<AMX_DBG> amxdbgPtr_;
 };
 
 static inline bool operator<(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {

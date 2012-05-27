@@ -24,13 +24,22 @@
 #ifndef CRASHDETECT_H
 #define CRASHDETECT_H
 
-#include <memory>
+#include <map>
+#ifdef WIN32
+	#include <memory>
+#else
+	#include <tr1/memory>
+#endif
 #include <stack>
 #include <string>
-#include <unordered_map>
 
 #include "amxdebuginfo.h"
 #include "configreader.h"
+
+namespace std {
+	using std::tr1::shared_ptr;
+	using std::tr1::weak_ptr;
+}
 
 class crashdetect {
 public:	
@@ -92,7 +101,7 @@ private:
 	static bool errorCaught_;
 	static ConfigReader serverCfg;
 
-	typedef std::unordered_map<AMX*, std::shared_ptr<crashdetect>> InstanceMap;
+	typedef std::map<AMX*, std::shared_ptr<crashdetect> > InstanceMap;
 	static InstanceMap instances_;
 };
 
