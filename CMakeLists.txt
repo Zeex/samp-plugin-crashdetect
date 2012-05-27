@@ -60,8 +60,6 @@ set_property(TARGET crashdetect PROPERTY PREFIX "")
 
 if(UNIX OR MINGW)
 	set_property(TARGET crashdetect APPEND_STRING PROPERTY
-		COMPILE_FLAGS " -Wno-attributes -fno-omit-frame-pointer")
-	set_property(TARGET crashdetect APPEND_STRING PROPERTY
 		LINK_FLAGS " -Wl,--no-undefined")
 	if(UNIX)
 		add_definitions(-DLINUX)

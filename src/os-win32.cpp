@@ -45,9 +45,9 @@ std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	if (address != 0) {
 		MEMORY_BASIC_INFORMATION mbi;
 		VirtualQuery(address, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, name.data(), maxLength);
+		GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], maxLength);
 	}
-	return std::string(name.data());
+	return std::string(&name[0]);
 }
 
 // The crash handler - it is set via SetCrashHandler()

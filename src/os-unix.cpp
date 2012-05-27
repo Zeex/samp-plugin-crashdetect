@@ -47,9 +47,9 @@ std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	if (address != 0) {
 		Dl_info info;
 		dladdr(address, &info);
-		strncpy(name.data(), info.dli_fname, maxLength);
+		strncpy(&name[0], info.dli_fname, maxLength);
 	}	
-	return std::string(name.data());
+	return std::string(&name[0]);
 }
 
 // The crash handler - it is set via SetCrashHandler()
