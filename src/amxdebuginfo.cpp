@@ -76,20 +76,16 @@ AMXDebugInfo::AMXDebugInfo(const std::string &filename)
 }
 
 AMXDebugInfo::~AMXDebugInfo() {
-	delete amxdbg_;
+	if (amxdbg_ != 0) {
+		dbg_FreeInfo(amxdbg_);
+		delete amxdbg_;
+	}
 }
 
 bool AMXDebugInfo::HasDebugInfo(AMX *amx) {
 	uint16_t flags;
 	amx_Flags(amx, &flags);
 	return ((flags & AMX_FLAG_DEBUG) != 0);
-}
-
-void AMXDebugInfo::FreeAmxDbg(AMX_DBG *amxdbg) {
-	if (amxdbg != 0) {
-		dbg_FreeInfo(amxdbg);
-		std::free(amxdbg);
-	}
 }
 
 bool AMXDebugInfo::IsLoaded() const {
