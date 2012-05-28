@@ -263,6 +263,9 @@ public:
 	}
 
 private:
+	AMXDebugInfo(const AMXDebugInfo &);
+	AMXDebugInfo &operator=(const AMXDebugInfo &);
+
 	static bool HasDebugInfo(AMX *amx);
 	static void FreeAmxDbg(AMX_DBG *amxdbg);
 
