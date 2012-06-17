@@ -58,3 +58,14 @@ diff -ruNpw amx_orig/amxaux.h amx/amxaux.h
  int AMXAPI aux_FreeProgram(AMX *amx);
  
  /* a readable error message from an error code */
+--- Z:/samp-server/plugins/crashdetect/amx_orig/amxdbg.h	Sat Jul 23 16:07:00 2005
++++ Z:/samp-server/plugins/crashdetect/amx/amxdbg.h	Sun Jun 17 22:43:01 2012
+@@ -27,6 +27,8 @@
+ #ifndef AMXDBG_H_INCLUDED
+ #define AMXDBG_H_INCLUDED
+ 
++#include <stdio.h>
++
+ #ifndef AMX_H_INCLUDED
+   #include "amx.h"
+ #endif 

@@ -1,46 +1,6 @@
-diff -ruNpw amx_orig/amxdbg.c amx/amxdbg.c
---- amx_orig/amxdbg.c	2005-07-23 17:07:00.000000000 +0700
-+++ amx/amxdbg.c	2012-04-26 10:18:36.734367600 +0700
-@@ -22,6 +22,7 @@
-  *
-  *  Version: $Id: amxdbg.c 3363 2005-07-23 09:03:29Z thiadmer $
-  */
-+
- #include <assert.h>
- #include <stdio.h>
- #include <stdlib.h>
-@@ -67,6 +68,7 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg,
-   #if BYTE_ORDER==BIG_ENDIAN
-     amx_Align32((uint32_t*)&amxhdr.size);
-     amx_Align16(&amxhdr.magic);
-+    amx_Align16(&dbghdr.flags);
-   #endif
-   if (amxhdr.magic != AMX_MAGIC)
-     return AMX_ERR_FORMAT;
-@@ -257,8 +259,9 @@ int AMXAPI dbg_LookupFunction(AMX_DBG *a
-   for (index = 0; index < amxdbg->hdr->symbols; index++) {
-     if (amxdbg->symboltbl[index]->ident == iFUNCTN
-         && amxdbg->symboltbl[index]->codestart <= address
--        && amxdbg->symboltbl[index]->codeend > address)
-+        && amxdbg->symboltbl[index]->codeend > address) {
-       break;
-+    }
-   } /* for */
-   if (index >= amxdbg->hdr->symbols)
-     return AMX_ERR_NOTFOUND;
-diff -ruNpw amx_orig/amxdbg.h amx/amxdbg.h
---- amx_orig/amxdbg.h	2005-07-23 17:07:00.000000000 +0700
-+++ amx/amxdbg.h	2012-04-26 10:19:29.382053000 +0700
-@@ -27,6 +27,8 @@
- #ifndef AMXDBG_H_INCLUDED
- #define AMXDBG_H_INCLUDED
- 
-+#include <stdio.h>
-+
- #ifndef AMX_H_INCLUDED
-   #include "amx.h"
- #endif
-@@ -63,17 +65,17 @@ extern  "C" {
+--- Z:/samp-server/plugins/crashdetect/amx_orig/amxdbg.h	Sat Jul 23 16:07:00 2005
++++ Z:/samp-server/plugins/crashdetect/amx/amxdbg.h	Sun Jun 17 22:43:01 2012
+@@ -63,17 +65,17 @@
  #endif
  
  typedef struct tagAMX_DBG_HDR {
@@ -66,7 +26,7 @@ diff -ruNpw amx_orig/amxdbg.h amx/amxdbg.h
  } AMX_DBG_HDR           PACKED;
  #define AMX_DBG_MAGIC   0xf1ef
  
-@@ -89,34 +91,34 @@ typedef struct tagAMX_DBG_LINE {
+@@ -89,34 +91,34 @@
  
  typedef struct tagAMX_DBG_SYMBOL {
    ucell   address       PACKED; /* address in the data segment or relative to the frame */
