@@ -164,6 +164,10 @@ std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 				if (demangled_name != 0) {
 					name.assign(demangled_name);
 				}
+				std::string::size_type end = name.find('(');
+				if (end != std::string::npos) {
+					name.erase(end);
+				}
 			}
 		#endif
 
@@ -174,7 +178,7 @@ std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 }
 
 void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
-		bool (*callback)(const char *, void *), void *userData) 
+		bool (*callback)(const char *, void *), void *userData)
 {
 	WIN32_FIND_DATA findFileData;
 	HANDLE hFindFile = FindFirstFile((directory + "\\" + pattern).c_str(), &findFileData);
