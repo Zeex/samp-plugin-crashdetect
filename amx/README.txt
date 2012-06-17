@@ -6,9 +6,10 @@ To re-generate this code from the original source:
 
    http://www.compuphase.com/pawn/pawn-3.0.3367.zip
 
-2) copy amx.patch to pawn-3.0.3667/SOURCE/AMX and apply it
+2) copy amx.patch to pawn-3.0.3667/SOURCE/AMX and apply it (in order):
 
    cd pawn-3.0.3667/SOURCE/AMX
    patch -p0 -i compile-fixes.patch
+   patch -p0 -i mingw.patch
    patch -p0 -i dbg-info.patch
    patch -p0 -i rte-reporting.patch

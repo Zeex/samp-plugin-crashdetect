@@ -465,7 +465,7 @@ int AMXAPI amx_Callback(AMX *amx, cell index, cell *result, cell *params)
     unsigned char *code=amx->base+(int)hdr->cod+(int)amx->cip-4;
     assert(amx->cip >= 4 && amx->cip < (hdr->dat - hdr->cod));
     assert(sizeof(f)<=sizeof(cell));    /* function pointer must fit in a cell */
-#if defined __GNUC__ || defined ASM32
+#if (defined __GNUC__ && !defined __MINGW32__) || defined ASM32
     if (*(cell*)code==index) {
 #else
     if (*(cell*)code!=OP_SYSREQ_PRI) {
@@ -516,7 +516,7 @@ static int amx_BrowseRelocate(AMX *amx)
   cell cip;
   long codesize;
   OPCODE op;
-  #if defined __GNUC__ || defined ASM32 || defined JIT
+  #if (defined __GNUC__ && !defined __MINGW32__) || defined ASM32 || defined JIT
     cell *opcode_list;
   #endif
   #if defined JIT
@@ -543,7 +543,7 @@ static int amx_BrowseRelocate(AMX *amx)
   assert(OP_SYMBOL==126);
 
   amx->sysreq_d=0;      /* preset */
-  #if (defined __GNUC__ || defined ASM32 || defined JIT) && !defined __64BIT__
+  #if ((defined __GNUC__ && !defined __MINGW32__) || defined ASM32 || defined JIT) && !defined __64BIT__
     amx_Exec(amx, (cell*)(void*)&opcode_list, 0);
     /* to use direct system requests, a function pointer must fit in a cell;
      * because the native function's address will be stored as the parameter
@@ -568,7 +568,7 @@ static int amx_BrowseRelocate(AMX *amx)
       amx->flags &= ~AMX_FLAG_BROWSE;
       return AMX_ERR_INVINSTR;
     } /* if */
-    #if defined __GNUC__ || defined ASM32 || defined JIT
+    #if (defined __GNUC__ && !defined __MINGW32__) || defined ASM32 || defined JIT
       /* relocate opcode (only works if the size of an opcode is at least
        * as big as the size of a pointer (jump address); so basically we
        * rely on the opcode and a pointer being 32-bit
@@ -1679,7 +1679,7 @@ int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char
 #define CHKSTACK()      if (stk>amx->stp) ABORT(amx, AMX_ERR_STACKLOW)
 #define CHKHEAP()       if (hea<amx->hlw) ABORT(amx, AMX_ERR_HEAPLOW)
 
-#if defined __GNUC__ && !(defined ASM32 || defined JIT)
+#if (defined __GNUC__ && !defined __MINGW32__) && !(defined ASM32 || defined JIT)
     /* GNU C version uses the "labels as values" extension to create
      * fast "indirect threaded" interpreter.
      */
