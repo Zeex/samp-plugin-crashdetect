@@ -1,3 +1,6 @@
+All files in this directory, except patches, README.txt and CMakeLists.txt,
+are covered by the following license:
+
 The software toolkit "Pawn" (the compiler, the abstract machine and the
 documentation) are copyright (c) 1997-2005 by ITB CompuPhase. The Intel
 assembler implementation of the abstract machine and the just-in-time
