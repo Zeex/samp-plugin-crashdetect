@@ -80,7 +80,7 @@ if(WIN32)
 	endif()
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX AND UNIX)
 	target_link_Libraries(crashdetect -ldl)
 endif()
 
