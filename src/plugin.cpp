@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -32,7 +32,7 @@
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
-		crashdetect::RuntimeError(amx, index, error);		
+		crashdetect::RuntimeError(amx, index, error);
 	}
 	return AMX_ERR_NONE;
 }
@@ -45,32 +45,88 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 	return crashdetect::GetInstance(amx)->HandleAmxExec(retval, index);
 }
 
+#if defined _MSC_VER
+
+static int CallAmxRelease(AMX *amx, cell amx_addr, void *caller) {
+	return crashdetect::GetInstance(amx)->HandleAmxRelease(amx_addr, caller);
+}
+
+static __declspec(naked) int AMXAPI AmxRelease(AMX *amx, cell amx_addr) {
+	__asm push ebp
+	__asm mov ebp, esp
+	__asm push dword ptr [ebp + 4]
+	__asm push dword ptr [ebp + 12]
+	__asm push dword ptr [ebp + 8]
+	__asm call CallAmxRelease
+	__asm add esp, 12
+	__asm pop ebp
+	__asm ret
+}
+
+#elif defined __GNUC__
+
+extern "C" int AMXAPI CallAmxRelease(AMX *amx, cell amx_addr, void *caller) {
+	return crashdetect::GetInstance(amx)->HandleAmxRelease(amx_addr, caller);
+}
+
+extern "C" int AMXAPI AmxRelease(AMX *amx, cell amx_addr);
+
+__asm__ __volatile__ (
+#if defined WIN32
+"_AmxRelease:\n"
+#else
+"AmxRelease:\n"
+#endif
+	"pushl %ebp;"
+	"movl %esp, %ebp;"
+	"pushl 4(%ebp);"
+	"pushl 12(%ebp);"
+	"pushl 8(%ebp);"
+	#if defined WIN32
+	"call _CallAmxRelease;"
+	#else
+	"call CallAmxRelease;"
+	#endif
+	"add $12, %esp;"
+	"pop %ebp;"
+	"ret;"
+);
+
+#else
+	#error Unsupported compiler
+#endif
+
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	void **exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
-	void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
 
-	// Make sure amx_Exec() is not hooked by someone else, e.g. sampgdk or profiler.
-	// In that case we can break an existing hook chain.
-	void *funAddr = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
-	if (funAddr == 0) {
+	void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
+	void *amx_Exec_sub = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
+
+	if (amx_Exec_sub == 0) {
 		new JumpX86(amx_Exec_ptr, (void*)AmxExec);
 	} else {
-		std::string module = fileutils::GetFileName(os::GetModulePath(funAddr));
-		if (!module.empty() && module != "samp-server.exe" && module != "samp03svr") {
+		std::string module = fileutils::GetFileName(os::GetModulePath(amx_Exec_sub));
+		if (!module.empty()) {
 			logprintf("  Warning: Runtime error detection will not work during this run because ");
 			logprintf("           %s has been loaded before crashdetect.", module.c_str());
 		}
+	}
+
+	void *amx_Release_ptr = exports[PLUGIN_AMX_EXPORT_Release];
+	void *amx_Release_sub = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Release_ptr));
+
+	if (amx_Release_sub == 0) {
+		new JumpX86(amx_Release_ptr, (void*)AmxRelease);
 	}
 
 	os::SetCrashHandler(crashdetect::Crash);
 	os::SetInterruptHandler(crashdetect::Interrupt);
 
 	logprintf("  crashdetect v"PLUGIN_VERSION_STRING" is OK.");
-
 	return true;
 }
 
@@ -81,6 +137,6 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	crashdetect::DestroyInstance(amx);	
+	crashdetect::DestroyInstance(amx);
 	return AMX_ERR_NONE;
 }

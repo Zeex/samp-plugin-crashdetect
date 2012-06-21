@@ -43,10 +43,12 @@ public:
 
 	int HandleAmxCallback(cell index, cell *result, cell *params);
 	int HandleAmxExec(cell *retval, int index);
+	int HandleAmxRelease(cell amx_addr, void *releaser);
 
 	void HandleCrash();
 	void HandleRuntimeError(int index, int error);
 	void HandleInterrupt();
+	void HandleReleaseError(cell address, void *releaser);
 
 	static void PrintAmxBacktrace();
 	static void PrintNativeBacktrace(int framesToSkip = 0);

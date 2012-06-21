@@ -130,6 +130,13 @@ crashdetect::crashdetect(AMX *amx)
 	prevCallback_ = amx_->callback;	
 }
 
+int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
+	npCalls_.push(NPCall(NPCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
+	int retcode = prevCallback_(amx_, index, result, params);	
+	npCalls_.pop();
+	return retcode;
+}
+
 int crashdetect::HandleAmxExec(cell *retval, int index) {
 	npCalls_.push(NPCall(NPCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
 
@@ -144,11 +151,11 @@ int crashdetect::HandleAmxExec(cell *retval, int index) {
 	return retcode;
 }
 
-int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
-	npCalls_.push(NPCall(NPCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
-	int retcode = prevCallback_(amx_, index, result, params);	
-	npCalls_.pop();
-	return retcode;
+int crashdetect::HandleAmxRelease(cell amx_addr, void *releaser) {
+	if (amx_addr < amx_->hlw || amx_addr >= amx_->stk) {
+		HandleReleaseError(amx_addr, releaser);
+	}
+	return amx_Release(amx_, amx_addr);
 }
 
 void crashdetect::HandleRuntimeError(int index, int error) {
@@ -214,6 +221,15 @@ void crashdetect::HandleCrash() {
 void crashdetect::HandleInterrupt() {
 	logprintf("Server recieved interrupt signal while executing %s", amxName_.c_str());
 	PrintAmxBacktrace();
+}
+
+void crashdetect::HandleReleaseError(cell address, void *releaser) {
+	std::string plugin = fileutils::GetFileName(os::GetModulePath(releaser));
+	if (plugin.empty()) {
+		plugin.assign("<unknown>");
+	}
+	logprintf("Heap corruption detected:");
+	logprintf("  %s [%08x] is trying to release memory at %08x", plugin.c_str(), releaser, address);
 }
 
 // static
