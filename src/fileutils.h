@@ -32,6 +32,7 @@
 namespace fileutils {
 
 std::string GetFileName(const std::string &path);
+std::string GetBaseName(const std::string &path);
 std::string GetExtenstion(const std::string &path);
 
 std::time_t GetModificationTime(const std::string &path);

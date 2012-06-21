@@ -38,6 +38,15 @@ std::string fileutils::GetFileName(const std::string &path) {
 	return path;
 }
 
+std::string fileutils::GetBaseName(const std::string &path) {
+	std::string base = GetFileName(path);
+	std::string::size_type period = base.rfind('.');
+	if (period != std::string::npos) {
+		base.erase(period);
+	} 
+	return base;
+}
+
 std::string fileutils::GetExtenstion(const std::string &path) {
 	std::string ext;
 	std::string::size_type period = path.rfind('.');
