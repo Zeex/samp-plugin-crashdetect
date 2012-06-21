@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2012, Zeex
+// Copyright (c) 2012, Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -117,12 +117,12 @@ bool JumpX86::IsInstalled() const {
 }
 
 // static 
-void *JumpX86::GetTargetAddress(unsigned char *jmp) {
-	if (*jmp == 0xE9) {
-		uint32_t next_instr = reinterpret_cast<uint32_t>(jmp + kJmpInstrSize);
-		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(jmp + 1);
+void *JumpX86::GetTargetAddress(void *jmp) {
+	if (*reinterpret_cast<unsigned char*>(jmp) == 0xE9) {
+		uint32_t next_instr = reinterpret_cast<uint32_t>(reinterpret_cast<char*>(jmp) + kJmpInstrSize);
+		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(reinterpret_cast<char*>(jmp) + 1);
 		uint32_t abs_addr = rel_addr + next_instr;
 		return reinterpret_cast<void*>(abs_addr);
-	} 
+	}
 	return 0;
 }
