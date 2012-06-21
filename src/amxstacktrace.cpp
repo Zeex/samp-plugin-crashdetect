@@ -94,38 +94,30 @@ static inline bool IsInCode(ucell address, AMX *amx) {
 AMXStackFrame::AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo &debugInfo) 
 	: frmAddr_(0), retAddr_(0), funAddr_(0)
 {
+	ucell retAddr = 0;
+
+	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
+
+	ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
+	ucell code = reinterpret_cast<ucell>(amx->base) + hdr->cod;
+
 	if (IsOnStack(frmAddr, amx)) {
-		AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-
-		ucell data = reinterpret_cast<ucell>(amx->base + hdr->dat);
-		ucell code = reinterpret_cast<ucell>(amx->base) + hdr->cod;
-
-		ucell retAddr = *(reinterpret_cast<ucell*>(data + frmAddr) + 1);
-		if (IsInCode(retAddr, amx)) {
-			Init(amx, frmAddr, retAddr, 0, debugInfo);
-		}
+		retAddr = *(reinterpret_cast<ucell*>(data + frmAddr) + 1);
 	}
+
+	Init(amx, frmAddr, retAddr, 0, debugInfo);
 }
 
 AMXStackFrame::AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo &debugInfo) 
 	: frmAddr_(0), retAddr_(0), funAddr_(0)
 {
-	if (IsInCode(retAddr, amx) && 
-	    IsOnStack(frmAddr, amx)) 
-	{
-		Init(amx, frmAddr, retAddr, 0, debugInfo);
-	}
+	Init(amx, frmAddr, retAddr, 0, debugInfo);
 }
 
 AMXStackFrame::AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo) 
 	: frmAddr_(0), retAddr_(0), funAddr_(0)
 {
-	if (IsInCode(retAddr, amx) && 
-	    IsInCode(funAddr, amx) && 
-	    IsOnStack(frmAddr, amx)) 
-	{
-		Init(amx, frmAddr, retAddr, funAddr, debugInfo);
-	}
+	Init(amx, frmAddr, retAddr, funAddr, debugInfo);
 }
 
 static inline char ToASCII(char c) {
@@ -221,10 +213,15 @@ static cell NextFrame(AMX *amx, cell frame) {
 }
 
 void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo) {
-	// Initialize member variables.
-	frmAddr_ = frmAddr;
-	retAddr_ = retAddr;
-	funAddr_ = funAddr;
+	if (IsOnStack(frmAddr, amx)) {
+		frmAddr_ = frmAddr;
+	}
+	if (IsInCode(retAddr, amx)) {
+		retAddr_ = retAddr;
+	}
+	if (IsInCode(funAddr, amx)) {
+		funAddr_ = funAddr;
+	}
 
 	std::stringstream stream;
 
@@ -243,7 +240,7 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 		}
 	}
 
-	if (retAddr_ == funAddr_) {
+	if (retAddr_ == funAddr_ || retAddr_ == 0) {
 		// The return address isn't real...
 		stream << "???????? in ";
 	} else {
@@ -271,19 +268,17 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 
 	stream << " (";
 
-	if (fun_) {
-		// Get function parameters.
+	if (fun_ && frmAddr_ != 0) {
+		// Get function arguments and sort the by address.
 		std::remove_copy_if(
 			debugInfo.GetSymbols().begin(), 
 			debugInfo.GetSymbols().end(), 
 			std::back_inserter(args_), 
 			std::not1(IsArgumentOf(fun_.GetCodeStartAddress()))
 		);
-
-		// Order them by address.
 		std::sort(args_.begin(), args_.end());
 
-		// Build a comma-separated list of args_ and their values.
+		// Build a comma-separated list of arguments and their values.
 		for (std::size_t i = 0; i < args_.size(); i++) {
 			AMXDebugInfo::Symbol &arg = args_[i];
 
