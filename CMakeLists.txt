@@ -24,6 +24,7 @@ set(SOURCES
 	src/amxutils.h
 	src/configreader.cpp
 	src/configreader.h
+	src/compiler.h
 	src/crashdetect.cpp
 	src/crashdetect.h
 	src/fileutils.cpp
@@ -42,13 +43,19 @@ set(SOURCES
 )
 
 if(WIN32)
-	set(SOURCES ${SOURCES}
-		src/os-win32.cpp
-	)
+	list(APPEND SOURCES	src/os-win32.cpp)
 elseif(UNIX)
-	set(SOURCES ${SOURCES}
-		src/os-unix.cpp
-	)
+	list(APPEND SOURCES src/os-unix.cpp)
+else()
+	message(FATAL_ERROR "Unsupported operating system.")
+endif()
+
+if(MSVC)
+	list(APPEND SOURCES src/compiler-msvc.cpp)
+elseif(CMAKE_COMPILER_IS_GNUCXX)
+	list(APPEND SOURCES src/compiler-gcc.cpp)
+else()
+	message(FATAL_ERROR "Unsupported compiler.")
 endif()
 
 add_library(crashdetect MODULE ${SOURCES})

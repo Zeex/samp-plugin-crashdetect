@@ -21,6 +21,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include "compiler.h"
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "jump-x86.h"
@@ -45,56 +46,9 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 	return crashdetect::GetInstance(amx)->HandleAmxExec(retval, index);
 }
 
-#if defined _MSC_VER
-
-static int CallAmxRelease(AMX *amx, cell amx_addr, void *caller) {
-	return crashdetect::GetInstance(amx)->HandleAmxRelease(amx_addr, caller);
+static int AMXAPI AmxRelease(AMX *amx, cell amx_addr) {
+	return crashdetect::GetInstance(amx)->HandleAmxRelease(amx_addr, compiler::GetReturnAddress());
 }
-
-static __declspec(naked) int AMXAPI AmxRelease(AMX *amx, cell amx_addr) {
-	__asm push ebp
-	__asm mov ebp, esp
-	__asm push dword ptr [ebp + 4]
-	__asm push dword ptr [ebp + 12]
-	__asm push dword ptr [ebp + 8]
-	__asm call CallAmxRelease
-	__asm add esp, 12
-	__asm pop ebp
-	__asm ret
-}
-
-#elif defined __GNUC__
-
-extern "C" int AMXAPI CallAmxRelease(AMX *amx, cell amx_addr, void *caller) {
-	return crashdetect::GetInstance(amx)->HandleAmxRelease(amx_addr, caller);
-}
-
-extern "C" int AMXAPI AmxRelease(AMX *amx, cell amx_addr);
-
-__asm__ __volatile__ (
-#if defined WIN32
-"_AmxRelease:\n"
-#else
-"AmxRelease:\n"
-#endif
-	"pushl %ebp;"
-	"movl %esp, %ebp;"
-	"pushl 4(%ebp);"
-	"pushl 12(%ebp);"
-	"pushl 8(%ebp);"
-	#if defined WIN32
-	"call _CallAmxRelease;"
-	#else
-	"call CallAmxRelease;"
-	#endif
-	"add $12, %esp;"
-	"pop %ebp;"
-	"ret;"
-);
-
-#else
-	#error Unsupported compiler
-#endif
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
