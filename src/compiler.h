@@ -21,8 +21,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef COMPILER_H
+#define COMPILER_H
+
 namespace compiler {
 
 void *GetReturnAddress(void *frame = 0, int level = 0);
 
-}
+} // namespace compiler
+
+#endif // !COMPILER_H
