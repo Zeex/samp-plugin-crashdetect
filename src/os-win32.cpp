@@ -98,64 +98,86 @@ void os::SetInterruptHandler(void (*handler)()) {
 
 class DbgHelp {
 public:
-	DbgHelp();
 	~DbgHelp();
 
-	BOOL SymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess) const;
-	BOOL SymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const;
+	BOOL SymInitialize(PCSTR UserSearchPath, BOOL fInvadeProcess) const {
+		return SymInitialize_(process_, UserSearchPath, fInvadeProcess);
+	}
+	BOOL SymFromAddr(DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
+		return SymFromAddr_(process_, Address, Displacement, Symbol);
+	}
+	BOOL SymCleanup() const {
+		return SymCleanup_(process_);
+	}
 
-	inline bool OK() const {
+	inline bool IsLoaded() const {
 		return module_ != 0;
 	}
-	inline operator bool() const {
-		return OK();
+	inline bool IsInitialized() const {
+		return initialized_ != FALSE;
 	}
 
+	static DbgHelp &GetGlobal();
+
 private:
+	DbgHelp(bool initialie = true);
+
 	typedef BOOL (WINAPI *SymInitializeType)(HANDLE, PCSTR, BOOL);
 	SymInitializeType SymInitialize_;
 
 	typedef BOOL (WINAPI *SymFromAddrType)(HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
 	SymFromAddrType SymFromAddr_;
 
+	typedef BOOL (WINAPI *SymCleanupType)(HANDLE);
+	SymCleanupType SymCleanup_;
+	
+	BOOL initialized_;
+	HANDLE process_;
 	HMODULE module_;
 };
 
-DbgHelp::DbgHelp()
+DbgHelp::DbgHelp(bool initialize)
 	: module_(LoadLibrary("dbghelp.dll"))
+	, process_(GetCurrentProcess())
+	, initialized_(FALSE)
 {
+	module_ = LoadLibrary("dbghelp.dll");
+
 	SymInitialize_ = (SymInitializeType)GetProcAddress(module_, "SymInitialize");
 	SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
+	SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
+
+	if (initialize) {
+		initialized_ = this->SymInitialize(NULL, TRUE);
+	}
 }
 
 DbgHelp::~DbgHelp() {
 	if (module_ != NULL) {
+		if (initialized_) {
+			this->SymCleanup();
+		}
 		FreeLibrary(module_);
 	}
 }
 
-BOOL DbgHelp::SymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess) const {
-	return SymInitialize_(hProcess, UserSearchPath, fInvadeProcess);
-}
-
-BOOL DbgHelp::SymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
-	return SymFromAddr_(hProcess, Address, Displacement, Symbol);
+// static
+DbgHelp &DbgHelp::GetGlobal() {
+	static DbgHelp dll;
+	return dll;
 }
 
 std::string os::GetSymbolName(void *address, std::size_t maxLength) {
 	std::string name;
 
-	DbgHelp dbgHelpDll;
-	if (dbgHelpDll) {
+	DbgHelp &dbghelp = DbgHelp::GetGlobal();
+	if (dbghelp.IsLoaded()) {
 		SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
 				std::calloc(sizeof(*symbol) + maxLength, 1));
 		symbol->SizeOfStruct = sizeof(*symbol);
 		symbol->MaxNameLen = maxLength;
 
-		HANDLE process = GetCurrentProcess();
-
-		dbgHelpDll.SymInitialize(process, NULL, TRUE);
-		dbgHelpDll.SymFromAddr(process, reinterpret_cast<DWORD64>(address), NULL, symbol);
+		dbghelp.SymFromAddr(reinterpret_cast<DWORD64>(address), NULL, symbol);
 		name.assign(symbol->Name);
 
 		#if defined __GNUC__
