@@ -160,57 +160,69 @@ int crashdetect::HandleAmxRelease(cell amx_addr, void *releaser) {
 
 void crashdetect::HandleRuntimeError(int index, int error) {
 	crashdetect::errorCaught_ = true;
+
 	if (error == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		error = AMX_ERR_NONE;
-	} else {
-		logprintf("Run time error %d: \"%s\"", error, aux_StrError(error));
-		switch (error) {
-			case AMX_ERR_BOUNDS: {
-				cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod + sizeof(cell)));
-				cell index = amx_->pri;
-				if (index < 0) {
-					logprintf("  Accessing element at negative index %d", index);
-				} else {
-					logprintf("  Accessing element at index %d past array upper bound %d", index, bound);
-				}
-				break;
-			}
-			case AMX_ERR_NOTFOUND: {
-				AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
-				int numNatives = 0;
-				amx_NumNatives(amx_, &numNatives);
-				for (int i = 0; i < numNatives; ++i) {
-					if (natives[i].address == 0) {
-						char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
-						logprintf("  %s", name);
-					}
-				}
-				break;
-			}
-			case AMX_ERR_STACKERR:
-				logprintf("  Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", amx_->stk, amx_->hea); 
-				break;
-			case AMX_ERR_STACKLOW:
-				logprintf("  Stack index (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
-				break;
-			case AMX_ERR_HEAPLOW:
-				logprintf("  Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
-				break;
-			case AMX_ERR_INVINSTR: {
-				cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
-				logprintf("  Unknown opcode 0x%x at address 0x%08X", opcode , amx_->cip);
-				break;
-			}
-		}
-		if (error != AMX_ERR_NOTFOUND &&
-		    error != AMX_ERR_INDEX &&
-		    error != AMX_ERR_CALLBACK &&
-		    error != AMX_ERR_INIT) 
-		{
-			PrintAmxBacktrace();			
-		}
-		ExitOnError();
+		return;
 	}
+
+	logprintf("Run time error %d: \"%s\"", error, aux_StrError(error));
+
+	switch (error) {
+		case AMX_ERR_BOUNDS: {
+			cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod + sizeof(cell)));
+			cell index = amx_->pri;
+			if (index < 0) {
+				logprintf("  Accessing element at negative index %d", index);
+			} else {
+				logprintf("  Accessing element at index %d past array upper bound %d", index, bound);
+			}
+			break;
+		}
+		case AMX_ERR_NOTFOUND: {
+			AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
+			int numNatives = 0;
+			amx_NumNatives(amx_, &numNatives);
+			for (int i = 0; i < numNatives; ++i) {
+				if (natives[i].address == 0) {
+					char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
+					logprintf("  %s", name);
+				}
+			}
+			break;
+		}
+		case AMX_ERR_STACKERR:
+			logprintf("  Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", amx_->stk, amx_->hea); 
+			break;
+		case AMX_ERR_STACKLOW:
+			logprintf("  Stack index (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
+			break;
+		case AMX_ERR_HEAPLOW:
+			logprintf("  Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
+			break;
+		case AMX_ERR_INVINSTR: {
+			cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
+			logprintf("  Unknown opcode 0x%x at address 0x%08X", opcode , amx_->cip);
+			break;
+		}
+	}
+
+	// Backtrace is meaningless for certain kinds of errors.
+	if (error != AMX_ERR_NOTFOUND &&
+		error != AMX_ERR_INDEX &&
+		error != AMX_ERR_CALLBACK &&
+		error != AMX_ERR_INIT) 
+	{
+		PrintAmxBacktrace();			
+	}
+
+	// Run a custom shell command if set.
+	std::string command = serverCfg.GetOption("run_on_error", std::string());
+	if (!command.empty()) {
+		std::system(command.c_str());
+	}
+
+	ExitOnError();
 }
 
 void crashdetect::HandleCrash() {
