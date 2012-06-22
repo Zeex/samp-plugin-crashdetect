@@ -36,19 +36,21 @@ public:
 	static crashdetect *GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
-	static void Crash();
-	static void RuntimeError(AMX *amx, cell index, int error);
-	static void Interrupt();
-	static void ExitOnError();	
+	static void OnCrash();
+	static void OnAmxError(AMX *amx, cell index, int error);
+	static void OnInterrupt();
 
 	int HandleAmxCallback(cell index, cell *result, cell *params);
 	int HandleAmxExec(cell *retval, int index);
 	int HandleAmxRelease(cell amx_addr, void *releaser);
 
+private:
 	void HandleCrash();
 	void HandleRuntimeError(int index, int error);
 	void HandleInterrupt();
 	void HandleReleaseError(cell address, void *releaser);
+
+	static void DieOrContinue();
 
 	static void PrintAmxBacktrace();
 	static void PrintNativeBacktrace(int framesToSkip = 0);

@@ -41,7 +41,6 @@
 #include "fileutils.h"
 #include "logprintf.h"
 #include "os.h"
-#include "plugincommon.h"
 #include "x86stacktrace.h"
 
 #include "amx/amx.h"
@@ -49,9 +48,12 @@
 
 #define AMX_EXEC_GDK (-10)
 
+static const char *kLogMessagePrefix = "[debug] ";
+static const char *kServerConfig = "server.cfg";
+
 bool crashdetect::errorCaught_ = false;
 std::stack<crashdetect::NPCall> crashdetect::npCalls_;
-ConfigReader crashdetect::serverCfg("server.cfg");
+ConfigReader crashdetect::serverCfg(kServerConfig);
 crashdetect::InstanceMap crashdetect::instances_;
 
 // static
@@ -71,7 +73,7 @@ void crashdetect::DestroyInstance(AMX *amx) {
 }
 
 // static
-void crashdetect::Crash() {
+void crashdetect::OnCrash() {
 	// Check if the last native/public call succeeded
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
@@ -84,12 +86,12 @@ void crashdetect::Crash() {
 }
 
 // static
-void crashdetect::RuntimeError(AMX *amx, cell index, int error) {
+void crashdetect::OnAmxError(AMX *amx, cell index, int error) {
 	GetInstance(amx)->HandleRuntimeError(index, error);
 }
 
 // static
-void crashdetect::Interrupt() {	
+void crashdetect::OnInterrupt() {	
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleInterrupt();
@@ -100,7 +102,7 @@ void crashdetect::Interrupt() {
 }
 
 // static
-void crashdetect::ExitOnError() {
+void crashdetect::DieOrContinue() {
 	if (serverCfg.GetOption("die_on_error", false)) {
 		logprintf("Aborting...");
 		std::exit(EXIT_FAILURE);
@@ -207,7 +209,6 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 		}
 	}
 
-	// Backtrace is meaningless for certain kinds of errors.
 	if (error != AMX_ERR_NOTFOUND &&
 		error != AMX_ERR_INDEX &&
 		error != AMX_ERR_CALLBACK &&
@@ -216,13 +217,12 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 		PrintAmxBacktrace();			
 	}
 
-	// Run a custom shell command if set.
 	std::string command = serverCfg.GetOption("run_on_error", std::string());
 	if (!command.empty()) {
 		std::system(command.c_str());
 	}
 
-	ExitOnError();
+	DieOrContinue();
 }
 
 void crashdetect::HandleCrash() {
@@ -348,7 +348,7 @@ void crashdetect::logprintf(const char *format, ...) {
 	va_start(args, format);
 
 	std::string prefixed_format;
-	prefixed_format.append("[debug] ");
+	prefixed_format.append(kLogMessagePrefix);
 	prefixed_format.append(format);
 
 	::vlogprintf(prefixed_format.c_str(), args);

@@ -23,7 +23,7 @@
 
 #include "compiler.h"
 
-__declspec(naked) void *compiler::GetReturnAddress(void *frame, int level) {
+__declspec(naked) void *compiler::GetReturnAddress(void *frame, int depth) {
 	__asm mov eax, dword ptr [esp + 4]
 	__asm cmp eax, 0
 	__asm jnz init

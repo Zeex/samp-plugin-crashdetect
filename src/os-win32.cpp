@@ -38,7 +38,9 @@
 
 const char os::kDirSepChar = '\\';
 
-#undef GetModulePath
+#if defined GetModulePath
+	#undef GetModulePath
+#endif
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	std::vector<char> name(maxLength + 1);
@@ -57,8 +59,7 @@ static void (*crashHandler)() = 0;
 static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
 
 // Our exception filter
-static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo)
-{
+static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
 	if (::crashHandler != 0) {
 		::crashHandler();
 	}

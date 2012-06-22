@@ -26,7 +26,7 @@
 
 namespace compiler {
 
-void *GetReturnAddress(void *frame = 0, int level = 0);
+void *GetReturnAddress(void *frame = 0, int depth = 0);
 
 } // namespace compiler
 
