@@ -52,7 +52,7 @@ private:
 	static void DieOrContinue();
 
 	static void PrintAmxBacktrace();
-	static void PrintNativeBacktrace(void *context = 0);
+	static void PrintSystemBacktrace(void *context = 0);
 
 	static void logprintf(const char *format, ...);
 

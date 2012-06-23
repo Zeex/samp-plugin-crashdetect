@@ -81,7 +81,7 @@ void crashdetect::SystemException(void *context) {
 	} else {
 		logprintf("Server crashed due to an unknown error");
 	}
-	PrintNativeBacktrace(context);
+	PrintSystemBacktrace(context);
 }
 
 // static
@@ -92,7 +92,7 @@ void crashdetect::SystemInterrupt() {
 	} else {
 		logprintf("Server recieved an interrupt signal");
 	}	
-	PrintNativeBacktrace();
+	PrintSystemBacktrace();
 }
 
 // static
@@ -236,7 +236,7 @@ void crashdetect::HandleReleaseError(cell address, void *releaser) {
 	}
 	logprintf("Heap corruption detected:");
 	logprintf("  %s [%08x] is trying to release memory at %08x", plugin.c_str(), releaser, address);
-	PrintNativeBacktrace();
+	PrintSystemBacktrace();
 }
 
 // static
@@ -317,8 +317,8 @@ void crashdetect::PrintAmxBacktrace() {
 }
 
 // static
-void crashdetect::PrintNativeBacktrace(void *context) {
-	logprintf("Native backtrace:");
+void crashdetect::PrintSystemBacktrace(void *context) {
+	logprintf("System backtrace:");
 
 	int level = 0;
 
