@@ -77,10 +77,18 @@ std::deque<X86StackFrame> X86StackTrace::CollectFrames() const {
 		? compiler::GetFrameAddress()
 		: topFrame_;
 
+	void *top = stackTop_ == 0
+		? compiler::GetStackTop()
+		: stackTop_;
+
+	void *bot = stackBottom_ == 0
+		? compiler::GetStackBottom()
+		: stackBottom_;
+
 	for (int i = 0; i < maxDepth_; i++) {
 		if (frame == 0
-			|| (frame >= stackTop_ && stackTop_ != 0)
-			|| (frame < stackBottom_ && stackBottom_ != 0)) {
+			|| (frame >= top && top != 0)
+			|| (frame < bot && bot != 0)) {
 			break;
 		}
 
