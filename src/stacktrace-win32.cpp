@@ -75,7 +75,11 @@ public:
 		PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
 		PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
 		PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
-	);
+	) {
+		return StackWalk64_(MachineType, hProcess, hThread, StackFrame, ContextRecord,
+		                    ReadMemoryRoutine, FunctionTableAccessRoutine, GetModuleBaseRoutine,
+		                    TranslateAddress);
+	}
 
 	inline bool IsLoaded() const {
 		return module_ != 0;
@@ -95,7 +99,7 @@ private:
 	SymCleanupType SymCleanup_;
 
 	typedef BOOL (WINAPI *StackWalk64Type)(DWORD, HANDLE, HANDLE, LPSTACKFRAME64, LPVOID ContextRecord,
-	                                       PREAD_PROCESS_MEMORY_ROUTINE64, PFUNCTION_TABLE_ACCESS_ROUTINE,
+	                                       PREAD_PROCESS_MEMORY_ROUTINE64, PFUNCTION_TABLE_ACCESS_ROUTINE64,
 	                                       PGET_MODULE_BASE_ROUTINE64, PTRANSLATE_ADDRESS_ROUTINE64);
 	StackWalk64Type StackWalk64_;
 
@@ -172,7 +176,7 @@ StackTrace::StackTrace(int skip, int max, void *theirContext) {
 	}
 
 	for (int i = 0; (i < max || max == 0); i++) {
-		BOOL result = StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stackFrame,
+		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stackFrame,
 		                          (PVOID)context, NULL, NULL, NULL, NULL);
 		DWORD64 address = stackFrame.AddrReturn.Offset;
 		if (!result || address == 0) {
