@@ -32,8 +32,6 @@
 #include <DbgHelp.h>
 #include <sys/types.h>
 
-const char os::kDirSepChar = '\\';
-
 #if defined GetModulePath
 	#undef GetModulePath
 #endif
@@ -48,13 +46,9 @@ std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	return std::string(&name[0]);
 }
 
-// The exception handler - it is set via SetExceptionHandler()
 static os::ExceptionHandler exceptionHandler = 0;
-
-// Previous exception filter
 static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
 
-// Our exception filter
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
 	if (::exceptionHandler != 0) {
 		::exceptionHandler();
@@ -74,10 +68,8 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
 	}
 }
 
-// The interrupt (Ctrl+C) handler - set via SetInterruptHandler
 static os::InterruptHandler interruptHandler;
 
-// Console event handler
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 	switch (dwCtrlType) {
 	case CTRL_C_EVENT:
@@ -91,19 +83,4 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 void os::SetInterruptHandler(InterruptHandler handler) {
 	::interruptHandler = handler;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
-}
-
-void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
-		bool (*callback)(const char *, void *), void *userData)
-{
-	WIN32_FIND_DATA findFileData;
-	HANDLE hFindFile = FindFirstFile((directory + "\\" + pattern).c_str(), &findFileData);
-	if (hFindFile != INVALID_HANDLE_VALUE) {
-		do {
-			if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-				callback(findFileData.cFileName, userData);
-			}
-		} while (FindNextFile(hFindFile, &findFileData) != 0);
-		FindClose(hFindFile);
-	}
 }

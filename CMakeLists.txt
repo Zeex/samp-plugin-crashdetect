@@ -44,11 +44,13 @@ set(SOURCES
 
 if(WIN32)
 	list(APPEND SOURCES
+		src/fileutils-win32.cpp
 		src/os-win32.cpp
 		src/stacktrace-win32.cpp
 	)
 elseif(UNIX)
 	list(APPEND SOURCES
+		src/fileutils-unix.cpp
 		src/os-unix.cpp
 		src/stacktrace-unix.cpp
 	)

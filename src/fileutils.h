@@ -24,12 +24,13 @@
 #ifndef FILEUTILS_H
 #define FILEUTILS_H
 
+#include <ctime>
 #include <string>
 #include <vector>
 
-#include <ctime>
-
 namespace fileutils {
+
+extern const char kNativePathSep;
 
 std::string GetFileName(const std::string &path);
 std::string GetBaseName(const std::string &path);

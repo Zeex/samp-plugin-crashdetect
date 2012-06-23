@@ -30,15 +30,10 @@
 #include <string>
 #include <vector>
 
-#include <dirent.h>
-#include <fnmatch.h>
-
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE 1 // for dladdr()
 #endif
 #include <dlfcn.h> 
-
-const char os::kDirSepChar = '/';
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	std::vector<char> name(maxLength + 1);
@@ -50,10 +45,7 @@ std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	return std::string(&name[0]);
 }
 
-// The exception handler - it is set via SetExceptionHandler()
 static os::ExceptionHandler exceptionHandler = 0;
-
-// Previous SIGSEGV handler
 static void (*previousSIGSEGVHandler)(int);
 
 static void HandleSIGSEGV(int sig)
@@ -72,13 +64,9 @@ void os::SetExceptionHandler(ExceptionHandler handler) {::exceptionHandler = han
 	}
 }
 
-// The interrupt (Ctrl+C) handler - set via SetInterruptHandler
 static os::InterruptHandler interruptHandler;
-
-// Previous SIGINT handler
 static void (*previousSIGINTHandler)(int);
 
-// Out SIGINT handler
 static void HandleSIGINT(int sig) {
 	if (::interruptHandler != 0) {
 		::interruptHandler();
@@ -90,19 +78,4 @@ static void HandleSIGINT(int sig) {
 void os::SetInterruptHandler(InterruptHandler handler) {
 	::interruptHandler = handler;
 	::previousSIGINTHandler = signal(SIGINT, HandleSIGINT);
-}
-
-void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,
-		bool (*callback)(const char *, void *), void *userData) 
-{
-	DIR *dp;
-	if ((dp = opendir(directory.c_str())) != 0) {
-		struct dirent *dirp;
-		while ((dirp = readdir(dp)) != 0) {
-			if (!fnmatch(pattern.c_str(), dirp->d_name, FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
-				callback(dirp->d_name, userData);
-			}
-		}
-		closedir(dp);
-	}
 }

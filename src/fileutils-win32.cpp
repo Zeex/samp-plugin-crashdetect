@@ -21,34 +21,30 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef OS_H
-#define OS_H
-
-#include <cstddef>
-#include <cstdio>
 #include <string>
+#include <vector>
 
-namespace os {
+#include <Windows.h>
 
-const std::size_t kMaxModulePathLength = FILENAME_MAX;
-const std::size_t kMaxSymbolNameLength = 256;
+#include "fileutils.h"
 
-// GetModuleNameByAddress finds which module (executable/DLL) a given 
-// address belongs to.
-std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
+namespace fileutils {
 
-typedef void (*ExceptionHandler)();
+const char kNativePathSep = '\\';
 
-// SetExceptionHandler sets a global exception handler on Windows and SIGSEGV
-// signal handler on Linux.
-void SetExceptionHandler(ExceptionHandler handler);
+void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
+                                  std::vector<std::string> &files) 
+{
+	WIN32_FIND_DATA findFileData;
+	HANDLE hFindFile = FindFirstFile((directory + kNativePathSep + pattern).c_str(), &findFileData);
+	if (hFindFile != INVALID_HANDLE_VALUE) {
+		do {
+			if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				files.push_back(findFileData.cFileName);
+			}
+		} while (FindNextFile(hFindFile, &findFileData) != 0);
+		FindClose(hFindFile);
+	}
+}
 
-typedef void (*InterruptHandler)();
-
-// SetInterruptHandler sets a global Ctrl+C event handler on Windows
-// and SIGINT signal handler on Linux.
-void SetInterruptHandler(InterruptHandler handler);
-
-} // namespace os
-
-#endif // !OS_H
+} // namespace fileutils

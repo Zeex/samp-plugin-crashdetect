@@ -27,10 +27,9 @@
 
 #include <sys/stat.h>
 
-#include "fileutils.h"
-#include "os.h"
+namespace fileutils {
 
-std::string fileutils::GetFileName(const std::string &path) {
+std::string GetFileName(const std::string &path) {
 	std::string::size_type lastSep = path.find_last_of("/\\");
 	if (lastSep != std::string::npos) {
 		return path.substr(lastSep + 1);
@@ -38,7 +37,7 @@ std::string fileutils::GetFileName(const std::string &path) {
 	return path;
 }
 
-std::string fileutils::GetBaseName(const std::string &path) {
+std::string GetBaseName(const std::string &path) {
 	std::string base = GetFileName(path);
 	std::string::size_type period = base.rfind('.');
 	if (period != std::string::npos) {
@@ -47,7 +46,7 @@ std::string fileutils::GetBaseName(const std::string &path) {
 	return base;
 }
 
-std::string fileutils::GetExtenstion(const std::string &path) {
+std::string GetExtenstion(const std::string &path) {
 	std::string ext;
 	std::string::size_type period = path.rfind('.');
 	if (period != std::string::npos) {
@@ -56,7 +55,7 @@ std::string fileutils::GetExtenstion(const std::string &path) {
 	return ext;
 }
 
-std::time_t fileutils::GetModificationTime(const std::string &path) {
+std::time_t GetModificationTime(const std::string &path) {
 	struct stat attrib;
 	if (stat(path.c_str(), &attrib) == 0) {
 		return attrib.st_mtime;
@@ -64,16 +63,4 @@ std::time_t fileutils::GetModificationTime(const std::string &path) {
 	return 0;
 }
 
-typedef std::vector<std::string> StringVector;
-
-static bool ListCallback(const char *filename, void *param) {
-	StringVector *files = reinterpret_cast<StringVector*>(param);
-	files->push_back(filename);
-	return true;
-}
-
-void fileutils::GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
-		std::vector<std::string> &files) 
-{
-	os::ListDirectoryFiles(directory, pattern, ListCallback, &files);
-}
+} // namespace fileutils

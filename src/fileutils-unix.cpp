@@ -21,34 +21,31 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef OS_H
-#define OS_H
-
-#include <cstddef>
-#include <cstdio>
 #include <string>
+#include <vector>
 
-namespace os {
+#include <dirent.h>
+#include <fnmatch.h>
 
-const std::size_t kMaxModulePathLength = FILENAME_MAX;
-const std::size_t kMaxSymbolNameLength = 256;
+#include "fileutils.h"
 
-// GetModuleNameByAddress finds which module (executable/DLL) a given 
-// address belongs to.
-std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
+namespace fileutils {
 
-typedef void (*ExceptionHandler)();
+const char kNativePathSep = '/';
 
-// SetExceptionHandler sets a global exception handler on Windows and SIGSEGV
-// signal handler on Linux.
-void SetExceptionHandler(ExceptionHandler handler);
+void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
+                                  std::vector<std::string> &files) 
+{
+	DIR *dp;
+	if ((dp = opendir(directory.c_str())) != 0) {
+		struct dirent *dirp;
+		while ((dirp = readdir(dp)) != 0) {
+			if (!fnmatch(pattern.c_str(), dirp->d_name, FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
+				files.push_back(dirp->d_name);
+			}
+		}
+		closedir(dp);
+	}
+}
 
-typedef void (*InterruptHandler)();
-
-// SetInterruptHandler sets a global Ctrl+C event handler on Windows
-// and SIGINT signal handler on Linux.
-void SetInterruptHandler(InterruptHandler handler);
-
-} // namespace os
-
-#endif // !OS_H
+} // namespace fileutils
