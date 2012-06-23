@@ -50,3 +50,4 @@ void GetDirectoryFiles(const std::string &directory, const std::string &pattern,
 }
 
 } // namespace fileutils
+
