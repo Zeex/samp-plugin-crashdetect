@@ -37,7 +37,7 @@ const std::size_t kMaxSymbolNameLength = 256;
 // address belongs to.
 std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
 
-typedef void (*ExceptionHandler)();
+typedef void (*ExceptionHandler)(void *context);
 
 // SetExceptionHandler sets a global exception handler on Windows and SIGSEGV
 // signal handler on Linux.

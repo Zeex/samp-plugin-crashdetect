@@ -74,14 +74,14 @@ void crashdetect::DestroyInstance(AMX *amx) {
 }
 
 // static
-void crashdetect::OnCrash() {
+void crashdetect::OnCrash(void *context) {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleCrash();
 	} else {
 		logprintf("Server crashed due to an unknown error");
 	}
-	PrintNativeBacktrace();
+	PrintNativeBacktrace(context);
 }
 
 // static
@@ -321,12 +321,12 @@ void crashdetect::PrintAmxBacktrace() {
 }
 
 // static
-void crashdetect::PrintNativeBacktrace(int framesToSkip) {
+void crashdetect::PrintNativeBacktrace(void *context) {
 	logprintf("Native backtrace:");
 
 	int level = 0;
 
-	StackTrace trace(framesToSkip);
+	StackTrace trace(0, 0, context);
 	std::deque<StackFrame> frames = trace.GetFrames();	
 
 	for (std::deque<StackFrame>::const_iterator iterator = frames.begin();

@@ -40,23 +40,38 @@ public:
 	bool HaveSymInitialize() const {
 		return SymInitialize_ != NULL;
 	}
-	BOOL SymInitialize(PCSTR UserSearchPath, BOOL fInvadeProcess) const {
-		return SymInitialize_(process_, UserSearchPath, fInvadeProcess);
+	BOOL SymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess) const {
+		return SymInitialize_(hProcess, UserSearchPath, fInvadeProcess);
 	}
 
 	bool HaveSymFromAddr() const {
 		return SymFromAddr_ != NULL;
 	}
-	BOOL SymFromAddr(DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
-		return SymFromAddr_(process_, Address, Displacement, Symbol);
+	BOOL SymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
+		return SymFromAddr_(hProcess, Address, Displacement, Symbol);
 	}
 
 	bool HaveSymCleanup() const {
 		return SymCleanup_ != NULL;
 	}
-	BOOL SymCleanup() const {
-		return SymCleanup_(process_);
+	BOOL SymCleanup(HANDLE hProcess) const {
+		return SymCleanup_(hProcess);
 	}
+
+	bool HaveStackWalk64() const {
+		return StackWalk64_ != NULL;
+	}
+	BOOL StackWalk64(
+		DWORD MachineType,
+		HANDLE hProcess,
+		HANDLE hThread,
+		LPSTACKFRAME64 StackFrame,
+		LPVOID ContextRecord,
+		PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine,
+		PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
+		PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
+		PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
+	);
 
 	inline bool IsLoaded() const {
 		return module_ != 0;
@@ -74,6 +89,11 @@ private:
 
 	typedef BOOL (WINAPI *SymCleanupType)(HANDLE);
 	SymCleanupType SymCleanup_;
+
+	typedef BOOL (WINAPI *StackWalk64Type)(DWORD, HANDLE, HANDLE, LPSTACKFRAME64, LPVOID ContextRecord,
+	                                       PREAD_PROCESS_MEMORY_ROUTINE64, PFUNCTION_TABLE_ACCESS_ROUTINE,
+	                                       PGET_MODULE_BASE_ROUTINE64, PTRANSLATE_ADDRESS_ROUTINE64);
+	StackWalk64Type StackWalk64_;
 
 	HMODULE module_;
 	HANDLE process_;
@@ -93,6 +113,7 @@ DbgHelp::DbgHelp(HANDLE process)
 		SymInitialize_ = (SymInitializeType)GetProcAddress(module_, "SymInitialize");
 		SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
 		SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
+		StackWalk64_ = (StackWalk64Type)GetProcAddress(module_, "StackWalk64");
 	}
 
 	if (SymInitialize_ != NULL) {
@@ -109,28 +130,59 @@ DbgHelp::~DbgHelp() {
 	}
 }
 
-StackTrace::StackTrace(int skip, int max) {
-	void *trace[kMaxFrames];
-	int traceLength = CaptureStackBackTrace(0, kMaxFrames, trace, NULL);
+StackTrace::StackTrace(int skip, int max, void *theirContext) {
+	HANDLE process = GetCurrentProcess();
+	DbgHelp dbghelp(process);
+	if (!dbghelp.IsLoaded()) {
+		return;
+	}
+
+	PCONTEXT context = reinterpret_cast<PCONTEXT>(theirContext);
+	CONTEXT currentContext;
+	if (theirContext == NULL) {
+		RtlCaptureContext(&currentContext);
+		context = &currentContext;
+	}
+
+	STACKFRAME64 stackFrame;
+	ZeroMemory(&stackFrame, sizeof(stackFrame));
+
+	// http://stackoverflow.com/a/136942/249230
+	stackFrame.AddrPC.Offset = context->Eip;
+	stackFrame.AddrPC.Mode = AddrModeFlat;
+	stackFrame.AddrFrame.Offset = context->Ebp;
+	stackFrame.AddrFrame.Mode = AddrModeFlat;
+	stackFrame.AddrStack.Offset = context->Esp;
+	stackFrame.AddrStack.Mode = AddrModeFlat;
+
+	if (!dbghelp.HaveStackWalk64()) {
+		return;
+	}
 
 	SYMBOL_INFO *symbol = NULL;
 
-	DbgHelp dbghelp(GetCurrentProcess());
 	if (dbghelp.IsInitialized()) {
 		symbol = reinterpret_cast<SYMBOL_INFO*>(std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
 		symbol->SizeOfStruct = sizeof(*symbol);
 		symbol->MaxNameLen = kMaxSymbolNameLength;
 	}
 
-	for (int i = 0; i < traceLength && (i < max || max == 0); i++) {
+	for (int i = 0; (i < max || max == 0); i++) {
+		BOOL result = StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stackFrame,
+		                          (PVOID)context, NULL, NULL, NULL, NULL);
+		DWORD64 address = stackFrame.AddrReturn.Offset;
+		if (!result || address == 0) {
+			break;
+		}
+
 		if (i >= skip) {
-			CHAR *name = "";
+			const CHAR *name = "";
 			if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
-				if (dbghelp.SymFromAddr(reinterpret_cast<DWORD64>(trace[i]), NULL, symbol)) {
+				if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
 					name = symbol->Name;
 				}
 			}
-			frames_.push_back(StackFrame(trace[i], name));
+			frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
 		}
 	}
 

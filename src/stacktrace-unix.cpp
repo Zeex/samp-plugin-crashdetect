@@ -42,7 +42,7 @@ static std::string GetSymbolName(const std::string &symbol) {
 	return name;
 }
 
-StackTrace::StackTrace(int skip, int max) {
+StackTrace::StackTrace(int skip, int max, void *context) {
 	void *trace[kMaxFrames];
 	int traceLength = backtrace(trace, kMaxFrames);
 	char **symbols = backtrace_symbols(trace, traceLength);

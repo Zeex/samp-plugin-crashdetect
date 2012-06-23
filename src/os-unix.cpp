@@ -51,7 +51,7 @@ static void (*previousSIGSEGVHandler)(int);
 static void HandleSIGSEGV(int sig)
 {
 	if (::exceptionHandler != 0) {
-		::exceptionHandler();
+		::exceptionHandler(0);
 	}
 	signal(sig, SIG_DFL);
 }

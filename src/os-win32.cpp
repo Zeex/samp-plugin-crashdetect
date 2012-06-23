@@ -51,7 +51,7 @@ static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
 
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
 	if (::exceptionHandler != 0) {
-		::exceptionHandler();
+		::exceptionHandler(exceptionInfo->ContextRecord);
 	}
 	if (::previousExceptionFilter != 0) {
 		return ::previousExceptionFilter(exceptionInfo);
