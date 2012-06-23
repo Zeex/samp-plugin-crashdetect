@@ -31,10 +31,11 @@
 
 namespace fileutils {
 
-const char kNativePathSep = '/';
+const char kNativePathSepChar = '/';
+const char *kNativePathSepString = "/";
 
 void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
-                                  std::vector<std::string> &files) 
+                       std::vector<std::string> &files) 
 {
 	DIR *dp;
 	if ((dp = opendir(directory.c_str())) != 0) {

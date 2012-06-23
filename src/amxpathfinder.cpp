@@ -84,11 +84,14 @@ std::string AMXPathFinder::FindAMX(AMX *amx) {
 		for (std::vector<std::string>::iterator fileIter = files.begin(); 
 				fileIter != files.end(); ++fileIter) 
 		{
-			std::string filename = *dirIter + fileutils::kNativePathSep + *fileIter;
+			std::string filename;
+			filename.append(*dirIter);
+			filename.append(fileutils::kNativePathSepString);
+			filename.append(*fileIter);
+
 			std::time_t last_write = fileutils::GetModificationTime(filename);
 
-			StringToAMXFileMap::iterator script_it = stringToAMXFile_.find(filename);				
-
+			StringToAMXFileMap::iterator script_it = stringToAMXFile_.find(filename);
 			if (script_it == stringToAMXFile_.end() || 
 					script_it->second->GetModificationTime() < last_write) {
 				if (script_it != stringToAMXFile_.end()) {

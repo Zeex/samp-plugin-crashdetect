@@ -30,7 +30,8 @@
 
 namespace fileutils {
 
-extern const char kNativePathSep;
+extern const char kNativePathSepChar;
+extern const char *kNativePathSepString;
 
 std::string GetFileName(const std::string &path);
 std::string GetBaseName(const std::string &path);

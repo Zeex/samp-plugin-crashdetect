@@ -22,6 +22,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <string>
+#include <stack>
 #include <vector>
 
 #include <Windows.h>
@@ -30,21 +31,33 @@
 
 namespace fileutils {
 
-const char kNativePathSep = '\\';
+const char kNativePathSepChar = '\\';
+const char *kNativePathSepString = "\\";
 
 void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
-                                  std::vector<std::string> &files) 
+                       std::vector<std::string> &files) 
 {
+	std::stack<std::string> current;
+
+	std::string fileName;
+	fileName.append(directory);
+	fileName.append(kNativePathSepString);
+	fileName.append(pattern);
+
 	WIN32_FIND_DATA findFileData;
-	HANDLE hFindFile = FindFirstFile((directory + kNativePathSep + pattern).c_str(), &findFileData);
-	if (hFindFile != INVALID_HANDLE_VALUE) {
-		do {
-			if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-				files.push_back(findFileData.cFileName);
-			}
-		} while (FindNextFile(hFindFile, &findFileData) != 0);
-		FindClose(hFindFile);
+
+	HANDLE hFindFile = FindFirstFile(fileName.c_str(), &findFileData);
+	if (hFindFile == INVALID_HANDLE_VALUE) {
+		return;
 	}
+
+	do {
+		if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				files.push_back(findFileData.cFileName);
+		}
+	} while (FindNextFile(hFindFile, &findFileData) != 0);
+
+	FindClose(hFindFile);
 }
 
 } // namespace fileutils
