@@ -61,10 +61,14 @@ static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
 // Our exception filter
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
 	if (::exceptionHandler != 0) {
-		os::ExceptionContext ctx;
-		ctx.SetEbp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Ebp));
-		ctx.SetEsp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Esp));
-		::exceptionHandler(&ctx);
+		if (exceptionInfo->ContextRecord->ContextFlags & CONTEXT_INTEGER) {
+			os::ExceptionContext ctx;
+			ctx.SetEbp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Ebp));
+			ctx.SetEsp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Esp));
+			::exceptionHandler(&ctx);
+		} else {
+			::exceptionHandler(0);
+		}
 	}
 	if (::previousExceptionFilter != 0) {
 		return ::previousExceptionFilter(exceptionInfo);
