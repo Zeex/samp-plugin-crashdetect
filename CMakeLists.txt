@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8.6)
 
 project(crashdetect)
 
-list(APPEND CMAKE_MODULE_PATH 
-	${crashdetect_SOURCE_DIR}/cmake/Modules)
+# Alter CMake module path so it will see our modules.
+list(APPEND CMAKE_MODULE_PATH "${crashdetect_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
 include(GetGitRevisionDescription)
@@ -11,75 +11,65 @@ include(GetGitRevisionDescription)
 include_directories(".")
 include_directories("amx")
 
-add_subdirectory(amx)
+add_subdirectory("amx")
 
 set(SOURCES
-	src/amxdebuginfo.cpp
-	src/amxdebuginfo.h
-	src/amxpathfinder.cpp
-	src/amxpathfinder.h
-	src/amxstacktrace.cpp
-	src/amxstacktrace.h
-	src/amxutils.cpp
-	src/amxutils.h
-	src/configreader.cpp
-	src/configreader.h
-	src/compiler.h
-	src/crashdetect.cpp
-	src/crashdetect.h
-	src/fileutils.cpp
-	src/fileutils.h
-	src/jump-x86.cpp
-	src/jump-x86.h
-	src/logprintf.cpp
-	src/logprintf.h
-	src/os.h
-	src/plugin.cpp
-	src/plugin.rc
-	src/plugincommon.h
-	src/stacktrace.cpp
-	src/stacktrace.h
-	src/version.h
+	"src/amxdebuginfo.cpp"
+	"src/amxdebuginfo.h"
+	"src/amxpathfinder.cpp"
+	"src/amxpathfinder.h"
+	"src/amxstacktrace.cpp"
+	"src/amxstacktrace.h"
+	"src/amxutils.cpp"
+	"src/amxutils.h"
+	"src/configreader.cpp"
+	"src/configreader.h"
+	"src/compiler.h"
+	"src/crashdetect.cpp"
+	"src/crashdetect.h"
+	"src/fileutils.cpp"
+	"src/fileutils.h"
+	"src/jump-x86.cpp"
+	"src/jump-x86.h"
+	"src/logprintf.cpp"
+	"src/logprintf.h"
+	"src/os.h"
+	"src/plugin.cpp"
+	"src/plugin.rc"
+	"src/plugincommon.h"
+	"src/stacktrace.cpp"
+	"src/stacktrace.h"
+	"src/version.h"
 )
 
 if(WIN32)
 	list(APPEND SOURCES
-		src/fileutils-win32.cpp
-		src/os-win32.cpp
-		src/stacktrace-win32.cpp
+		"src/fileutils-win32.cpp"
+		"src/os-win32.cpp"
+		"src/stacktrace-win32.cpp"
 	)
 elseif(UNIX)
 	list(APPEND SOURCES
-		src/fileutils-unix.cpp
-		src/os-unix.cpp
-		src/stacktrace-unix.cpp
+		"src/fileutils-unix.cpp"
+		"src/os-unix.cpp"
+		"src/stacktrace-unix.cpp"
 	)
 else()
 	message(FATAL_ERROR "Unsupported operating system.")
 endif()
 
 if(MSVC)
-	list(APPEND SOURCES src/compiler-msvc.cpp)
+	list(APPEND SOURCES "src/compiler-msvc.cpp")
 elseif(CMAKE_COMPILER_IS_GNUCXX)
-	list(APPEND SOURCES src/compiler-gcc.cpp)
+	list(APPEND SOURCES "src/compiler-gcc.cpp")
 else()
 	message(FATAL_ERROR "Unsupported compiler.")
 endif()
 
 add_library(crashdetect MODULE ${SOURCES})
 
-target_link_libraries(crashdetect amx)
-
-# Don't prefix the output .so with "lib" 
+# Don't prefix output file with "lib".
 set_property(TARGET crashdetect PROPERTY PREFIX "")
-
-if(UNIX OR MINGW)
-	set_property(TARGET crashdetect APPEND_STRING PROPERTY
-		LINK_FLAGS " -Wl,--no-undefined")
-	if(UNIX)
-		add_definitions(-DLINUX)
-	endif()
-endif()
 
 if(WIN32)
 	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/plugin.def")
@@ -93,29 +83,36 @@ if(WIN32)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
 	endif()
+	list(APPEND LIBRARIES "DbgHelp.lib")
+elseif(UNIX)
+	add_definitions(-DLINUX)
+	if(CMAKE_COMPILER_IS_GNUCXX)
+		list(APPEND LIBRARIES "-ldl")
+	endif()
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX AND UNIX)
-	target_link_Libraries(crashdetect -ldl)
-endif()
+list(APPEND LIBRARIES "amx")
+target_link_Libraries(crashdetect ${LIBRARIES})
 
+# Get latest version tag from Git.
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
 	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
 	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
 else()
-	message(STATUS "Failed to get version from Git, will read VERSION.txt")
+	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
 	file(READ "${crashdetect_SOURCE_DIR}/VERSION.txt" version)
 	string(STRIP ${version} version)
 endif()
 
+# Convert version to a comma separated list for RC.
 string(REGEX REPLACE "[.-]" "," version_rc ${version})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
 set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
 set(PLUGIN_DESCRIPTION "crashdetect plugin for SA-MP server")
-set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
+set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012, Zeex")
 set(PLUGIN_VERSION ${version})
 set(PLUGIN_VERSION_RC ${version_rc})
 
@@ -133,14 +130,15 @@ configure_file(
 message(STATUS "You're going to build crashdetect v${version}")
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
-install(FILES README.md DESTINATION ".")
+install(FILES "README.md" DESTINATION ".")
 
 if(MSVC)
-	# Copy the .pdb file 
+	# Install the PDB file. This works only for Debug/RelWithDebInfo.
 	set(PDB_NAME "crashdetect.pdb")
 	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
 	install(FILES ${PDB_PATH} DESTINATION ".")
 endif()
+
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
 if(WIN32)
 	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-win32")
