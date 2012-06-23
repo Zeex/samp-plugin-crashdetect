@@ -113,22 +113,28 @@ StackTrace::StackTrace(int skip, int max) {
 	void *trace[kMaxFrames];
 	int traceLength = CaptureStackBackTrace(0, kMaxFrames, trace, NULL);
 
-	SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
-			std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
-	symbol->SizeOfStruct = sizeof(*symbol);
-	symbol->MaxNameLen = kMaxSymbolNameLength;
+	SYMBOL_INFO *symbol = NULL;
 
 	DbgHelp dbghelp(GetCurrentProcess());
+	if (dbghelp.IsInitialized()) {
+		symbol = reinterpret_cast<SYMBOL_INFO*>(std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
+		symbol->SizeOfStruct = sizeof(*symbol);
+		symbol->MaxNameLen = kMaxSymbolNameLength;
+	}
 
 	for (int i = 0; i < traceLength && (i < max || max == 0); i++) {
 		if (i >= skip) {
 			CHAR *name = "";
-			if (dbghelp.HaveSymFromAddr()) {
+			if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
 				if (dbghelp.SymFromAddr(reinterpret_cast<DWORD64>(trace[i]), NULL, symbol)) {
 					name = symbol->Name;
 				}
 			}
 			frames_.push_back(StackFrame(trace[i], name));
 		}
+	}
+
+	if (symbol != NULL) {
+		std::free(symbol);
 	}
 }
