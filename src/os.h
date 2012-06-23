@@ -30,12 +30,9 @@
 
 namespace os {
 
-const std::size_t kMaxModulePathLength = FILENAME_MAX;
-const std::size_t kMaxSymbolNameLength = 256;
-
 // GetModuleNameByAddress finds which module (executable/DLL) a given 
 // address belongs to.
-std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
+std::string GetModulePath(void *address, std::size_t maxLength = FILENAME_MAX);
 
 typedef void (*ExceptionHandler)(void *context);
 
