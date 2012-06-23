@@ -33,7 +33,7 @@
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
-		crashdetect::OnAmxError(amx, index, error);
+		crashdetect::GetInstance(amx)->HandleRuntimeError(index, error);
 	}
 	return AMX_ERR_NONE;
 }
@@ -77,8 +77,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		new JumpX86(amx_Release_ptr, (void*)AmxRelease);
 	}
 
-	os::SetExceptionHandler(crashdetect::OnCrash);
-	os::SetInterruptHandler(crashdetect::OnInterrupt);
+	os::SetExceptionHandler(crashdetect::SystemException);
+	os::SetInterruptHandler(crashdetect::SystemInterrupt);
 
 	logprintf("  crashdetect v"PLUGIN_VERSION_STRING" is OK.");
 	return true;

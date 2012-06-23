@@ -74,7 +74,7 @@ void crashdetect::DestroyInstance(AMX *amx) {
 }
 
 // static
-void crashdetect::OnCrash(void *context) {
+void crashdetect::SystemException(void *context) {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleCrash();
@@ -85,12 +85,7 @@ void crashdetect::OnCrash(void *context) {
 }
 
 // static
-void crashdetect::OnAmxError(AMX *amx, cell index, int error) {
-	GetInstance(amx)->HandleRuntimeError(index, error);
-}
-
-// static
-void crashdetect::OnInterrupt() {	
+void crashdetect::SystemInterrupt() {	
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleInterrupt();
