@@ -32,23 +32,103 @@
 // Windows Server 2003 and Windows XP.
 static const int kMaxFrames = 62;
 
+class DbgHelp {
+public:
+	DbgHelp(HANDLE process = NULL);
+	~DbgHelp();
+
+	bool HaveSymInitialize() const {
+		return SymInitialize_ != NULL;
+	}
+	BOOL SymInitialize(PCSTR UserSearchPath, BOOL fInvadeProcess) const {
+		return SymInitialize_(process_, UserSearchPath, fInvadeProcess);
+	}
+
+	bool HaveSymFromAddr() const {
+		return SymFromAddr_ != NULL;
+	}
+	BOOL SymFromAddr(DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
+		return SymFromAddr_(process_, Address, Displacement, Symbol);
+	}
+
+	bool HaveSymCleanup() const {
+		return SymCleanup_ != NULL;
+	}
+	BOOL SymCleanup() const {
+		return SymCleanup_(process_);
+	}
+
+	inline bool IsLoaded() const {
+		return module_ != 0;
+	}
+	inline bool IsInitialized() const {
+		return initialized_ != FALSE;
+	}
+
+private:
+	typedef BOOL (WINAPI *SymInitializeType)(HANDLE, PCSTR, BOOL);
+	SymInitializeType SymInitialize_;
+
+	typedef BOOL (WINAPI *SymFromAddrType)(HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
+	SymFromAddrType SymFromAddr_;
+
+	typedef BOOL (WINAPI *SymCleanupType)(HANDLE);
+	SymCleanupType SymCleanup_;
+
+	HMODULE module_;
+	HANDLE process_;
+	BOOL initialized_;
+};
+
+DbgHelp::DbgHelp(HANDLE process)
+	: module_(LoadLibrary("DbgHelp.dll"))
+	, process_(process)
+	, initialized_(FALSE)
+{
+	if (process_ == NULL) {
+		process_ = GetCurrentProcess();
+	}
+
+	if (module_ != NULL) {
+		SymInitialize_ = (SymInitializeType)GetProcAddress(module_, "SymInitialize");
+		SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
+		SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
+	}
+
+	if (SymInitialize_ != NULL) {
+		initialized_ = SymInitialize_(process_, NULL, TRUE);
+	}
+}
+
+DbgHelp::~DbgHelp() {
+	if (module_ != NULL) {
+		if (initialized_ && SymCleanup_ != NULL) {
+			SymCleanup_(process_);
+		}
+		FreeLibrary(module_);
+	}
+}
+
 StackTrace::StackTrace(int skip, int max) {
 	void *trace[kMaxFrames];
 	int traceLength = CaptureStackBackTrace(0, kMaxFrames, trace, NULL);
-
-	HANDLE hProcess = GetCurrentProcess();
-	SymInitialize(hProcess, NULL, TRUE);
 
 	SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
 			std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
 	symbol->SizeOfStruct = sizeof(*symbol);
 	symbol->MaxNameLen = kMaxSymbolNameLength;
 
+	DbgHelp dbghelp(GetCurrentProcess());
+
 	for (int i = 0; i < traceLength && (i < max || max == 0); i++) {
 		if (i >= skip) {
-			SymFromAddr(hProcess, reinterpret_cast<DWORD64>(trace[i]), NULL, symbol);
-			frames_.push_back(StackFrame(trace[i], symbol->Name));
-			symbol->Name[0] = '\0';
+			CHAR *name = "";
+			if (dbghelp.HaveSymFromAddr()) {
+				if (dbghelp.SymFromAddr(reinterpret_cast<DWORD64>(trace[i]), NULL, symbol)) {
+					name = symbol->Name;
+				}
+			}
+			frames_.push_back(StackFrame(trace[i], name));
 		}
 	}
 }

@@ -83,7 +83,6 @@ if(WIN32)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
 	endif()
-	list(APPEND LIBRARIES "DbgHelp.lib")
 elseif(UNIX)
 	add_definitions(-DLINUX)
 	if(CMAKE_COMPILER_IS_GNUCXX)
