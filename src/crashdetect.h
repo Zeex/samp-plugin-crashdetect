@@ -31,10 +31,6 @@
 #include "amxdebuginfo.h"
 #include "configreader.h"
 
-namespace os {
-	class ExceptionContext;
-}
-
 class crashdetect {
 public:	
 	static crashdetect *GetInstance(AMX *amx);
