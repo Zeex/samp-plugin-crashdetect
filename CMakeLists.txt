@@ -78,7 +78,7 @@ if(WIN32)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY
 			COMPILE_FLAGS " /Oy-")
  		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
-			LINK_FLAGS " /DEF:${DEF_FILE} DbgHelp.lib")
+			LINK_FLAGS " /DEF:${DEF_FILE}")
 	elseif(MINGW)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
