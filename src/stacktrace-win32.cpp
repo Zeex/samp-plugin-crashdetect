@@ -21,35 +21,32 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "compiler.h"
+#include <Windows.h>
+#include <DbgHelp.h>
 
-__asm__ __volatile__(
-#ifdef __MINGW32__
-".globl __ZN8compiler16GetReturnAddressEPvi;"
-"__ZN8compiler16GetReturnAddressEPvi:"
-#else
-"_ZN8compiler16GetReturnAddressEPvi:"
-".globl _ZN8compiler16GetReturnAddressEPvi;"
-#endif
+#include "stacktrace.h"
 
-"	movl 4(%esp), %eax;"
-"	cmpl $0, %eax;"
-"	jnz GetReturnAddress_init;"
-"	movl %ebp, %eax;"
+// MSDN says that CaptureStackBackTrace() can't handle more than 62 frames on
+// Windows Server 2003 and Windows XP.
+static const int kMaxFrames = 62;
 
-"GetReturnAddress_init:"
-"	movl 8(%esp), %ecx;"
-"	movl $0, %edx;"
+StackTrace::StackTrace(int skip, int max) {
+	void *trace[kMaxFrames];
+	int traceLength = CaptureStackBackTrace(0, kMaxFrames, trace, NULL);
 
-"GetReturnAddress_loop:"
-"	cmpl $0, %ecx;"
-"	jl GetReturnAddress_exit;"
-"	movl 4(%eax), %edx;"
-"	movl (%eax), %eax;"
-"	decl %ecx;"
-"	jmp GetReturnAddress_loop;"
+	HANDLE hProcess = GetCurrentProcess();
+	SymInitialize(hProcess, NULL, TRUE);
 
-"GetReturnAddress_exit:"
-"	movl %edx, %eax;"
-"	ret;"
-);
+	SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
+			std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
+	symbol->SizeOfStruct = sizeof(*symbol);
+	symbol->MaxNameLen = kMaxSymbolNameLength;
+
+	for (int i = 0; i < traceLength && (i < max || max == 0); i++) {
+		if (i >= skip) {
+			SymFromAddr(hProcess, reinterpret_cast<DWORD64>(trace[i]), NULL, symbol);
+			frames_.push_back(StackFrame(trace[i], symbol->Name));
+			symbol->Name[0] = '\0';
+		}
+	}
+}

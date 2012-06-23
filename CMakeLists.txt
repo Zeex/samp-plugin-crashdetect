@@ -37,15 +37,21 @@ set(SOURCES
 	src/plugin.cpp
 	src/plugin.rc
 	src/plugincommon.h
-	src/x86stacktrace.cpp
-	src/x86stacktrace.h
+	src/stacktrace.cpp
+	src/stacktrace.h
 	src/version.h
 )
 
 if(WIN32)
-	list(APPEND SOURCES	src/os-win32.cpp)
+	list(APPEND SOURCES
+		src/os-win32.cpp
+		src/stacktrace-win32.cpp
+	)
 elseif(UNIX)
-	list(APPEND SOURCES src/os-unix.cpp)
+	list(APPEND SOURCES
+		src/os-unix.cpp
+		src/stacktrace-unix.cpp
+	)
 else()
 	message(FATAL_ERROR "Unsupported operating system.")
 endif()
@@ -80,7 +86,7 @@ if(WIN32)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY
 			COMPILE_FLAGS " /Oy-")
  		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
-			LINK_FLAGS " /DEF:${DEF_FILE}")
+			LINK_FLAGS " /DEF:${DEF_FILE} DbgHelp.lib")
 	elseif(MINGW)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")

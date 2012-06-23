@@ -46,27 +46,3 @@ exit:
 	__asm ret
 }
 
-__declspec(naked) void *compiler::GetFrameAddress(int depth) {
-	__asm mov eax, ebp
-	__asm mov ecx, dword ptr [esp + 4]
-
-iteration:
-	__asm test ecx, 0
-	__asm jz exit
-	__asm mov eax, dword ptr [eax]
-	__asm dec ecx
-	__asm jmp iteration
-
-exit:
-	__asm ret
-}
-
-__declspec(naked) void *compiler::GetStackTop() {
-	__asm mov eax, fs:[0x04]
-	__asm ret
-}
-
-__declspec(naked) void *compiler::GetStackBottom() {
-	__asm mov eax, fs:[0x08]
-	__asm ret
-}

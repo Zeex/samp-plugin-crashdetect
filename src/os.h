@@ -41,22 +41,7 @@ const std::size_t kMaxSymbolNameLength = 256;
 // address belongs to.
 std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
 
-class ExceptionContext {
-public:
-	ExceptionContext() : ebp_(0), esp_(0) {}
-
-	void SetEbp(void *ebp) { ebp_ = ebp; }
-	void *GetEbp() { return ebp_; }
-
-	void SetEsp(void *esp) { esp_ = esp; }
-	void *GetEsp() { return esp_; }
-
-private:
-	void *ebp_;
-	void *esp_;
-};
-
-typedef void (*ExceptionHandler)(os::ExceptionContext *ctx);
+typedef void (*ExceptionHandler)();
 
 // SetExceptionHandler sets a global exception handler on Windows and SIGSEGV
 // signal handler on Linux.

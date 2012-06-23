@@ -42,7 +42,7 @@
 #include "fileutils.h"
 #include "logprintf.h"
 #include "os.h"
-#include "x86stacktrace.h"
+#include "stacktrace.h"
 
 #include "amx/amx.h"
 #include "amx/amxaux.h" // for amx_StrError()
@@ -74,18 +74,14 @@ void crashdetect::DestroyInstance(AMX *amx) {
 }
 
 // static
-void crashdetect::OnCrash(os::ExceptionContext *ctx) {
+void crashdetect::OnCrash() {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleCrash();
 	} else {
 		logprintf("Server crashed due to an unknown error");
 	}
-	if (ctx != 0) {
-		PrintNativeBacktrace(ctx->GetEbp());
-	} else {
-		PrintNativeBacktrace();
-	}
+	PrintNativeBacktrace();
 }
 
 // static
@@ -325,20 +321,17 @@ void crashdetect::PrintAmxBacktrace() {
 }
 
 // static
-void crashdetect::PrintNativeBacktrace(void *frame, int framesToSkip) {
+void crashdetect::PrintNativeBacktrace(int framesToSkip) {
 	logprintf("Native backtrace:");
 
 	int level = 0;
 
-	X86StackTrace trace;
-	trace.SetTopFrame(frame);
-	trace.SetStackTop(compiler::GetStackTop());
-	trace.SetStackBottom(compiler::GetStackBottom());
+	StackTrace trace(framesToSkip);
+	std::deque<StackFrame> frames = trace.GetFrames();	
 
-	std::deque<X86StackFrame> frames = trace.CollectFrames();	
-	for (std::deque<X86StackFrame>::const_iterator iterator = frames.begin();
+	for (std::deque<StackFrame>::const_iterator iterator = frames.begin();
 			iterator != frames.end(); ++iterator) {
-		const X86StackFrame &frame = *iterator;
+		const StackFrame &frame = *iterator;
 
 		std::string module = os::GetModulePath(frame.GetReturnAddress());
 		std::string from = " from " + module;

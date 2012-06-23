@@ -21,25 +21,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <cstdlib>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <sstream>
 #include <string>
 
-#include "compiler.h"
-#include "os.h"
-#include "x86stacktrace.h"
+#include "stacktrace.h"
 
-static const int kMaxSymbolNameLength = 256;
+static const int kMaxFrames = 100;
 
-X86StackFrame::X86StackFrame(void *frmAddr, void *retAddr, const std::string &name)
-	: frmAddr_(frmAddr), retAddr_(retAddr), name_(name)
-{
-}
-
-std::string X86StackFrame::GetString() const {
+std::string StackFrame::GetString() const {
 	std::stringstream stream;
 
 	stream << std::hex << std::setw(8) << std::setfill('0') 
@@ -51,58 +42,4 @@ std::string X86StackFrame::GetString() const {
 	}
 
 	return stream.str();
-}
-
-static inline void *GetReturnAddress(void *frmAddr) {
-	return *reinterpret_cast<void**>(reinterpret_cast<char*>(frmAddr) + 4);
-}
-
-static inline void *GetNextFrame(void *frmAddr) {
-	return *reinterpret_cast<void**>(frmAddr);
-}
-
-X86StackTrace::X86StackTrace()
-	: maxDepth_(std::numeric_limits<int>::max())
-	, skipCount_(0)
-	, topFrame_(0)
-	, stackTop_(0)
-	, stackBottom_(0)
-{
-}
-
-std::deque<X86StackFrame> X86StackTrace::CollectFrames() const {
-	std::deque<X86StackFrame> frames;
-
-	void *frame = topFrame_ == 0
-		? compiler::GetFrameAddress()
-		: topFrame_;
-
-	void *top = stackTop_ == 0
-		? compiler::GetStackTop()
-		: stackTop_;
-
-	void *bot = stackBottom_ == 0
-		? compiler::GetStackBottom()
-		: stackBottom_;
-
-	for (int i = 0; i < maxDepth_; i++) {
-		if (frame == 0
-			|| (frame >= top && top != 0)
-			|| (frame < bot && bot != 0)) {
-			break;
-		}
-
-		void *ret = GetReturnAddress(frame);
-		if (ret == 0) {
-			break;
-		}
-
-		frame = GetNextFrame(frame);
-
-		if (i >= skipCount_) {
-			frames.push_back(X86StackFrame(frame, ret, os::GetSymbolName(ret)));
-		}
-	}
-
-	return frames;
 }

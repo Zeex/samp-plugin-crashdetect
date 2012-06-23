@@ -30,9 +30,7 @@
 #include <string>
 #include <vector>
 
-#include <cxxabi.h>
 #include <dirent.h>
-#include <execinfo.h>
 #include <fnmatch.h>
 
 #ifndef _GNU_SOURCE
@@ -61,7 +59,7 @@ static void (*previousSIGSEGVHandler)(int);
 static void HandleSIGSEGV(int sig)
 {
 	if (::exceptionHandler != 0) {
-		::exceptionHandler(0);
+		::exceptionHandler();
 	}
 	signal(sig, SIG_DFL);
 }
@@ -92,35 +90,6 @@ static void HandleSIGINT(int sig) {
 void os::SetInterruptHandler(InterruptHandler handler) {
 	::interruptHandler = handler;
 	::previousSIGINTHandler = signal(SIGINT, HandleSIGINT);
-}
-
-std::string os::GetSymbolName(void *address, std::size_t maxLength) {
-	char **symbols = backtrace_symbols(&address, 1);
-	std::string symbol(symbols[0]);
-	std::free(symbols);
-
-	std::string::size_type lp = symbol.find('(');
-	std::string::size_type rp = symbol.find_first_of(")+-");
-
-	std::string name;
-	if (lp != std::string::npos && rp != std::string::npos) {
-		name.assign(symbol.begin() + lp + 1, symbol.begin() + rp);
-	}
-
-	if (!name.empty()) {
-		char *demangled_name = abi::__cxa_demangle(name.c_str(), 0, 0, 0);
-		if (demangled_name != 0) {
-			name.assign(demangled_name);
-
-			// Cut argment type information e.g. (int*, char*, void*).
-			std::string::size_type end = name.find('(');
-			if (end != std::string::npos) {
-				name.erase(end);
-			}
-		}
-	}	
-
-	return name;
 }
 
 void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,

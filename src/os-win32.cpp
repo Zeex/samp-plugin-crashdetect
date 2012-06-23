@@ -32,10 +32,6 @@
 #include <DbgHelp.h>
 #include <sys/types.h>
 
-#if defined __GNUC__
-	#include <cxxabi.h>
-#endif
-
 const char os::kDirSepChar = '\\';
 
 #if defined GetModulePath
@@ -61,14 +57,7 @@ static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
 // Our exception filter
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
 	if (::exceptionHandler != 0) {
-		if (exceptionInfo->ContextRecord->ContextFlags & CONTEXT_INTEGER) {
-			os::ExceptionContext ctx;
-			ctx.SetEbp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Ebp));
-			ctx.SetEsp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Esp));
-			::exceptionHandler(&ctx);
-		} else {
-			::exceptionHandler(0);
-		}
+		::exceptionHandler();
 	}
 	if (::previousExceptionFilter != 0) {
 		return ::previousExceptionFilter(exceptionInfo);
@@ -102,109 +91,6 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 void os::SetInterruptHandler(InterruptHandler handler) {
 	::interruptHandler = handler;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
-}
-
-class DbgHelp {
-public:
-	~DbgHelp();
-
-	BOOL SymInitialize(PCSTR UserSearchPath, BOOL fInvadeProcess) const {
-		return SymInitialize_(process_, UserSearchPath, fInvadeProcess);
-	}
-	BOOL SymFromAddr(DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
-		return SymFromAddr_(process_, Address, Displacement, Symbol);
-	}
-	BOOL SymCleanup() const {
-		return SymCleanup_(process_);
-	}
-
-	inline bool IsLoaded() const {
-		return module_ != 0;
-	}
-	inline bool IsInitialized() const {
-		return initialized_ != FALSE;
-	}
-
-	static DbgHelp &GetGlobal();
-
-private:
-	DbgHelp(bool initialie = true);
-
-	typedef BOOL (WINAPI *SymInitializeType)(HANDLE, PCSTR, BOOL);
-	SymInitializeType SymInitialize_;
-
-	typedef BOOL (WINAPI *SymFromAddrType)(HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
-	SymFromAddrType SymFromAddr_;
-
-	typedef BOOL (WINAPI *SymCleanupType)(HANDLE);
-	SymCleanupType SymCleanup_;
-	
-	BOOL initialized_;
-	HANDLE process_;
-	HMODULE module_;
-};
-
-DbgHelp::DbgHelp(bool initialize)
-	: module_(LoadLibrary("dbghelp.dll"))
-	, process_(GetCurrentProcess())
-	, initialized_(FALSE)
-{
-	module_ = LoadLibrary("dbghelp.dll");
-
-	SymInitialize_ = (SymInitializeType)GetProcAddress(module_, "SymInitialize");
-	SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
-	SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
-
-	if (initialize) {
-		initialized_ = this->SymInitialize(NULL, TRUE);
-	}
-}
-
-DbgHelp::~DbgHelp() {
-	if (module_ != NULL) {
-		if (initialized_) {
-			this->SymCleanup();
-		}
-		FreeLibrary(module_);
-	}
-}
-
-// static
-DbgHelp &DbgHelp::GetGlobal() {
-	static DbgHelp dll;
-	return dll;
-}
-
-std::string os::GetSymbolName(void *address, std::size_t maxLength) {
-	std::string name;
-
-	DbgHelp &dbghelp = DbgHelp::GetGlobal();
-	if (dbghelp.IsLoaded()) {
-		SYMBOL_INFO *symbol = reinterpret_cast<SYMBOL_INFO*>(
-				std::calloc(sizeof(*symbol) + maxLength, 1));
-		symbol->SizeOfStruct = sizeof(*symbol);
-		symbol->MaxNameLen = maxLength;
-
-		dbghelp.SymFromAddr(reinterpret_cast<DWORD64>(address), NULL, symbol);
-		name.assign(symbol->Name);
-
-		#if defined __GNUC__
-			if (!name.empty()) {
-				char *demangled_name = abi::__cxa_demangle(("_" + name).c_str(), 0, 0, 0);
-				if (demangled_name != 0) {
-					name.assign(demangled_name);
-				}
-				std::string::size_type end = name.find('(');
-				if (end != std::string::npos) {
-					name.erase(end);
-				}
-			}
-		#endif
-
-		std::free(symbol);
-	}
-
-	return name;
 }
 
 void os::ListDirectoryFiles(const std::string &directory, const std::string &pattern,

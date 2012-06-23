@@ -21,25 +21,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef X86STACKTRACE_H
-#define X86STACKTRACE_H
+#ifndef STACKTRACE_H
+#define STACKTRACE_H
 
 #include <deque>
 #include <string>
 
-class X86StackFrame {
+class StackFrame {
 public:
-	X86StackFrame(void *frmAddr, void *retAddr, const std::string &name = std::string());
-
-	inline void *GetFrameAddress() const {
-		return frmAddr_;
+	StackFrame(void *retAddr, const std::string &name = std::string())
+		: retAddr_(retAddr), name_(name)
+	{
 	}
 
 	inline void *GetReturnAddress() const {
 		return retAddr_;
 	}
-
-	// Get caller name if possible. An empty string can be returned.
 	inline std::string GetFunctionName() const {
 		return name_;
 	}
@@ -47,48 +44,22 @@ public:
 	std::string GetString() const;
 
 private:
-	void *frmAddr_;
 	void *retAddr_;
 	std::string name_;
 };
 
-class X86StackTrace {
+class StackTrace {
 public:
-	X86StackTrace();
+	static const int kMaxSymbolNameLength = 256;
 
-	// Set the maximum number of trace items.
-	inline void SetMaxDepth(int number) {
-		maxDepth_ = number;
+	StackTrace(int skip = 0, int max = 0);
+
+	std::deque<StackFrame> GetFrames() const {
+		return frames_;
 	}
-
-	// How much frames to skip in beginning.
-	inline void SetSkipCount(int number) {
-		skipCount_ = number;
-	}
-
-	// Set the top most frame at which stack trace will start.
-	inline void SetTopFrame(void *ptr) {
-		topFrame_ = ptr;
-	}
-
-	// Set stack upper bound.
-	inline void SetStackTop(void *ptr) {
-		stackTop_ = ptr;
-	}
-
-	// Set stack lower bound.
-	inline void SetStackBottom(void *ptr) {
-		stackBottom_ = ptr;
-	}
-
-	std::deque<X86StackFrame> CollectFrames() const;
 
 private:
-	int maxDepth_;
-	int skipCount_;
-	void *topFrame_;
-	void *stackTop_;
-	void *stackBottom_;
+	std::deque<StackFrame> frames_;
 };
 
-#endif // !X86STACKTRACE_H
+#endif // !STACKTRACE_H
