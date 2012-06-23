@@ -236,6 +236,7 @@ void crashdetect::HandleReleaseError(cell address, void *releaser) {
 	}
 	logprintf("Heap corruption detected:");
 	logprintf("  %s [%08x] is trying to release memory at %08x", plugin.c_str(), releaser, address);
+	PrintNativeBacktrace();
 }
 
 // static
