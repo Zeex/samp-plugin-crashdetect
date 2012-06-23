@@ -36,6 +36,7 @@
 #include "amxpathfinder.h"
 #include "amxstacktrace.h"
 #include "amxutils.h"
+#include "compiler.h"
 #include "configreader.h"
 #include "crashdetect.h"
 #include "fileutils.h"
@@ -329,7 +330,12 @@ void crashdetect::PrintNativeBacktrace(void *frame, int framesToSkip) {
 
 	int level = 0;
 
-	std::deque<X86StackFrame> frames = X86StackTrace(frame, framesToSkip).GetFrames();	
+	X86StackTrace trace;
+	trace.SetTopFrame(frame);
+	trace.SetStackTop(compiler::GetStackTop());
+	trace.SetStackBottom(compiler::GetStackBottom());
+
+	std::deque<X86StackFrame> frames = trace.CollectFrames();	
 	for (std::deque<X86StackFrame>::const_iterator iterator = frames.begin();
 			iterator != frames.end(); ++iterator) {
 		const X86StackFrame &frame = *iterator;

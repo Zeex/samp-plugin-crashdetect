@@ -31,12 +31,19 @@ class X86StackFrame {
 public:
 	X86StackFrame(void *frmAddr, void *retAddr, const std::string &name = std::string());
 
-	inline void *GetFrameAddress() const 
-		{ return frmAddr_; }
-	inline void *GetReturnAddress() const 
-		{ return retAddr_; }
-	inline std::string GetFunctionName() const
-		{ return name_; }
+	inline void *GetFrameAddress() const {
+		return frmAddr_;
+	}
+
+	inline void *GetReturnAddress() const {
+		return retAddr_;
+	}
+
+	// Get caller name if possible. An empty string can be returned.
+	inline std::string GetFunctionName() const {
+		return name_;
+	}
+
 	std::string GetString() const;
 
 private:
@@ -47,14 +54,41 @@ private:
 
 class X86StackTrace {
 public:
-	X86StackTrace(void *frame, int framesToSkip = 0);
+	X86StackTrace();
 
-	inline std::deque<X86StackFrame> GetFrames() const {
-		return frames_;
+	// Set the maximum number of trace items.
+	inline void SetMaxDepth(int number) {
+		maxDepth_ = number;
 	}
 
+	// How much frames to skip in beginning.
+	inline void SetSkipCount(int number) {
+		skipCount_ = number;
+	}
+
+	// Set the top most frame at which stack trace will start.
+	inline void SetTopFrame(void *ptr) {
+		topFrame_ = ptr;
+	}
+
+	// Set stack upper bound.
+	inline void SetStackTop(void *ptr) {
+		stackTop_ = ptr;
+	}
+
+	// Set stack lower bound.
+	inline void SetStackBottom(void *ptr) {
+		stackBottom_ = ptr;
+	}
+
+	std::deque<X86StackFrame> CollectFrames() const;
+
 private:
-	std::deque<X86StackFrame> frames_;
+	int maxDepth_;
+	int skipCount_;
+	void *topFrame_;
+	void *stackTop_;
+	void *stackBottom_;
 };
 
 #endif // !X86CALLSTACK_H

@@ -23,31 +23,88 @@
 
 #include "compiler.h"
 
-__asm__ __volatile__ (
-".globl _ZN8compiler16GetReturnAddressEPvi;"
+__asm__ __volatile__(
+#ifdef __MINGW32__
 ".globl __ZN8compiler16GetReturnAddressEPvi;"
-
-"_ZN8compiler16GetReturnAddressEPvi:"
 "__ZN8compiler16GetReturnAddressEPvi:"
+#else
+"_ZN8compiler16GetReturnAddressEPvi:"
+".globl _ZN8compiler16GetReturnAddressEPvi;"
+#endif
 
 "	movl 4(%esp), %eax;"
 "	cmpl $0, %eax;"
-"	jnz init;"
+"	jnz GetReturnAddress_init;"
 "	movl %ebp, %eax;"
 
-"init:"
+"GetReturnAddress_init:"
 "	movl 8(%esp), %ecx;"
 "	movl $0, %edx;"
 
-"iteration:"
+"GetReturnAddress_loop:"
 "	cmpl $0, %ecx;"
-"	jl exit;"
+"	jl GetReturnAddress_exit;"
 "	movl 4(%eax), %edx;"
 "	movl (%eax), %eax;"
 "	decl %ecx;"
-"	jmp iteration;"
+"	jmp GetReturnAddress_loop;"
 
-"exit:"
+"GetReturnAddress_exit:"
 "	movl %edx, %eax;"
 "	ret;"
+);
+
+__asm__ __volatile__ (
+#ifdef __MINGW32__
+".globl __ZN8compiler15GetFrameAddressEi;"
+"__ZN8compiler15GetFrameAddressEi:"
+#else
+".globl _ZN8compiler15GetFrameAddressEi;"
+"_ZN8compiler15GetFrameAddressEi:"
+#endif
+
+"	movl %ebp, %eax;"
+"	movl 4(%esp), %ecx;"
+
+"GetFrameAddress_loop:"
+"	testl $0, %ecx;"
+"	jz GetFrameAddress_exit;"
+"	movl (%eax), %eax;"
+"	decl %ecx;"
+"	jmp GetFrameAddress_loop;"
+
+"GetFrameAddress_exit:"
+"	ret;"
+);
+
+__asm__ __volatile__ (
+#ifdef __MINGW32__
+".globl __ZN8compiler11GetStackTopEv;"
+"__ZN8compiler11GetStackTopEv:"
+
+"	movl %fs:(0x04), %eax;"
+"	ret;"
+#else
+".globl _ZN8compiler11GetStackTopEv;"
+"_ZN8compiler11GetStackTopEv:"
+
+"	xorl %eax, %eax;"
+"	ret;"
+#endif
+);
+
+__asm__ __volatile__ (
+#ifdef __MINGW32__
+".globl __ZN8compiler14GetStackBottomEv;"
+"__ZN8compiler14GetStackBottomEv:"
+
+"	movl %fs:(0x08), %eax;"
+"	ret;"
+#else
+".globl _ZN8compiler14GetStackBottomEv;"
+"_ZN8compiler14GetStackBottomEv:"
+
+"	xorl %eax, %eax;"
+"	ret;"
+#endif
 );

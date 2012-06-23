@@ -24,9 +24,11 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 
+#include "compiler.h"
 #include "os.h"
 #include "x86stacktrace.h"
 
@@ -59,52 +61,40 @@ static inline void *GetNextFrame(void *frmAddr) {
 	return *reinterpret_cast<void**>(frmAddr);
 }
 
-X86StackTrace::X86StackTrace(void *frame, int framesToSkip)
-	: frames_()
+X86StackTrace::X86StackTrace()
+	: maxDepth_(std::numeric_limits<int>::max())
+	, skipCount_(0)
+	, topFrame_(0)
+	, stackTop_(0)
+	, stackBottom_(0)
 {
-	void *frmAddr = frame;
-	void *retAddr;
+}
 
-	void *stackTop = 0;
-	void *stackBot = 0;
+std::deque<X86StackFrame> X86StackTrace::CollectFrames() const {
+	std::deque<X86StackFrame> frames;
 
-	int frameCount = 0;
+	void *frame = topFrame_ == 0
+		? compiler::GetFrameAddress()
+		: topFrame_;
 
-	#if defined _MSC_VER
-		if (frmAddr == 0) {
-			__asm mov dword ptr [frmAddr], ebp
-		}			
-		__asm mov eax, fs:[0x04]
-		__asm mov dword ptr [stackTop], eax
-		__asm mov eax, fs:[0x08]
-		__asm mov dword ptr [stackBot], eax
-	#elif defined __GNUC__
-		if (frmAddr == 0) {
-			__asm__ __volatile__(
-				"movl %%ebp, %0;" : "=r"(frmAddr) : : );
-		}	
-		#if defined WIN32
-			__asm__ __volatile__(
-				"movl %%fs:(0x04), %0;"
-				"movl %%fs:(0x08), %1;"
-				: "=r"(stackTop), "=r"(stackBot) : : );
-		#endif
-	#endif
-
-	do {
-		if ((frmAddr == 0)
-			|| (frmAddr >= stackTop && stackTop != 0)
-		    || (frmAddr < stackBot && stackBot != 0)) {
+	for (int i = 0; i < maxDepth_; i++) {
+		if (frame == 0
+			|| (frame >= stackTop_ && stackTop_ != 0)
+			|| (frame < stackBottom_ && stackBottom_ != 0)) {
 			break;
 		}
-		retAddr = GetReturnAddress(frmAddr);
-		if (retAddr == 0) {
+
+		void *ret = GetReturnAddress(frame);
+		if (ret == 0) {
 			break;
 		}
-		frmAddr = GetNextFrame(frmAddr);
-		if (++frameCount <= framesToSkip) {
-			continue;
+
+		frame = GetNextFrame(frame);
+
+		if (i >= skipCount_) {
+			frames.push_back(X86StackFrame(frame, ret, os::GetSymbolName(ret)));
 		}
-		frames_.push_back(X86StackFrame(frmAddr, retAddr, os::GetSymbolName(retAddr)));
-	} while (true);
+	}
+
+	return frames;
 }
