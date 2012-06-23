@@ -26,6 +26,10 @@
 #include <Windows.h>
 #include <DbgHelp.h>
 
+#if defined __GNUC__
+	#include <cxxabi.h>
+#endif
+
 #include "stacktrace.h"
 
 // MSDN says that CaptureStackBackTrace() can't handle more than 62 frames on
@@ -176,10 +180,22 @@ StackTrace::StackTrace(int skip, int max, void *theirContext) {
 		}
 
 		if (i >= skip) {
-			const CHAR *name = "";
+			std::string name;
 			if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
 				if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
 					name = symbol->Name;
+					#if defined __GNUC__
+						if (!name.empty()) {
+							char *demangled_name = abi::__cxa_demangle(name.c_str(), 0, 0, 0);
+							if (demangled_name != 0) {
+								name.assign(demangled_name);
+								std::string::size_type end = name.find('(');
+								if (end != std::string::npos) {
+									name.erase(end);
+								}
+							}
+						}	
+					#endif
 				}
 			}
 			frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
