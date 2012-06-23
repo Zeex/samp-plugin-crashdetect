@@ -53,3 +53,27 @@ __asm__ __volatile__(
 "	movl %edx, %eax;"
 "	ret;"
 );
+
+__asm__ __volatile__ (
+#ifdef __MINGW32__
+".globl __ZN8compiler15GetFrameAddressEi;"
+"__ZN8compiler15GetFrameAddressEi:"
+#else
+".globl _ZN8compiler15GetFrameAddressEi;"
+"_ZN8compiler15GetFrameAddressEi:"
+#endif
+
+"	movl %ebp, %eax;"
+"	movl 4(%esp), %ecx;"
+
+"GetFrameAddress_loop:"
+"	testl $0, %ecx;"
+"	jz GetFrameAddress_exit;"
+"	movl (%eax), %eax;"
+"	decl %ecx;"
+"	jmp GetFrameAddress_loop;"
+
+"GetFrameAddress_exit:"
+"	ret;"
+);
+
