@@ -25,8 +25,8 @@
 #include <sstream>
 #include <string>
 
-#ifndef CONFIG_READER_H
-#define CONFIG_READER_H
+#ifndef CONFIGREADER_H
+#define CONFIGREADER_H
 
 class ConfigReader {
 public:
@@ -62,4 +62,4 @@ T ConfigReader::GetOption(const std::string &name, const T &defaultValue) const 
 
 template<> std::string ConfigReader::GetOption(const std::string &name, const std::string &value) const;
 
-#endif // !CONFIG_READER_H
+#endif // !CONFIGREADER_H

@@ -21,8 +21,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef X86CALLSTACK_H
-#define X86CALLSTACK_H
+#ifndef X86STACKTRACE_H
+#define X86STACKTRACE_H
 
 #include <deque>
 #include <string>
@@ -91,4 +91,4 @@ private:
 	void *stackBottom_;
 };
 
-#endif // !X86CALLSTACK_H
+#endif // !X86STACKTRACE_H
