@@ -31,12 +31,16 @@
 #include "amxdebuginfo.h"
 #include "configreader.h"
 
+namespace os {
+	class ExceptionContext;
+}
+
 class crashdetect {
 public:	
 	static crashdetect *GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
-	static void OnCrash();
+	static void OnCrash(os::ExceptionContext *ctx);
 	static void OnAmxError(AMX *amx, cell index, int error);
 	static void OnInterrupt();
 
@@ -53,7 +57,7 @@ private:
 	static void DieOrContinue();
 
 	static void PrintAmxBacktrace();
-	static void PrintNativeBacktrace(int framesToSkip = 0);
+	static void PrintNativeBacktrace(void *frame = 0, int framesToSkip = 0);
 
 	static void logprintf(const char *format, ...);
 

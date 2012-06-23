@@ -41,13 +41,32 @@ const std::size_t kMaxSymbolNameLength = 256;
 // address belongs to.
 std::string GetModulePath(void *address, std::size_t maxLength = kMaxModulePathLength);
 
-// SetCrashHandle sets a global exception handler on Windows and SIGSEGV
+class ExceptionContext {
+public:
+	ExceptionContext() : ebp_(0), esp_(0) {}
+
+	void SetEbp(void *ebp) { ebp_ = ebp; }
+	void *GetEbp() { return ebp_; }
+
+	void SetEsp(void *esp) { esp_ = esp; }
+	void *GetEsp() { return esp_; }
+
+private:
+	void *ebp_;
+	void *esp_;
+};
+
+typedef void (*ExceptionHandler)(os::ExceptionContext *ctx);
+
+// SetExceptionHandler sets a global exception handler on Windows and SIGSEGV
 // signal handler on Linux.
-void SetCrashHandler(void (*handler)());
+void SetExceptionHandler(ExceptionHandler handler);
+
+typedef void (*InterruptHandler)();
 
 // SetInterruptHandler sets a global Ctrl+C event handler on Windows
 // and SIGINT signal handler on Linux.
-void SetInterruptHandler(void (*handler)());
+void SetInterruptHandler(InterruptHandler handler);
 
 // GetSymbolName finds symbol name by address.
 std::string GetSymbolName(void *address, std::size_t maxLength = kMaxSymbolNameLength);

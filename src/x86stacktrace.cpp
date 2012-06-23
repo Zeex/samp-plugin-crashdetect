@@ -59,10 +59,10 @@ static inline void *GetNextFrame(void *frmAddr) {
 	return *reinterpret_cast<void**>(frmAddr);
 }
 
-X86StackTrace::X86StackTrace(int framesToSkip)
+X86StackTrace::X86StackTrace(void *frame, int framesToSkip)
 	: frames_()
 {
-	void *frmAddr;
+	void *frmAddr = frame;
 	void *retAddr;
 
 	void *stackTop = 0;
@@ -71,16 +71,18 @@ X86StackTrace::X86StackTrace(int framesToSkip)
 	int frameCount = 0;
 
 	#if defined _MSC_VER
-		__asm {
-			mov dword ptr [frmAddr], ebp
-			mov eax, fs:[0x04]
-			mov dword ptr [stackTop], eax
-			mov eax, fs:[0x08]
-			mov dword ptr [stackBot], eax
-		}
+		if (frmAddr == 0) {
+			__asm mov dword ptr [frmAddr], ebp
+		}			
+		__asm mov eax, fs:[0x04]
+		__asm mov dword ptr [stackTop], eax
+		__asm mov eax, fs:[0x08]
+		__asm mov dword ptr [stackBot], eax
 	#elif defined __GNUC__
-		__asm__ __volatile__(
-			"movl %%ebp, %0;" : "=r"(frmAddr) : : );
+		if (frmAddr == 0) {
+			__asm__ __volatile__(
+				"movl %%ebp, %0;" : "=r"(frmAddr) : : );
+		}	
 		#if defined WIN32
 			__asm__ __volatile__(
 				"movl %%fs:(0x04), %0;"

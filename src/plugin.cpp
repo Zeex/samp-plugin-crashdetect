@@ -77,7 +77,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		new JumpX86(amx_Release_ptr, (void*)AmxRelease);
 	}
 
-	os::SetCrashHandler(crashdetect::OnCrash);
+	os::SetExceptionHandler(crashdetect::OnCrash);
 	os::SetInterruptHandler(crashdetect::OnInterrupt);
 
 	logprintf("  crashdetect v"PLUGIN_VERSION_STRING" is OK.");

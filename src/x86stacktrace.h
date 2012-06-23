@@ -47,7 +47,7 @@ private:
 
 class X86StackTrace {
 public:
-	X86StackTrace(int framesToSkip = 0);
+	X86StackTrace(void *frame, int framesToSkip = 0);
 
 	inline std::deque<X86StackFrame> GetFrames() const {
 		return frames_;

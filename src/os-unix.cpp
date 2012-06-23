@@ -52,22 +52,21 @@ std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	return std::string(&name[0]);
 }
 
-// The crash handler - it is set via SetCrashHandler()
-static void (*crashHandler)() = 0;
+// The exception handler - it is set via SetExceptionHandler()
+static os::ExceptionHandler exceptionHandler = 0;
 
 // Previous SIGSEGV handler
 static void (*previousSIGSEGVHandler)(int);
 
 static void HandleSIGSEGV(int sig)
 {
-	if (::crashHandler != 0) {
-		::crashHandler();
+	if (::exceptionHandler != 0) {
+		::exceptionHandler(0);
 	}
 	signal(sig, SIG_DFL);
 }
 
-void os::SetCrashHandler(void (*handler)()) {
-	::crashHandler = handler;
+void os::SetExceptionHandler(ExceptionHandler handler) {::exceptionHandler = handler;
 	if (handler != 0) {
 		::previousSIGSEGVHandler = signal(SIGSEGV, HandleSIGSEGV);
 	} else {
@@ -76,7 +75,7 @@ void os::SetCrashHandler(void (*handler)()) {
 }
 
 // The interrupt (Ctrl+C) handler - set via SetInterruptHandler
-static void (*interruptHandler)();
+static os::InterruptHandler interruptHandler;
 
 // Previous SIGINT handler
 static void (*previousSIGINTHandler)(int);
@@ -90,7 +89,7 @@ static void HandleSIGINT(int sig) {
 	raise(sig);
 }
 
-void os::SetInterruptHandler(void (*handler)()) {
+void os::SetInterruptHandler(InterruptHandler handler) {
 	::interruptHandler = handler;
 	::previousSIGINTHandler = signal(SIGINT, HandleSIGINT);
 }

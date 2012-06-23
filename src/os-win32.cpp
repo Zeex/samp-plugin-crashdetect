@@ -52,16 +52,19 @@ std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	return std::string(&name[0]);
 }
 
-// The crash handler - it is set via SetCrashHandler()
-static void (*crashHandler)() = 0;
+// The exception handler - it is set via SetExceptionHandler()
+static os::ExceptionHandler exceptionHandler = 0;
 
 // Previous exception filter
 static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
 
 // Our exception filter
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
-	if (::crashHandler != 0) {
-		::crashHandler();
+	if (::exceptionHandler != 0) {
+		os::ExceptionContext ctx;
+		ctx.SetEbp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Ebp));
+		ctx.SetEsp(reinterpret_cast<void*>(exceptionInfo->ContextRecord->Esp));
+		::exceptionHandler(&ctx);
 	}
 	if (::previousExceptionFilter != 0) {
 		return ::previousExceptionFilter(exceptionInfo);
@@ -69,8 +72,8 @@ static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void os::SetCrashHandler(void (*handler)()) {
-	::crashHandler = handler;
+void os::SetExceptionHandler(ExceptionHandler handler) {
+	::exceptionHandler = handler;
 	if (handler != 0) {
 		::previousExceptionFilter = SetUnhandledExceptionFilter(ExceptionFilter);
 	} else {
@@ -79,7 +82,7 @@ void os::SetCrashHandler(void (*handler)()) {
 }
 
 // The interrupt (Ctrl+C) handler - set via SetInterruptHandler
-static void (*interruptHandler)();
+static os::InterruptHandler interruptHandler;
 
 // Console event handler
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
@@ -92,7 +95,7 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 	return FALSE;
 }
 
-void os::SetInterruptHandler(void (*handler)()) {
+void os::SetInterruptHandler(InterruptHandler handler) {
 	::interruptHandler = handler;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }
