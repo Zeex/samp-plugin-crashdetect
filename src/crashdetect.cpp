@@ -23,14 +23,9 @@
 
 #include <cassert>
 #include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
 #include <map>
 #include <stack>
 #include <string>
-#include <vector>
 
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"

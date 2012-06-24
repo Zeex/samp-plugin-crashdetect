@@ -21,16 +21,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "os.h"
-
 #include <cstddef>
-#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include <Windows.h>
-#include <DbgHelp.h>
-#include <sys/types.h>
+
+#include "os.h"
 
 #if defined GetModulePath
 	#undef GetModulePath

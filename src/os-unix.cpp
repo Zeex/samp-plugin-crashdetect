@@ -21,11 +21,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "os.h"
-
 #include <csignal>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -33,7 +29,9 @@
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE 1 // for dladdr()
 #endif
-#include <dlfcn.h> 
+#include <dlfcn.h>
+
+#include "os.h"
 
 std::string os::GetModulePath(void *address, std::size_t maxLength) {
 	std::vector<char> name(maxLength + 1);
