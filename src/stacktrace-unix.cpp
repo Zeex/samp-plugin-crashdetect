@@ -39,17 +39,6 @@ static std::string GetSymbolName(const std::string &symbol) {
 		name.assign(symbol.begin() + lp + 1, symbol.begin() + rp);
 	}
 
-	if (!name.empty()) {
-		char *demangled_name = abi::__cxa_demangle(name.c_str(), 0, 0, 0);
-		if (demangled_name != 0) {
-			name.assign(demangled_name);
-			std::string::size_type end = name.find('(');
-			if (end != std::string::npos) {
-				name.erase(end);
-			}
-		}
-	}	
-
 	return name;
 }
 
