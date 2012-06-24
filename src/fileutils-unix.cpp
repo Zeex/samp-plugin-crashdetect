@@ -34,6 +34,9 @@ namespace fileutils {
 const char kNativePathSepChar = '/';
 const char *kNativePathSepString = "/";
 
+const char kNativePathListSepChar = ':';
+const char *kNativePathListSepString = ":";
+
 void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
                        std::vector<std::string> &files) 
 {

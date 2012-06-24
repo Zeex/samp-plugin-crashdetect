@@ -108,8 +108,27 @@ crashdetect::crashdetect(AMX *amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 {
 	AMXPathFinder pathFinder;
-	pathFinder.AddSearchPath("gamemodes/");
-	pathFinder.AddSearchPath("filterscripts/");
+	pathFinder.AddSearchPath("gamemodes");
+	pathFinder.AddSearchPath("filterscripts");
+
+	// Read a list of additional search paths from AMX_PATH.
+	const char *AMX_PATH = getenv("AMX_PATH");
+	if (AMX_PATH != 0) {
+		std::string var(AMX_PATH);
+		std::string path;
+		std::string::size_type begin = 0;
+		while (begin < var.length()) {
+			std::string::size_type end = var.find(fileutils::kNativePathListSepChar, begin);
+			if (end == std::string::npos) {
+				end = var.length();
+			}
+			path.assign(var.begin() + begin, var.begin() + end);
+			if (!path.empty()) {
+				pathFinder.AddSearchPath(path);
+			}
+			begin = end + 1;
+		}
+	}
 
 	amxPath_ = pathFinder.FindAMX(amx);
 	amxName_ = fileutils::GetFileName(amxPath_);
