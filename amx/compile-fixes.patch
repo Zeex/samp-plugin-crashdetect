@@ -58,8 +58,8 @@ diff -ruNpw amx_orig/amxaux.h amx/amxaux.h
  int AMXAPI aux_FreeProgram(AMX *amx);
  
  /* a readable error message from an error code */
---- Z:/samp-server/plugins/crashdetect/amx_orig/amxdbg.h	Sat Jul 23 16:07:00 2005
-+++ Z:/samp-server/plugins/crashdetect/amx/amxdbg.h	Sun Jun 17 22:43:01 2012
+--- amx_orig/amxdbg.h	Sat Jul 23 16:07:00 2005
++++ amx/amxdbg.h	Sun Jun 17 22:43:01 2012
 @@ -27,6 +27,8 @@
  #ifndef AMXDBG_H_INCLUDED
  #define AMXDBG_H_INCLUDED
@@ -68,6 +68,7 @@ diff -ruNpw amx_orig/amxaux.h amx/amxaux.h
 +
  #ifndef AMX_H_INCLUDED
    #include "amx.h"
+ #endif 
 diff -ruNpw amx_orig/amx.h amx/amx.h
 --- amx_orig/amx.h	2005-07-23 17:07:00.000000000 +0700
 +++ amx/amx.h	2012-04-26 09:33:38.437227400 +0700
@@ -80,4 +81,3 @@ diff -ruNpw amx_orig/amx.h amx/amx.h
  #if defined FREEBSD && !defined __FreeBSD__
    #define __FreeBSD__
  #endif
- #endif 
