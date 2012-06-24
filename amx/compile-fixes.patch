@@ -68,4 +68,16 @@ diff -ruNpw amx_orig/amxaux.h amx/amxaux.h
 +
  #ifndef AMX_H_INCLUDED
    #include "amx.h"
+diff -ruNpw amx_orig/amx.h amx/amx.h
+--- amx_orig/amx.h	2005-07-23 17:07:00.000000000 +0700
++++ amx/amx.h	2012-04-26 09:33:38.437227400 +0700
+@@ -21,6 +21,8 @@
+  *  Version: $Id: amx.h 3363 2005-07-23 09:03:29Z thiadmer $
+  */
+ 
++#include <stddef.h>
++
+ #if defined FREEBSD && !defined __FreeBSD__
+   #define __FreeBSD__
+ #endif
  #endif 
