@@ -129,7 +129,6 @@ configure_file(
 message(STATUS "You're going to build crashdetect v${version}")
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
-install(FILES "README.md" DESTINATION ".")
 
 if(MSVC)
 	# Install the PDB file. This works only for Debug/RelWithDebInfo.
