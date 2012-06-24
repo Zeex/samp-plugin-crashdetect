@@ -28,8 +28,6 @@
 
 #include "stacktrace.h"
 
-static const int kMaxFrames = 100;
-
 std::string StackFrame::GetString() const {
 	std::stringstream stream;
 
