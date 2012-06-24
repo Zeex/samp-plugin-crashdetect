@@ -22,7 +22,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <string>
-#include <stack>
 #include <vector>
 
 #include <Windows.h>
@@ -37,8 +36,6 @@ const char *kNativePathSepString = "\\";
 void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
                        std::vector<std::string> &files) 
 {
-	std::stack<std::string> current;
-
 	std::string fileName;
 	fileName.append(directory);
 	fileName.append(kNativePathSepString);
