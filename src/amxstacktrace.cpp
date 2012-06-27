@@ -232,16 +232,10 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 	if (funAddr_ == 0) {
 		if (fun_) {
 			funAddr_ = fun_.GetCodeStartAddress();
-		} else {
-			// Match return address against something in public table.
-			if (GetPublicFunctionName(amx, retAddr_) != 0) {
-				funAddr_ = retAddr_;
-			}
 		}
 	}
 
-	if (retAddr_ == funAddr_ || retAddr_ == 0) {
-		// The return address isn't real...
+	if (retAddr_ == 0) {
 		stream << "???????? in ";
 	} else {
 		stream << std::hex << std::setw(8) << std::setfill('0') 
@@ -369,7 +363,7 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 
 	stream << ")";
 
-	if (debugInfo.IsLoaded()) {
+	if (debugInfo.IsLoaded() && retAddr_ != 0) {
 		std::string fileName = debugInfo.GetFileName(retAddr_);
 		if (!fileName.empty()) {
 			stream << " at " << fileName;

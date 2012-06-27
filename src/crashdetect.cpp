@@ -302,7 +302,7 @@ void crashdetect::PrintAmxBacktrace() {
 
 			if (frames.empty()) {
 				ucell epAddr = amxutils::GetPublicAddress(call.amx(), call.index());
-				frames.push_front(AMXStackFrame(call.amx(), frm, cip, epAddr, debugInfo));
+				frames.push_front(AMXStackFrame(call.amx(), frm, 0, epAddr, debugInfo));
 			} else {
 				if (!debugInfo.IsLoaded()) {
 					AMXStackFrame &bottom = frames.back();
