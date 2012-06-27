@@ -29,8 +29,8 @@ set(SOURCES
 	"src/crashdetect.h"
 	"src/fileutils.cpp"
 	"src/fileutils.h"
-	"src/jump-x86.cpp"
-	"src/jump-x86.h"
+	"src/hook.cpp"
+	"src/hook.h"
 	"src/logprintf.cpp"
 	"src/logprintf.h"
 	"src/os.h"
@@ -45,12 +45,14 @@ set(SOURCES
 if(WIN32)
 	list(APPEND SOURCES
 		"src/fileutils-win32.cpp"
+		"src/hook-win32.cpp"
 		"src/os-win32.cpp"
 		"src/stacktrace-win32.cpp"
 	)
 elseif(UNIX)
 	list(APPEND SOURCES
 		"src/fileutils-unix.cpp"
+		"src/hook-unix.cpp"
 		"src/os-unix.cpp"
 		"src/stacktrace-unix.cpp"
 	)

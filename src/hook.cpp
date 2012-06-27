@@ -23,41 +23,15 @@
 
 #include <cstring>
 
-#include "jump-x86.h"
+#include "hook.h"
 
-#if defined WIN32 || defined _WIN32
-
-#include <windows.h>
-typedef unsigned __int32 uint32_t;
-
-static void Unprotect(void *address, int size) {
-	DWORD oldProtect;
-	VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &oldProtect);
-}
-
-#else
-
-#include <stdint.h>
-#include <unistd.h>
-#include <sys/mman.h>
-
-static void Unprotect(void *address, int size) {
-	// Both address and size must be multiples of page size...
-	size_t pagesize = getpagesize();
-	size_t where = ((reinterpret_cast<uint32_t>(address) / pagesize) * pagesize);
-	size_t count = (size / pagesize) * pagesize + pagesize * 2;
-	mprotect(reinterpret_cast<void*>(where), count, PROT_READ | PROT_WRITE | PROT_EXEC);
-}
-
-#endif
-
-JumpX86::JumpX86() 
+Hook::Hook() 
 	: src_(0)
 	, dst_(0)
 	, installed_(false)
 {}
 
-JumpX86::JumpX86(void *src, void *dst) 
+Hook::Hook(void *src, void *dst) 
 	: src_(0)
 	, dst_(0)
 	, installed_(false)
@@ -65,11 +39,11 @@ JumpX86::JumpX86(void *src, void *dst)
 	Install(src, dst);
 }
 
-JumpX86::~JumpX86() {
+Hook::~Hook() {
 	Remove();
 }
 
-bool JumpX86::Install() {
+bool Hook::Install() {
 	if (installed_) {
 		return false;
 	}
@@ -85,14 +59,14 @@ bool JumpX86::Install() {
 	memcpy(src_, &JMP, 1);
 
 	// Jump address is relative to the next instruction's address
-	size_t offset = (uint32_t)dst_ - ((uint32_t)src_ + kJmpInstrSize);
-	memcpy((void*)((uint32_t)src_ + 1), &offset, kJmpInstrSize - 1);
+	size_t offset = (int)dst_ - ((int)src_ + kJmpInstrSize);
+	memcpy((void*)((int)src_ + 1), &offset, kJmpInstrSize - 1);
 
 	installed_ = true;
 	return true;
 }
 
-bool JumpX86::Install(void *src, void *dst) {
+bool Hook::Install(void *src, void *dst) {
 	if (installed_) {
 		return false;
 	}
@@ -102,7 +76,7 @@ bool JumpX86::Install(void *src, void *dst) {
 	return Install();
 }
 
-bool JumpX86::Remove() {
+bool Hook::Remove() {
 	if (!installed_) {
 		return false;
 	}
@@ -112,16 +86,16 @@ bool JumpX86::Remove() {
 	return true;
 }
 
-bool JumpX86::IsInstalled() const {
+bool Hook::IsInstalled() const {
 	return installed_;
 }
 
 // static 
-void *JumpX86::GetTargetAddress(void *jmp) {
+void *Hook::GetTargetAddress(void *jmp) {
 	if (*reinterpret_cast<unsigned char*>(jmp) == 0xE9) {
-		uint32_t next_instr = reinterpret_cast<uint32_t>(reinterpret_cast<char*>(jmp) + kJmpInstrSize);
-		uint32_t rel_addr = *reinterpret_cast<uint32_t*>(reinterpret_cast<char*>(jmp) + 1);
-		uint32_t abs_addr = rel_addr + next_instr;
+		int next_instr = reinterpret_cast<int>(reinterpret_cast<char*>(jmp) + kJmpInstrSize);
+		int rel_addr = *reinterpret_cast<int*>(reinterpret_cast<char*>(jmp) + 1);
+		int abs_addr = rel_addr + next_instr;
 		return reinterpret_cast<void*>(abs_addr);
 	}
 	return 0;

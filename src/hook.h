@@ -21,34 +21,32 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef JUMP_X86_H
-#define JUMP_X86_H
+#ifndef HOOK_H
+#define HOOK_H
 
 #if !defined _M_IX86 && !defined __i386__
-	#error "Unsupported architecture"
+	#error Unsupported architecture
 #endif
 
-class JumpX86 {
+class Hook {
 public:
 	static const int kJmpInstrSize = 5;
 
-	JumpX86();
-	JumpX86(void *src, void *dst);
-	~JumpX86();
+	Hook();
+	Hook(void *src, void *dst);
+	~Hook();
 
 	bool Install();
 	bool Install(void *src, void *dst);
+	bool IsInstalled() const;
 	bool Remove();
 
-	bool IsInstalled() const;
-
-	// Returns a E9 JMP destination as an aboluste address
 	static void *GetTargetAddress(void *jmp);
 
 	// Temporary Remove()
 	class ScopedRemove {
 	public:
-		ScopedRemove(JumpX86 *jmp) 
+		ScopedRemove(Hook *jmp) 
 			: jmp_(jmp)
 			, removed_(jmp->Remove())
 		{
@@ -62,14 +60,14 @@ public:
 		}
 
 	private:		
-		JumpX86 *jmp_;
+		Hook *jmp_;
 		bool removed_;
 	};
 
 	// Temporary Install() 
 	class ScopedInstall {
 	public:
-		ScopedInstall(JumpX86 *jmp) 
+		ScopedInstall(Hook *jmp) 
 			: jmp_(jmp)
 			, installed_(jmp->Install())
 		{
@@ -83,9 +81,12 @@ public:
 		}
 
 	private:
-		JumpX86 *jmp_;
+		Hook *jmp_;
 		bool installed_;
 	};
+
+private:
+	static void Unprotect(void *address, int size);
 
 private:
 	void *src_;

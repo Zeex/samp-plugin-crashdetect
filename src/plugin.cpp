@@ -24,7 +24,7 @@
 #include "compiler.h"
 #include "crashdetect.h"
 #include "fileutils.h"
-#include "jump-x86.h"
+#include "hook.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
@@ -58,10 +58,10 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	void **exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
 
 	void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
-	void *amx_Exec_sub = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
+	void *amx_Exec_sub = Hook::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
 
 	if (amx_Exec_sub == 0) {
-		new JumpX86(amx_Exec_ptr, (void*)AmxExec);
+		new Hook(amx_Exec_ptr, (void*)AmxExec);
 	} else {
 		std::string module = fileutils::GetFileName(os::GetModulePath(amx_Exec_sub));
 		if (!module.empty()) {
@@ -71,10 +71,10 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	}
 
 	void *amx_Release_ptr = exports[PLUGIN_AMX_EXPORT_Release];
-	void *amx_Release_sub = JumpX86::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Release_ptr));
+	void *amx_Release_sub = Hook::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Release_ptr));
 
 	if (amx_Release_sub == 0) {
-		new JumpX86(amx_Release_ptr, (void*)AmxRelease);
+		new Hook(amx_Release_ptr, (void*)AmxRelease);
 	}
 
 	os::SetExceptionHandler(crashdetect::SystemException);
