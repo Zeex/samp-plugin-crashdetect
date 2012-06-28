@@ -85,7 +85,7 @@ void crashdetect::SystemInterrupt() {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleInterrupt();
 	} else {
-		logprintf("Server recieved an interrupt signal");
+		logprintf("Server recieved interrupt signal");
 	}	
 	PrintSystemBacktrace();
 }
