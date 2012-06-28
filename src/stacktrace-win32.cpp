@@ -31,6 +31,7 @@
 // MSDN says that CaptureStackBackTrace() can't handle more than 62 frames on
 // Windows Server 2003 and Windows XP.
 static const int kMaxFrames = 62;
+static const int kMaxSymbolNameLength = 1024;
 
 class DbgHelp {
 public:

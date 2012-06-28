@@ -50,8 +50,6 @@ private:
 
 class StackTrace {
 public:
-	static const int kMaxSymbolNameLength = 256;
-
 	StackTrace(int skip = 0, int max = 0, void *context = 0);
 
 	std::deque<StackFrame> GetFrames() const {
