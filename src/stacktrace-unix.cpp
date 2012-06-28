@@ -23,7 +23,6 @@
 
 #include <string>
 
-#include <cxxabi.h>
 #include <execinfo.h>
 
 #include "stacktrace.h"
