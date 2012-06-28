@@ -39,13 +39,13 @@ public:
 	static void SystemException(void *context);
 	static void SystemInterrupt();
 
-	int HandleAmxCallback(cell index, cell *result, cell *params);
-	int HandleAmxExec(cell *retval, int index);
-	int HandleAmxRelease(cell amx_addr, void *releaser);
+	int DoAmxCallback(cell index, cell *result, cell *params);
+	int DoAmxExec(cell *retval, int index);
+	int DoAmxRelease(cell amx_addr, void *releaser);
 
-	void HandleCrash();
-	void HandleRuntimeError(int index, int error);
+	void HandleException();
 	void HandleInterrupt();
+	void HandleExecError(int index, int error);
 	void HandleReleaseError(cell address, void *releaser);
 
 private:

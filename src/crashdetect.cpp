@@ -72,7 +72,7 @@ void crashdetect::DestroyInstance(AMX *amx) {
 void crashdetect::SystemException(void *context) {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
-		GetInstance(amx)->HandleCrash();
+		GetInstance(amx)->HandleException();
 	} else {
 		logprintf("Server crashed due to an unknown error");
 	}
@@ -140,14 +140,14 @@ crashdetect::crashdetect(AMX *amx)
 	prevCallback_ = amx_->callback;	
 }
 
-int crashdetect::HandleAmxCallback(cell index, cell *result, cell *params) {
+int crashdetect::DoAmxCallback(cell index, cell *result, cell *params) {
 	npCalls_.push(NPCall(NPCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
 	int retcode = prevCallback_(amx_, index, result, params);	
 	npCalls_.pop();
 	return retcode;
 }
 
-int crashdetect::HandleAmxExec(cell *retval, int index) {
+int crashdetect::DoAmxExec(cell *retval, int index) {
 	npCalls_.push(NPCall(NPCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
 
 	int retcode = ::amx_Exec(amx_, retval, index);
@@ -161,14 +161,14 @@ int crashdetect::HandleAmxExec(cell *retval, int index) {
 	return retcode;
 }
 
-int crashdetect::HandleAmxRelease(cell amx_addr, void *releaser) {
+int crashdetect::DoAmxRelease(cell amx_addr, void *releaser) {
 	if (amx_addr < amx_->hlw || amx_addr >= amx_->stk) {
 		HandleReleaseError(amx_addr, releaser);
 	}
 	return amx_Release(amx_, amx_addr);
 }
 
-void crashdetect::HandleRuntimeError(int index, int error) {
+void crashdetect::HandleExecError(int index, int error) {
 	crashdetect::errorCaught_ = true;
 
 	if (error == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
@@ -233,7 +233,7 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 	DieOrContinue();
 }
 
-void crashdetect::HandleCrash() {
+void crashdetect::HandleException() {
 	logprintf("Server crashed while executing %s", amxName_.c_str());
 	PrintAmxBacktrace();
 }

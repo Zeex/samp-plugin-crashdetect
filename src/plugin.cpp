@@ -33,21 +33,21 @@
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
-		crashdetect::GetInstance(amx)->HandleRuntimeError(index, error);
+		crashdetect::GetInstance(amx)->HandleExecError(index, error);
 	}
 	return AMX_ERR_NONE;
 }
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return crashdetect::GetInstance(amx)->HandleAmxCallback(index, result, params);
+	return crashdetect::GetInstance(amx)->DoAmxCallback(index, result, params);
 }
 
 static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
-	return crashdetect::GetInstance(amx)->HandleAmxExec(retval, index);
+	return crashdetect::GetInstance(amx)->DoAmxExec(retval, index);
 }
 
 static int AMXAPI AmxRelease(AMX *amx, cell amx_addr) {
-	return crashdetect::GetInstance(amx)->HandleAmxRelease(amx_addr, compiler::GetReturnAddress());
+	return crashdetect::GetInstance(amx)->DoAmxRelease(amx_addr, compiler::GetReturnAddress());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
