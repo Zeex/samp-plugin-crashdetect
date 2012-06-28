@@ -202,13 +202,13 @@ void crashdetect::HandleRuntimeError(int index, int error) {
 			break;
 		}
 		case AMX_ERR_STACKERR:
-			logprintf("  Stack index (STK) is 0x%X, heap index (HEA) is 0x%X", amx_->stk, amx_->hea); 
+			logprintf("  Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X", amx_->stk, amx_->hea); 
 			break;
 		case AMX_ERR_STACKLOW:
-			logprintf("  Stack index (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
+			logprintf("  Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
 			break;
 		case AMX_ERR_HEAPLOW:
-			logprintf("  Heap index (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
+			logprintf("  Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
 			break;
 		case AMX_ERR_INVINSTR: {
 			cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
