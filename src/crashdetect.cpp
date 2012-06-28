@@ -259,14 +259,18 @@ void crashdetect::PrintAmxBacktrace() {
 		return;
 	}
 
-	logprintf("AMX backtrace:");
-
 	std::stack<NPCall> npCallStack = npCalls_;
 	cell frm = npCallStack.top().amx()->frm;
 	cell cip = npCallStack.top().amx()->cip;
 	int level = 0;
 
-	while (!npCallStack.empty()) {
+	if (cip == 0) {
+		return;
+	}
+
+	logprintf("AMX backtrace:");
+
+	while (!npCallStack.empty() && cip != 0) {
 		NPCall call = npCallStack.top();
 
 		if (call.amx() != npCallStack.top().amx()) {
