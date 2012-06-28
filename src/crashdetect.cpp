@@ -284,7 +284,7 @@ void crashdetect::PrintAmxBacktrace() {
 				}				
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
-					logprintf("#%-2d native %s () [%08x]%s", level++, name, address, from.c_str());
+					logprintf("#%d native %s () [%08x]%s", level++, name, address, from.c_str());
 				}
 			}
 		} else if (call.type() == NPCall::PUBLIC) {
@@ -320,7 +320,7 @@ void crashdetect::PrintAmxBacktrace() {
 				if (amxName.empty() || debugInfo.IsLoaded()) {
 					from.clear();
 				}
-				logprintf("#%-2d %s%s", level++, frames[i].GetString().c_str(), from.c_str());
+				logprintf("#%d %s%s", level++, frames[i].GetString().c_str(), from.c_str());
 			}
 
 			frm = call.frm();
@@ -349,7 +349,7 @@ void crashdetect::PrintSystemBacktrace(void *context) {
 			from.clear();
 		}
 
-		logprintf("#%-2d %s%s", level++, frame.GetString().c_str(), from.c_str());
+		logprintf("#%d %s%s", level++, frame.GetString().c_str(), from.c_str());
 	}
 }
 
