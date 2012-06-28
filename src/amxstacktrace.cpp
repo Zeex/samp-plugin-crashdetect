@@ -254,7 +254,10 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 	} else {		
 		const char *name = GetPublicFunctionName(amx, funAddr_);
 		if (name != 0) {
-			stream << "public " << name;
+			if (!IsMain(amx, funAddr_)) {
+				stream << "public ";
+			}
+			stream << name;
 		} else {
 			stream << "??"; // unknown function
 		}
