@@ -174,9 +174,13 @@ StackTrace::StackTrace(int skip, int max, void *theirContext) {
 
 	for (int i = 0; (i < max || max == 0); i++) {
 		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stackFrame,
-		                          (PVOID)context, NULL, NULL, NULL, NULL);
+		                                  (PVOID)context, NULL, NULL, NULL, NULL);
+		if (!result) {
+			break;
+		}
+
 		DWORD64 address = stackFrame.AddrReturn.Offset;
-		if (!result || address == 0) {
+		if (address == 0 || address == stackFrame.AddrPC.Offset) {
 			break;
 		}
 
