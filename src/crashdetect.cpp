@@ -249,7 +249,7 @@ void crashdetect::HandleReleaseError(cell address, void *releaser) {
 		plugin.assign("<unknown>");
 	}
 	logprintf("Bad heap release detected:");
-	logprintf(" %s [%08x] releases memory at %08x which is out of heap", plugin.c_str(), releaser, address);
+	logprintf(" %s [%08x] is releasing memory at %08x which is out of heap", plugin.c_str(), releaser, address);
 	PrintSystemBacktrace();
 }
 
