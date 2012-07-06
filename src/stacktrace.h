@@ -50,13 +50,16 @@ private:
 
 class StackTrace {
 public:
-	StackTrace(int skip = 0, int max = 0, void *context = 0);
+	StackTrace(void *context = 0);
 
 	std::deque<StackFrame> GetFrames() const {
 		return frames_;
 	}
 
-private:
+protected:
+	struct HappyCompiler {};
+	StackTrace(HappyCompiler *happyCompiler);
+
 	std::deque<StackFrame> frames_;
 };
 

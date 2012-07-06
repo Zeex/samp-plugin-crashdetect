@@ -27,6 +27,7 @@
 #include <DbgHelp.h>
 
 #include "stacktrace.h"
+#include "stacktrace-manual.h"
 
 // MSDN says that CaptureStackBackTrace() can't handle more than 62 frames on
 // Windows Server 2003 and Windows XP.
@@ -119,10 +120,9 @@ DbgHelp::DbgHelp(HANDLE process)
 		SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
 		SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
 		StackWalk64_ = (StackWalk64Type)GetProcAddress(module_, "StackWalk64");
-	}
-
-	if (SymInitialize_ != NULL) {
-		initialized_ = SymInitialize_(process_, NULL, TRUE);
+		if (SymInitialize_ != NULL) {
+			initialized_ = SymInitialize_(process_, NULL, TRUE);
+		}
 	}
 }
 
@@ -135,18 +135,18 @@ DbgHelp::~DbgHelp() {
 	}
 }
 
-StackTrace::StackTrace(int skip, int max, void *theirContext) {
-	HANDLE process = GetCurrentProcess();
-	DbgHelp dbghelp(process);
-	if (!dbghelp.IsLoaded()) {
-		return;
-	}
-
+StackTrace::StackTrace(void *theirContext) {
 	PCONTEXT context = reinterpret_cast<PCONTEXT>(theirContext);
 	CONTEXT currentContext;
 	if (theirContext == NULL) {
 		RtlCaptureContext(&currentContext);
 		context = &currentContext;
+	}
+
+	HANDLE process = GetCurrentProcess();
+	DbgHelp dbghelp(process);
+	if (!dbghelp.IsLoaded()) {
+		goto fail;
 	}
 
 	STACKFRAME64 stackFrame;
@@ -161,7 +161,7 @@ StackTrace::StackTrace(int skip, int max, void *theirContext) {
 	stackFrame.AddrStack.Mode = AddrModeFlat;
 
 	if (!dbghelp.HaveStackWalk64()) {
-		return;
+		goto fail;
 	}
 
 	SYMBOL_INFO *symbol = NULL;
@@ -172,7 +172,7 @@ StackTrace::StackTrace(int skip, int max, void *theirContext) {
 		symbol->MaxNameLen = kMaxSymbolNameLength;
 	}
 
-	for (int i = 0; (i < max || max == 0); i++) {
+	for (int i = 0; ; i++) {
 		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stackFrame,
 		                                  (PVOID)context, NULL, NULL, NULL, NULL);
 		if (!result) {
@@ -184,18 +184,26 @@ StackTrace::StackTrace(int skip, int max, void *theirContext) {
 			break;
 		}
 
-		if (i >= skip) {
-			const CHAR *name = "";
-			if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
-				if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
-					name = symbol->Name;
-				}
+		const char *name = "";
+		if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
+			if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
+				name = symbol->Name;
 			}
-			frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
 		}
+
+		frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
 	}
 
 	if (symbol != NULL) {
 		std::free(symbol);
 	}
+
+	return;
+
+fail:
+	StackTraceManual manualTrace(
+		reinterpret_cast<void*>(context->Ebp),
+		reinterpret_cast<void*>(context->Eip));
+
+	frames_ = manualTrace.GetFrames();
 }

@@ -28,6 +28,9 @@
 
 #include "stacktrace.h"
 
+StackTrace::StackTrace(HappyCompiler *happyCompiler) {
+}
+
 std::string StackFrame::GetString() const {
 	std::stringstream stream;
 

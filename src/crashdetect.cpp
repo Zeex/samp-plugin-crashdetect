@@ -340,7 +340,7 @@ void crashdetect::PrintSystemBacktrace(void *context) {
 
 	int level = 0;
 
-	StackTrace trace(0, 0, context);
+	StackTrace trace(context);
 	std::deque<StackFrame> frames = trace.GetFrames();	
 
 	for (std::deque<StackFrame>::const_iterator iterator = frames.begin();

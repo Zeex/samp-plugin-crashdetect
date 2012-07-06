@@ -60,3 +60,13 @@ iteration:
 exit:
 	__asm ret
 }
+
+__declspec(naked) void *compiler::GetStackTop() {
+	__asm mov eax, fs:[0x04]
+	__asm ret
+}
+
+__declspec(naked) void *compiler::GetStackBottom() {
+	__asm mov eax, fs:[0x08]
+	__asm ret
+}

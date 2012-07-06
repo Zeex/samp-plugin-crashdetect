@@ -6,7 +6,17 @@ project(crashdetect)
 list(APPEND CMAKE_MODULE_PATH "${crashdetect_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
+include(CheckFunctionExists)
 include(GetGitRevisionDescription)
+
+check_function_exists(backtrace HAVE_BACKTRACE)
+if(HAVE_BACKTRACE)
+	add_definitions(-DHAVE_BACKTRACE)
+endif()
+check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
+if(HAVE_BACKTRACE_SYMBOLS)
+	add_definitions(-DHAVE_BACKTRACE_SYMBOLS)
+endif()
 
 include_directories(".")
 include_directories("amx")
@@ -39,6 +49,8 @@ set(SOURCES
 	"src/plugincommon.h"
 	"src/stacktrace.cpp"
 	"src/stacktrace.h"
+	"src/stacktrace-manual.cpp"
+	"src/stacktrace-manual.h"
 	"src/version.h"
 )
 

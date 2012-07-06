@@ -29,6 +29,9 @@ namespace compiler {
 void *GetFrameAddress(int depth = 0);
 void *GetReturnAddress(void *frame = 0, int depth = 0);
 
+void *GetStackTop();
+void *GetStackBottom();
+
 } // namespace compiler
 
 #endif // !COMPILER_H

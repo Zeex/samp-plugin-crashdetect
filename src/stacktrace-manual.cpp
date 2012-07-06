@@ -21,45 +21,47 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstdlib>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <sstream>
 #include <string>
 
-#include <execinfo.h>
-
-#include "stacktrace.h"
+#include "compiler.h"
 #include "stacktrace-manual.h"
 
-static const int kMaxFrames = 100;
-
-static std::string GetSymbolName(const std::string &symbol) {
-	std::string::size_type lp = symbol.find('(');
-	std::string::size_type rp = symbol.find_first_of(")+-");
-
-	std::string name;
-	if (lp != std::string::npos && rp != std::string::npos) {
-		name.assign(symbol.begin() + lp + 1, symbol.begin() + rp);
-	}
-
-	return name;
+static inline void *GetReturnAddress(void *frmAddr) {
+	return *reinterpret_cast<void**>(reinterpret_cast<char*>(frmAddr) + 4);
 }
 
-StackTrace::StackTrace(void *context) {
-	#ifdef HAVE_BACKTRACE
-		void *trace[kMaxFrames];
-		int traceLength = backtrace(trace, kMaxFrames);
+static inline void *GetNextFrame(void *frmAddr) {
+	return *reinterpret_cast<void**>(frmAddr);
+}
 
-		#ifdef HAVE_BACKTRACE_SYMBOLS
-			char **symbols = backtrace_symbols(trace, traceLength);
-		#endif
+StackTraceManual::StackTraceManual(void *frame, void *pc)
+	: StackTrace(static_cast<HappyCompiler*>(0))
+{
+	void *curFrame = frame == 0
+		? compiler::GetFrameAddress()
+		: frame;
 
-		for (int i = 0; i < traceLength; i++) {
-			#ifdef HAVE_BACKTRACE_SYMBOLS
-				std::string name = GetSymbolName(symbols[i]);
-				frames_.push_back(StackFrame(trace[i], name));
-			#else
-				frames_.push_back(StackFrame(trace[i]));
-			#endif
+	void *top = compiler::GetStackTop();
+	void *bot = compiler::GetStackBottom();
+
+	for (int i = 0; ; i++) {
+		if (curFrame == 0
+			|| (curFrame >= top && top != 0)
+			|| (curFrame < bot && bot != 0)) {
+			break;
 		}
-	#else
-		frames_ = StackTraceManual().GetFrames();
-	#endif
+
+		void *ret = GetReturnAddress(curFrame);
+		if (ret == 0) {
+			break;
+		}
+
+		curFrame = GetNextFrame(curFrame);
+		frames_.push_back(StackFrame(ret));
+	}
 }

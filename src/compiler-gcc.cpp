@@ -77,3 +77,34 @@ __asm__ __volatile__ (
 "	ret;"
 );
 
+__asm__ __volatile__ (
+#ifdef __MINGW32__
+".globl __ZN8compiler11GetStackTopEv;"
+"__ZN8compiler11GetStackTopEv:"
+
+"	movl %fs:(0x04), %eax;"
+"	ret;"
+#else
+".globl _ZN8compiler11GetStackTopEv;"
+"_ZN8compiler11GetStackTopEv:"
+
+"	xorl %eax, %eax;"
+"	ret;"
+#endif
+);
+
+__asm__ __volatile__ (
+#ifdef __MINGW32__
+".globl __ZN8compiler14GetStackBottomEv;"
+"__ZN8compiler14GetStackBottomEv:"
+
+"	movl %fs:(0x08), %eax;"
+"	ret;"
+#else
+".globl _ZN8compiler14GetStackBottomEv;"
+"_ZN8compiler14GetStackBottomEv:"
+
+"	xorl %eax, %eax;"
+"	ret;"
+#endif
+);

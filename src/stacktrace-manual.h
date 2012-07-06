@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
+// modification, are permitted provided that the following conditions are met: 
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer.
+//    list of conditions and the following disclaimer. 
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution.
+//    and/or other materials provided with the distribution. 
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -21,45 +21,14 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <string>
-
-#include <execinfo.h>
+#ifndef STACKTRACE_MANUAL_H
+#define STACKTRACE_MANUAL_H
 
 #include "stacktrace.h"
-#include "stacktrace-manual.h"
 
-static const int kMaxFrames = 100;
+class StackTraceManual : public StackTrace {
+public:
+	StackTraceManual(void *frame = 0, void *pc = 0);
+};
 
-static std::string GetSymbolName(const std::string &symbol) {
-	std::string::size_type lp = symbol.find('(');
-	std::string::size_type rp = symbol.find_first_of(")+-");
-
-	std::string name;
-	if (lp != std::string::npos && rp != std::string::npos) {
-		name.assign(symbol.begin() + lp + 1, symbol.begin() + rp);
-	}
-
-	return name;
-}
-
-StackTrace::StackTrace(void *context) {
-	#ifdef HAVE_BACKTRACE
-		void *trace[kMaxFrames];
-		int traceLength = backtrace(trace, kMaxFrames);
-
-		#ifdef HAVE_BACKTRACE_SYMBOLS
-			char **symbols = backtrace_symbols(trace, traceLength);
-		#endif
-
-		for (int i = 0; i < traceLength; i++) {
-			#ifdef HAVE_BACKTRACE_SYMBOLS
-				std::string name = GetSymbolName(symbols[i]);
-				frames_.push_back(StackFrame(trace[i], name));
-			#else
-				frames_.push_back(StackFrame(trace[i]));
-			#endif
-		}
-	#else
-		frames_ = StackTraceManual().GetFrames();
-	#endif
-}
+#endif // !STACKTRACE_H
