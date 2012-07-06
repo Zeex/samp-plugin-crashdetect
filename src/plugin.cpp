@@ -63,7 +63,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	if (amx_Exec_sub == 0) {
 		new Hook(amx_Exec_ptr, (void*)AmxExec);
 	} else {
-		std::string module = fileutils::GetFileName(os::GetModulePath(amx_Exec_sub));
+		std::string module = fileutils::GetFileName(os::GetModulePathFromAddr(amx_Exec_sub));
 		if (!module.empty()) {
 			logprintf("  Warning: Runtime error detection will not work during this run because ");
 			logprintf("           %s has been loaded before crashdetect.", module.c_str());

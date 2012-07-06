@@ -33,7 +33,7 @@
 
 #include "os.h"
 
-std::string os::GetModulePath(void *address, std::size_t maxLength) {
+std::string os::GetModulePathFromAddr(void *address, std::size_t maxLength) {
 	std::vector<char> name(maxLength + 1);
 	if (address != 0) {
 		Dl_info info;

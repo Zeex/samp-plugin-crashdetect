@@ -244,7 +244,7 @@ void crashdetect::HandleInterrupt() {
 }
 
 void crashdetect::HandleReleaseError(cell address, void *releaser) {
-	std::string plugin = fileutils::GetFileName(os::GetModulePath(releaser));
+	std::string plugin = fileutils::GetFileName(os::GetModulePathFromAddr(releaser));
 	if (plugin.empty()) {
 		plugin.assign("<unknown>");
 	}
@@ -281,7 +281,7 @@ void crashdetect::PrintAmxBacktrace() {
 		if (call.type() == NPCall::NATIVE) {			
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address != 0) {				
-				std::string module = fileutils::GetFileName(os::GetModulePath((void*)address));
+				std::string module = fileutils::GetFileName(os::GetModulePathFromAddr((void*)address));
 				std::string from = " from " + module;
 				if (module.empty()) {
 					from.clear();
@@ -347,7 +347,7 @@ void crashdetect::PrintSystemBacktrace(void *context) {
 			iterator != frames.end(); ++iterator) {
 		const StackFrame &frame = *iterator;
 
-		std::string module = os::GetModulePath(frame.GetReturnAddress());
+		std::string module = os::GetModulePathFromAddr(frame.GetReturnAddress());
 		std::string from = " from " + module;
 		if (module.empty()) {
 			from.clear();

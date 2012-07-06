@@ -29,11 +29,7 @@
 
 #include "os.h"
 
-#if defined GetModulePath
-	#undef GetModulePath
-#endif
-
-std::string os::GetModulePath(void *address, std::size_t maxLength) {
+std::string os::GetModulePathFromAddr(void *address, std::size_t maxLength) {
 	std::vector<char> name(maxLength + 1);
 	if (address != 0) {
 		MEMORY_BASIC_INFORMATION mbi;
