@@ -60,6 +60,20 @@ public:
 		return SymCleanup_(hProcess);
 	}
 
+	bool HaveSymGetOptions() const {
+		return SymGetOptions_ != NULL;
+	}
+	DWORD SymGetOptions() const {
+		return SymGetOptions_();
+	}
+
+	bool HaveSymSetOptions() const {
+		return SymSetOptions_ != NULL;
+	}
+	BOOL SymSetOptions(DWORD SymOptions) const {
+		return SymSetOptions_(SymOptions);
+	}
+
 	bool HaveStackWalk64() const {
 		return StackWalk64_ != NULL;
 	}
@@ -96,6 +110,12 @@ private:
 	typedef BOOL (WINAPI *SymCleanupType)(HANDLE);
 	SymCleanupType SymCleanup_;
 
+	typedef DWORD (WINAPI *SymGetOptionsType)();
+	SymGetOptionsType SymGetOptions_;
+
+	typedef DWORD (WINAPI *SymSetOptionsType)(DWORD);
+	SymSetOptionsType SymSetOptions_;
+
 	typedef BOOL (WINAPI *StackWalk64Type)(DWORD, HANDLE, HANDLE, LPSTACKFRAME64, LPVOID ContextRecord,
 	                                       PREAD_PROCESS_MEMORY_ROUTINE64, PFUNCTION_TABLE_ACCESS_ROUTINE64,
 	                                       PGET_MODULE_BASE_ROUTINE64, PTRANSLATE_ADDRESS_ROUTINE64);
@@ -119,6 +139,8 @@ DbgHelp::DbgHelp(HANDLE process)
 		SymInitialize_ = (SymInitializeType)GetProcAddress(module_, "SymInitialize");
 		SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
 		SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
+		SymGetOptions_ = (SymGetOptionsType)GetProcAddress(module_, "SymGetOptions");
+		SymSetOptions_ = (SymSetOptionsType)GetProcAddress(module_, "SymSetOptions");
 		StackWalk64_ = (StackWalk64Type)GetProcAddress(module_, "StackWalk64");
 		if (SymInitialize_ != NULL) {
 			initialized_ = SymInitialize_(process_, NULL, TRUE);
@@ -170,6 +192,12 @@ StackTrace::StackTrace(void *theirContext) {
 		symbol = reinterpret_cast<SYMBOL_INFO*>(std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
 		symbol->SizeOfStruct = sizeof(*symbol);
 		symbol->MaxNameLen = kMaxSymbolNameLength;
+
+		if (dbghelp.HaveSymGetOptions() && dbghelp.HaveSymSetOptions()) {
+			DWORD options = dbghelp.SymGetOptions();
+			options |= SYMOPT_FAIL_CRITICAL_ERRORS;
+			dbghelp.SymSetOptions(options);
+		}
 	}
 
 	for (int i = 0; ; i++) {
