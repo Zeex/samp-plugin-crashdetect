@@ -74,23 +74,18 @@ public:
 		return SymSetOptions_(SymOptions);
 	}
 
+	bool HaveSymGetModuleInfo64() const {
+		return SymGetModuleInfo64_ != NULL;
+	}
+	BOOL SymGetModuleInfo64(HANDLE hProcess, DWORD64 dwAddr, PIMAGEHLP_MODULE64 ModuleInfo) const {
+		return SymGetModuleInfo64_(hProcess, dwAddr, ModuleInfo);
+	}
+
 	bool HaveStackWalk64() const {
 		return StackWalk64_ != NULL;
 	}
-	BOOL StackWalk64(
-		DWORD MachineType,
-		HANDLE hProcess,
-		HANDLE hThread,
-		LPSTACKFRAME64 StackFrame,
-		LPVOID ContextRecord,
-		PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine,
-		PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
-		PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
-		PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
-	) {
-		return StackWalk64_(MachineType, hProcess, hThread, StackFrame, ContextRecord,
-		                    ReadMemoryRoutine, FunctionTableAccessRoutine, GetModuleBaseRoutine,
-		                    TranslateAddress);
+	BOOL StackWalk64(DWORD MachineType, HANDLE hProcess, HANDLE hThread, LPSTACKFRAME64 StackFrame, LPVOID ContextRecord, PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine, PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine, PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine, PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress) {
+		return StackWalk64_(MachineType, hProcess, hThread, StackFrame, ContextRecord, ReadMemoryRoutine, FunctionTableAccessRoutine, GetModuleBaseRoutine, TranslateAddress);
 	}
 
 	inline bool IsLoaded() const {
@@ -115,6 +110,9 @@ private:
 
 	typedef DWORD (WINAPI *SymSetOptionsType)(DWORD);
 	SymSetOptionsType SymSetOptions_;
+
+	typedef BOOL (WINAPI *SymGetModuleInfo64Type)(HANDLE, DWORD64, PIMAGEHLP_MODULE64);
+	SymGetModuleInfo64Type SymGetModuleInfo64_;
 
 	typedef BOOL (WINAPI *StackWalk64Type)(DWORD, HANDLE, HANDLE, LPSTACKFRAME64, LPVOID ContextRecord,
 	                                       PREAD_PROCESS_MEMORY_ROUTINE64, PFUNCTION_TABLE_ACCESS_ROUTINE64,
@@ -141,6 +139,7 @@ DbgHelp::DbgHelp(HANDLE process)
 		SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
 		SymGetOptions_ = (SymGetOptionsType)GetProcAddress(module_, "SymGetOptions");
 		SymSetOptions_ = (SymSetOptionsType)GetProcAddress(module_, "SymSetOptions");
+		SymGetModuleInfo64_ = (SymGetModuleInfo64Type)GetProcAddress(module_, "SymGetModuleInfo64");
 		StackWalk64_ = (StackWalk64Type)GetProcAddress(module_, "StackWalk64");
 		if (SymInitialize_ != NULL) {
 			initialized_ = SymInitialize_(process_, NULL, TRUE);
@@ -212,10 +211,24 @@ StackTrace::StackTrace(void *theirContext) {
 			break;
 		}
 
+		bool haveSymbols = true;
+		if (dbghelp.HaveSymGetModuleInfo64()) {
+			IMAGEHLP_MODULE64 module;
+			ZeroMemory(&module, sizeof(IMAGEHLP_MODULE64));
+			module.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
+			if (dbghelp.SymGetModuleInfo64(process, address, &module)) {
+				if (!module.GlobalSymbols) {
+					haveSymbols = false;
+				}
+			}
+		}
+
 		const char *name = "";
-		if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
-			if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
-				name = symbol->Name;
+		if (haveSymbols) {
+			if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
+				if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
+					name = symbol->Name;
+				}
 			}
 		}
 
