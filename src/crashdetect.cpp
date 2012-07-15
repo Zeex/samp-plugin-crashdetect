@@ -23,6 +23,7 @@
 
 #include <cassert>
 #include <cstdarg>
+#include <cstdlib>
 #include <map>
 #include <stack>
 #include <string>
