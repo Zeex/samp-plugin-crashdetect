@@ -2,13 +2,13 @@
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -60,7 +60,7 @@ crashdetect *crashdetect::GetInstance(AMX *amx) {
 		crashdetect *c = new crashdetect(amx);
 		instances_.insert(std::make_pair(amx, c));
 		return c;
-	} 
+	}
 	return iterator->second;
 }
 
@@ -81,14 +81,14 @@ void crashdetect::SystemException(void *context) {
 }
 
 // static
-void crashdetect::SystemInterrupt() {	
+void crashdetect::SystemInterrupt(void *context) {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleInterrupt();
 	} else {
 		logprintf("Server recieved interrupt signal");
-	}	
-	PrintSystemBacktrace();
+	}
+	PrintSystemBacktrace(context);
 }
 
 // static
@@ -99,7 +99,7 @@ void crashdetect::DieOrContinue() {
 	}
 }
 
-crashdetect::crashdetect(AMX *amx) 
+crashdetect::crashdetect(AMX *amx)
 	: amx_(amx)
 	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 {
@@ -138,12 +138,12 @@ crashdetect::crashdetect(AMX *amx)
 	}
 
 	amx_->sysreq_d = 0;
-	prevCallback_ = amx_->callback;	
+	prevCallback_ = amx_->callback;
 }
 
 int crashdetect::DoAmxCallback(cell index, cell *result, cell *params) {
 	npCalls_.push(NPCall(NPCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
-	int retcode = prevCallback_(amx_, index, result, params);	
+	int retcode = prevCallback_(amx_, index, result, params);
 	npCalls_.pop();
 	return retcode;
 }
@@ -153,12 +153,12 @@ int crashdetect::DoAmxExec(cell *retval, int index) {
 
 	int retcode = ::amx_Exec(amx_, retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
-		amx_Error(amx_, index, retcode);		
+		amx_Error(amx_, index, retcode);
 	} else {
 		errorCaught_ = false;
 	}
 
-	npCalls_.pop();	
+	npCalls_.pop();
 	return retcode;
 }
 
@@ -203,7 +203,7 @@ void crashdetect::HandleExecError(int index, int error) {
 			break;
 		}
 		case AMX_ERR_STACKERR:
-			logprintf(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X", amx_->stk, amx_->hea); 
+			logprintf(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X", amx_->stk, amx_->hea);
 			break;
 		case AMX_ERR_STACKLOW:
 			logprintf(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
@@ -221,9 +221,9 @@ void crashdetect::HandleExecError(int index, int error) {
 	if (error != AMX_ERR_NOTFOUND &&
 		error != AMX_ERR_INDEX &&
 		error != AMX_ERR_CALLBACK &&
-		error != AMX_ERR_INIT) 
+		error != AMX_ERR_INIT)
 	{
-		PrintAmxBacktrace();			
+		PrintAmxBacktrace();
 	}
 
 	std::string command = serverCfg.GetOption("run_on_error", std::string());
@@ -279,14 +279,14 @@ void crashdetect::PrintAmxBacktrace() {
 			break;
 		}
 
-		if (call.type() == NPCall::NATIVE) {			
+		if (call.type() == NPCall::NATIVE) {
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
-			if (address != 0) {				
+			if (address != 0) {
 				std::string module = fileutils::GetFileName(os::GetModulePathFromAddr((void*)address));
 				std::string from = " from " + module;
 				if (module.empty()) {
 					from.clear();
-				}				
+				}
 				const char *name = amxutils::GetNativeName(call.amx(), call.index());
 				if (name != 0) {
 					logprintf("#%d native %s () [%08x]%s", level++, name, address, from.c_str());
@@ -311,8 +311,8 @@ void crashdetect::PrintAmxBacktrace() {
 			} else {
 				if (!debugInfo.IsLoaded()) {
 					AMXStackFrame &bottom = frames.back();
-					bottom = AMXStackFrame(call.amx(), 
-						bottom.GetFrameAddress(), 
+					bottom = AMXStackFrame(call.amx(),
+						bottom.GetFrameAddress(),
 						bottom.GetReturnAddress(),
 						amxutils::GetPublicAddress(call.amx(), call.index()),
 						debugInfo);
@@ -331,7 +331,7 @@ void crashdetect::PrintAmxBacktrace() {
 			frm = call.frm();
 			cip = call.cip();
 		}
-		npCallStack.pop();		
+		npCallStack.pop();
 	}
 }
 
@@ -342,7 +342,7 @@ void crashdetect::PrintSystemBacktrace(void *context) {
 	int level = 0;
 
 	StackTrace trace(context);
-	std::deque<StackFrame> frames = trace.GetFrames();	
+	std::deque<StackFrame> frames = trace.GetFrames();
 
 	for (std::deque<StackFrame>::const_iterator iterator = frames.begin();
 			iterator != frames.end(); ++iterator) {

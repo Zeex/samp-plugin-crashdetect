@@ -67,7 +67,7 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 	switch (dwCtrlType) {
 	case CTRL_C_EVENT:
 		if (::interruptHandler != 0) {
-			::interruptHandler();
+			::interruptHandler(0);
 		}
 	}
 	return FALSE;

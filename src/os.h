@@ -40,7 +40,7 @@ typedef void (*ExceptionHandler)(void *context);
 // signal handler on Linux.
 void SetExceptionHandler(ExceptionHandler handler);
 
-typedef void (*InterruptHandler)();
+typedef void (*InterruptHandler)(void *context);
 
 // SetInterruptHandler sets a global Ctrl+C event handler on Windows
 // and SIGINT signal handler on Linux.
