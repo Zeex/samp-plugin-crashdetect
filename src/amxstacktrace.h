@@ -35,9 +35,9 @@ class AMXStackFrame {
 public:
 	static const int kMaxString = 30;
 
-	AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
-	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
-	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo = AMXDebugInfo());
+	AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo &debugInfo);
+	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo &debugInfo);
+	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo);
 
 	inline ucell GetFrameAddress() const 
 		{ return frmAddr_; }

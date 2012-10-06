@@ -302,7 +302,7 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 			if (arg.IsVariable()) {
 				if (tag == "bool:") {
 					// Boolean.
-					stream << "=" << value ? "true" : "false";
+					stream << "=" << (value ? "true" : "false");
 				} else if (tag == "Float:") {
 					// Floating-point number.
 					stream << "=" << std::fixed << std::setprecision(5) << amx_ctof(value);
@@ -328,7 +328,7 @@ void AMXStackFrame::Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, 
 				stream << "=@0x" << std::hex << std::setw(8) << std::setfill('0') << value << std::dec;
 
 				// If this is a string argument, get the text.
-				if (arg.IsArray() || arg.IsArrayRef() 
+				if ((arg.IsArray() || arg.IsArrayRef())
 						&& dims.size() == 1
 						&& tag == "_:"
 						&& debugInfo.GetTagName(dims[0].GetTag()) == "_") 

@@ -23,7 +23,7 @@
 
 #include "compiler.h"
 
-__asm__ __volatile__(
+__asm__ (
 #ifdef __MINGW32__
 ".globl __ZN8compiler16GetReturnAddressEPvi;"
 "__ZN8compiler16GetReturnAddressEPvi:"
@@ -54,7 +54,7 @@ __asm__ __volatile__(
 "	ret;"
 );
 
-__asm__ __volatile__ (
+__asm__ (
 #ifdef __MINGW32__
 ".globl __ZN8compiler15GetFrameAddressEi;"
 "__ZN8compiler15GetFrameAddressEi:"
@@ -77,7 +77,7 @@ __asm__ __volatile__ (
 "	ret;"
 );
 
-__asm__ __volatile__ (
+__asm__ (
 #ifdef __MINGW32__
 ".globl __ZN8compiler11GetStackTopEv;"
 "__ZN8compiler11GetStackTopEv:"
@@ -93,7 +93,7 @@ __asm__ __volatile__ (
 #endif
 );
 
-__asm__ __volatile__ (
+__asm__ (
 #ifdef __MINGW32__
 ".globl __ZN8compiler14GetStackBottomEv;"
 "__ZN8compiler14GetStackBottomEv:"
