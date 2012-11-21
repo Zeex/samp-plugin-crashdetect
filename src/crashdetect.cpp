@@ -86,7 +86,7 @@ void crashdetect::SystemInterrupt(void *context) {
 		AMX *amx = npCalls_.top().amx();
 		GetInstance(amx)->HandleInterrupt();
 	} else {
-		logprintf("Server recieved interrupt signal");
+		logprintf("Server received interrupt signal");
 	}
 	PrintSystemBacktrace(context);
 }
@@ -240,7 +240,7 @@ void crashdetect::HandleException() {
 }
 
 void crashdetect::HandleInterrupt() {
-	logprintf("Server recieved interrupt signal while executing %s", amxName_.c_str());
+	logprintf("Server received interrupt signal while executing %s", amxName_.c_str());
 	PrintAmxBacktrace();
 }
 
