@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2012, Zeex
+// Copyright (c) 2012, Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -21,61 +21,28 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef CRASHDETECT_H
-#define CRASHDETECT_H
+#include <amx/amx.h>
 
-#include <map>
-#include <stack>
-#include <string>
-
-#include "amxdebuginfo.h"
-#include "configreader.h"
 #include "npcall.h"
 
-class crashdetect {
-public:
-	static crashdetect *GetInstance(AMX *amx);
-	static void DestroyInstance(AMX *amx);
+NPCall::NPCall(Type type, AMX *amx, cell index)
+	: type_(type), amx_(amx), index_(index)
+{
+	frm_ = amx_->frm;
+	cip_ = amx_->cip;
+}
 
-	static void SystemException(void *context);
-	static void SystemInterrupt(void *context);
+NPCall::NPCall(Type type, AMX *amx, cell index, cell frm, cell cip)
+	: type_(type), amx_(amx), index_(index), frm_(frm), cip_(cip)
+{
+}
 
-	int DoAmxCallback(cell index, cell *result, cell *params);
-	int DoAmxExec(cell *retval, int index);
-	int DoAmxRelease(cell amx_addr, void *releaser);
+// static
+NPCall NPCall::Public(AMX *amx, cell index) {
+	return NPCall(PUBLIC, amx, index);
+}
 
-	void HandleException();
-	void HandleInterrupt();
-	void HandleExecError(int index, int error);
-	void HandleReleaseError(cell address, void *releaser);
-
-private:
-	static void DieOrContinue();
-
-	static void PrintAmxBacktrace();
-	static void PrintSystemBacktrace(void *context = 0);
-
-	static void logprintf(const char *format, ...);
-
-private:
-	explicit crashdetect(AMX *amx);
-
-	AMX         *amx_;
-	AMX_HEADER  *amxhdr_;
-
-	AMXDebugInfo debugInfo_;
-
-	std::string amxPath_;
-	std::string amxName_;
-
-	AMX_CALLBACK prevCallback_;
-
-	static std::stack<NPCall> npCalls_;
-	static bool errorCaught_;
-	static ConfigReader serverCfg;
-
-	typedef std::map<AMX*, crashdetect*> InstanceMap;
-	static InstanceMap instances_;
-};
-
-#endif // !CRASHDETECT_H
+// static
+NPCall NPCall::Native(AMX *amx, cell index) {
+	return NPCall(NATIVE, amx, index);
+}

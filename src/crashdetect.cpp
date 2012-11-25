@@ -37,6 +37,7 @@
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"
+#include "npcall.h"
 #include "os.h"
 #include "stacktrace.h"
 
@@ -49,7 +50,7 @@ static const char *kLogMessagePrefix = "[debug] ";
 static const char *kServerConfig = "server.cfg";
 
 bool crashdetect::errorCaught_ = false;
-std::stack<crashdetect::NPCall> crashdetect::npCalls_;
+std::stack<NPCall> crashdetect::npCalls_;
 ConfigReader crashdetect::serverCfg(kServerConfig);
 crashdetect::InstanceMap crashdetect::instances_;
 
@@ -138,14 +139,14 @@ crashdetect::crashdetect(AMX *amx)
 }
 
 int crashdetect::DoAmxCallback(cell index, cell *result, cell *params) {
-	npCalls_.push(NPCall(NPCall::NATIVE, amx_, index, amx_->frm, amx_->cip));
+	npCalls_.push(NPCall::Native(amx_, index));
 	int retcode = prevCallback_(amx_, index, result, params);
 	npCalls_.pop();
 	return retcode;
 }
 
 int crashdetect::DoAmxExec(cell *retval, int index) {
-	npCalls_.push(NPCall(NPCall::PUBLIC, amx_, index, amx_->frm, amx_->cip));
+	npCalls_.push(NPCall::Public(amx_, index));
 
 	int retcode = ::amx_Exec(amx_, retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
@@ -268,10 +269,10 @@ void crashdetect::PrintAmxBacktrace() {
 
 	logprintf("AMX backtrace:");
 
-	std::stack<NPCall> npCallStack = npCalls_;
+	std::stack<NPCall> npCalls = npCalls_;
 
-	while (!npCallStack.empty() && cip != 0) {
-		NPCall call = npCallStack.top();
+	while (!npCalls.empty() && cip != 0) {
+		const NPCall &call = npCalls.top();
 
 		// We don't trace calls across AMX bounds i.e. outside of top-level
 		// function's AMX instance.
@@ -280,7 +281,7 @@ void crashdetect::PrintAmxBacktrace() {
 			break;
 		}
 
-		if (call.type() == NPCall::NATIVE) {
+		if (call.IsNative()) {
 			AMX_NATIVE address = amxutils::GetNativeAddress(call.amx(), call.index());
 			if (address != 0) {
 				std::string module = fileutils::GetFileName(os::GetModulePathFromAddr((void*)address));
@@ -293,7 +294,7 @@ void crashdetect::PrintAmxBacktrace() {
 					logprintf("#%d native %s () [%08x]%s", level++, name, address, from.c_str());
 				}
 			}
-		} else if (call.type() == NPCall::PUBLIC) {
+		} else if (call.IsPublic()) {
 			AMXDebugInfo &debugInfo = instances_[call.amx()]->debugInfo_;
 
 			amxutils::PushStack(call.amx(), cip); // push return address
@@ -332,7 +333,8 @@ void crashdetect::PrintAmxBacktrace() {
 			frm = call.frm();
 			cip = call.cip();
 		}
-		npCallStack.pop();
+
+		npCalls.pop();
 	}
 }
 

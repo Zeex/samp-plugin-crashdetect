@@ -52,6 +52,8 @@ set(SOURCES
 	"src/hook.h"
 	"src/logprintf.cpp"
 	"src/logprintf.h"
+	"src/npcall.cpp"
+	"src/npcall.h"
 	"src/os.h"
 	"src/plugin.cpp"
 	"src/plugin.rc"
