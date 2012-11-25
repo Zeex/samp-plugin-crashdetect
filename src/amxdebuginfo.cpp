@@ -235,3 +235,10 @@ ucell AMXDebugInfo::GetLineAddress(long line, const std::string &fileName) const
 	dbg_GetLineAddress(amxdbg_, line, fileName.c_str(), &lineAddress);
 	return lineAddress;
 }
+
+// static
+bool AMXDebugInfo::IsPresent(AMX *amx) {
+	uint16_t flags;
+	amx_Flags(amx, &flags);
+	return ((flags & AMX_FLAG_DEBUG) != 0);
+}

@@ -191,7 +191,7 @@ public:
 		VClass      GetVClass() const           { return static_cast<VClass>(symbol_->vclass); }
 		int16_t     GetArrayDim() const         { return symbol_->dim; }
 		std::string GetName() const             { return symbol_->name; }
-		int16_t     GetNumDims() const           { return symbol_->dim; }
+		int16_t     GetNumDims() const          { return symbol_->dim; }
 
 		std::vector<SymbolDim> GetDims() const;
 
@@ -261,6 +261,8 @@ public:
 	SymbolTable GetSymbols() const {
 		return SymbolTable(amxdbg_->symboltbl, amxdbg_->hdr->symbols);
 	}
+
+	static bool IsPresent(AMX *amx);
 
 private:
 	AMXDebugInfo(const AMXDebugInfo &);

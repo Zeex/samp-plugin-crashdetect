@@ -126,15 +126,11 @@ crashdetect::crashdetect(AMX *amx)
 		}
 	}
 
-	amxPath_ = pathFinder.FindAMX(amx);
+	amxPath_ = pathFinder.FindAMX(amx_);
 	amxName_ = fileutils::GetFileName(amxPath_);
 
-	if (!amxPath_.empty()) {
-		uint16_t flags;
-		amx_Flags(amx_, &flags);
-		if ((flags & AMX_FLAG_DEBUG) != 0) {
-			debugInfo_.Load(amxPath_);
-		}
+	if (!amxPath_.empty() && AMXDebugInfo::IsPresent(amx_)) {
+		debugInfo_.Load(amxPath_);
 	}
 
 	amx_->sysreq_d = 0;
