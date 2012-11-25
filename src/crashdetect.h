@@ -30,7 +30,8 @@
 
 #include "amxdebuginfo.h"
 #include "configreader.h"
-#include "npcall.h"
+
+class NPCall;
 
 class crashdetect {
 public:
@@ -70,7 +71,7 @@ private:
 
 	AMX_CALLBACK prevCallback_;
 
-	static std::stack<NPCall> npCalls_;
+	static std::stack<NPCall*> npCalls_;
 	static bool errorCaught_;
 	static ConfigReader serverCfg;
 
