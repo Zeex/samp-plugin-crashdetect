@@ -32,11 +32,11 @@
 #include <utility>
 #include <vector>
 
+#include <amx/amx.h>
+#include <amx/amxdbg.h>
+
 #include "amxstacktrace.h"
 #include "amxdebuginfo.h"
-
-#include "amx/amx.h"
-#include "amx/amxdbg.h"
 
 static bool IsFunctionArgument(const AMXDebugInfo::Symbol &symbol, ucell functionAddress) {
 	return symbol.IsLocal() && symbol.GetCodeStartAddress() == functionAddress; 

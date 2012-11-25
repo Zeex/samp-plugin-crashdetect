@@ -21,6 +21,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <amx/amx.h>
+
 #include "compiler.h"
 #include "crashdetect.h"
 #include "fileutils.h"
@@ -29,7 +31,6 @@
 #include "os.h"
 #include "plugincommon.h"
 #include "version.h"
-#include "amx/amx.h"
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {

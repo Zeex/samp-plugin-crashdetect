@@ -28,6 +28,9 @@
 #include <stack>
 #include <string>
 
+#include <amx/amx.h>
+#include <amx/amxaux.h>
+
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
 #include "amxstacktrace.h"
@@ -40,9 +43,6 @@
 #include "npcall.h"
 #include "os.h"
 #include "stacktrace.h"
-
-#include "amx/amx.h"
-#include "amx/amxaux.h" // for amx_StrError()
 
 #define AMX_EXEC_GDK (-10)
 

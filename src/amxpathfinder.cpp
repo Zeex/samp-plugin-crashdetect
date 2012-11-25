@@ -27,11 +27,11 @@
 #include <list>
 #include <vector>
 
+#include <amx/amx.h>
+#include <amx/amxaux.h>
+
 #include "amxpathfinder.h"
 #include "fileutils.h"
-
-#include "amx/amx.h"
-#include "amx/amxaux.h"
 
 AMXPathFinder::AMXFile::AMXFile(const std::string &name)
 	: name_(name)
