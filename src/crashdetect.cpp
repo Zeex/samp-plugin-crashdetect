@@ -260,9 +260,10 @@ void crashdetect::PrintAmxBacktrace() {
 		return;
 	}
 
-	std::stack<NPCall> npCallStack = npCalls_;
-	cell frm = npCallStack.top().amx()->frm;
-	cell cip = npCallStack.top().amx()->cip;
+	AMX *topAmx = npCalls_.top().amx();
+
+	cell frm = topAmx->frm;
+	cell cip = topAmx->cip;
 	int level = 0;
 
 	if (cip == 0) {
@@ -271,10 +272,14 @@ void crashdetect::PrintAmxBacktrace() {
 
 	logprintf("AMX backtrace:");
 
+	std::stack<NPCall> npCallStack = npCalls_;
+
 	while (!npCallStack.empty() && cip != 0) {
 		NPCall call = npCallStack.top();
 
-		if (call.amx() != npCallStack.top().amx()) {
+		// We don't trace calls across AMX bounds i.e. outside of top-level
+		// function's AMX instance.
+		if (call.amx() != topAmx) {
 			assert(level != 0);
 			break;
 		}
