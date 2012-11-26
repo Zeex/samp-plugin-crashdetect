@@ -82,13 +82,17 @@ static inline bool IsMain(AMX *amx, ucell address) {
 }
 
 static inline bool IsOnStack(ucell address, AMX *amx) {
-	return (static_cast<cell>(address) >= amx->hlw 
-	     && static_cast<cell>(address) <  amx->stp);
+	return (static_cast<cell>(address) >= amx->hlw
+		&& static_cast<cell>(address) <  amx->stp);
+}
+
+static inline bool IsInData(ucell address, AMX *amx) {
+	return address < amx->stp;
 }
 
 static inline bool IsInCode(ucell address, AMX *amx) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	return static_cast<cell>(address) < hdr->dat - hdr->cod;
+	return address < static_cast<ucell>(hdr->dat - hdr->cod);
 }
 
 AMXStackFrame::AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo &debugInfo) 
@@ -171,7 +175,7 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
-	if (address < 0 || address >= hdr->hea - hdr->dat) {
+	if (!IsInData(address, amx)) {
 		// The address is not inside the data section...
 		return result;
 	}
