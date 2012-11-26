@@ -46,12 +46,9 @@
 
 #define AMX_EXEC_GDK (-10)
 
-static const char *kLogMessagePrefix = "[debug] ";
-static const char *kServerConfig = "server.cfg";
-
 bool crashdetect::errorCaught_ = false;
 std::stack<NPCall*> crashdetect::npCalls_;
-ConfigReader crashdetect::serverCfg(kServerConfig);
+ConfigReader crashdetect::serverCfg("server.cfg");
 crashdetect::InstanceMap crashdetect::instances_;
 
 // static
@@ -373,7 +370,7 @@ void crashdetect::logprintf(const char *format, ...) {
 	va_start(args, format);
 
 	std::string prefixed_format;
-	prefixed_format.append(kLogMessagePrefix);
+	prefixed_format.append("[debug] ");
 	prefixed_format.append(format);
 
 	::vlogprintf(prefixed_format.c_str(), args);
