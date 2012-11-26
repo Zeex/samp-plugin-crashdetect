@@ -183,7 +183,7 @@ static std::pair<std::string, bool> GetAMXString(AMX *amx, cell address, std::si
 
 	if (size == 0) {
 		// Size is unknown - copy up to the end of data.
-		size = hdr->hea - address; 
+		size = hdr->stp - address;
 	}
 
 	if (*reinterpret_cast<ucell*>(cstr) > UNPACKEDMAX) {
