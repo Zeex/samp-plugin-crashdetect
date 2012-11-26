@@ -35,7 +35,7 @@ static const char *kDefaultTimeFormat = "[%H:%M:%S]";
 
 class Log {
 public:
-	explicit Log();
+	Log();
 	~Log();
 
 	std::string GetTimeStamp() const;
