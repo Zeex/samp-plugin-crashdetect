@@ -1,3 +1,9 @@
+crashdetect - https://github.com/Zeex/samp-crashdetect-plugin
+=============================================================
+
+Frequently asked questions
+--------------------------
+
 Q: How do I make crashdetect print function names, line numbers, etc?
 
 A: You have to tell the Pawn compiler to include debugging information in the
