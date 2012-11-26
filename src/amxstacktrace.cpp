@@ -82,12 +82,12 @@ static inline bool IsMainAddr(AMX *amx, ucell address) {
 }
 
 static inline bool IsStackAddr(ucell address, AMX *amx) {
-	return (static_cast<cell>(address) >= amx->hlw
-		&& static_cast<cell>(address) <  amx->stp);
+	return (address >= static_cast<ucell>(amx->hlw)
+		&& address < static_cast<ucell>(amx->stp));
 }
 
 static inline bool IsDataAddr(ucell address, AMX *amx) {
-	return address < amx->stp;
+	return address < static_cast<ucell>(amx->stp);
 }
 
 static inline bool IsCodeAddr(ucell address, AMX *amx) {
