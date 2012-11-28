@@ -28,7 +28,7 @@ A: You have to tell the Pawn compiler to include debugging information in the
 Q: I did everyting you said but still don't see the extra info in my error
    messages! Why??
 
-A: There's can be a few reasons for this.
+A: There can be a few reasons for this.
 
    One is that the AMX file in question is put in some custom directory other
    than "gamemodes" or "filterscripts". If that's the case, crashdetect is not
