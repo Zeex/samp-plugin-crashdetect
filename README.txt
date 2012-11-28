@@ -43,3 +43,9 @@ A: There can be a few reasons for this.
    processed code (i.e. the script itself + all included files). Unfortunately,
    there's no workaround except splitting code in separate filterscripts so they
    are loaded as different AMX files.
+
+Q: I'm getting weird/wrong function names in AMX backtrace like
+   "Float:operator-(Float:) (Float:oper=0.00000)", what the heck?
+
+A: See part 2 of the previous question.
+  
