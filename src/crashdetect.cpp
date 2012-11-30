@@ -366,13 +366,13 @@ void crashdetect::PrintSystemBacktrace(void *context) {
 			iterator != frames.end(); ++iterator) {
 		const StackFrame &frame = *iterator;
 
-		std::string module = os::GetModulePathFromAddr(frame.GetReturnAddress());
+		std::string module = os::GetModulePathFromAddr(frame.GetRetAddr());
 		std::string from = " from " + module;
 		if (module.empty()) {
 			from.clear();
 		}
 
-		logprintf("#%d %s%s", level++, frame.GetString().c_str(), from.c_str());
+		logprintf("#%d %s%s", level++, frame.AsString().c_str(), from.c_str());
 	}
 }
 

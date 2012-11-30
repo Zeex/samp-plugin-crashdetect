@@ -29,19 +29,17 @@
 
 class StackFrame {
 public:
-	StackFrame(void *retAddr, const std::string &name = std::string())
-		: retAddr_(retAddr), name_(name)
-	{
+	std::ostream &operator<<(std::ostream &os) const {
+		return os << AsString();
 	}
 
-	inline void *GetReturnAddress() const {
-		return retAddr_;
-	}
-	inline std::string GetFunctionName() const {
-		return name_;
-	}
+	StackFrame(void *retAddr, const std::string &name = std::string());
+	virtual ~StackFrame();
 
-	std::string GetString() const;
+	void *GetRetAddr() const { return retAddr_; }
+	std::string GetFuncName() const { return name_; }
+
+	virtual std::string AsString() const;
 
 private:
 	void *retAddr_;

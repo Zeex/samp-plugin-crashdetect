@@ -31,7 +31,15 @@
 StackTrace::StackTrace(HappyCompiler *happyCompiler) {
 }
 
-std::string StackFrame::GetString() const {
+StackFrame::StackFrame(void *retAddr, const std::string &name)
+		: retAddr_(retAddr), name_(name)
+{
+}
+
+StackFrame::~StackFrame() {
+}
+
+std::string StackFrame::AsString() const {
 	std::stringstream stream;
 
 	stream << std::hex << std::setw(8) << std::setfill('0') 
