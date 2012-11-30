@@ -109,7 +109,7 @@ public:
 		File(const AMX_DBG_FILE *file) : file_(file) {}
 
 		std::string GetName() const    { return file_->name; }
-		ucell       GetAddress() const { return file_->address; }
+		ucell       GetAddr() const { return file_->address; }
 
 		operator bool() { return file_ != 0; }
 
@@ -123,8 +123,8 @@ public:
 		Line() { line_.address = 0; }
 		Line(AMX_DBG_LINE line) : line_(line) {}
 
-		int32_t GetNumber() const  { return line_.line; }
-		ucell   GetAddress() const { return line_.address; }
+		int32_t GetNo() const  { return line_.line; }
+		ucell   GetAddr() const { return line_.address; }
 
 		operator bool() { return line_.address != 0; }
 
@@ -183,15 +183,15 @@ public:
 		bool IsFunction() const    { return GetKind() == Function; }
 		bool IsFunctionRef() const { return GetKind() == FunctionRef; }
 
-		ucell       GetAddress() const          { return symbol_->address; }
-		int16_t     GetTag() const              { return symbol_->tag; }
-		ucell       GetCodeStartAddress() const { return symbol_->codestart; }
-		ucell       GetCodeEndAddress() const   { return symbol_->codeend; }
-		Kind        GetKind() const             { return static_cast<Kind>(symbol_->ident); }
-		VClass      GetVClass() const           { return static_cast<VClass>(symbol_->vclass); }
-		int16_t     GetArrayDim() const         { return symbol_->dim; }
-		std::string GetName() const             { return symbol_->name; }
-		int16_t     GetNumDims() const          { return symbol_->dim; }
+		ucell       GetAddr() const       { return symbol_->address; }
+		int16_t     GetTag() const           { return symbol_->tag; }
+		ucell       GetCodeStartAddr() const { return symbol_->codestart; }
+		ucell       GetCodeEndAddr() const   { return symbol_->codeend; }
+		Kind        GetKind() const          { return static_cast<Kind>(symbol_->ident); }
+		VClass      GetVClass() const        { return static_cast<VClass>(symbol_->vclass); }
+		int16_t     GetArrayDim() const      { return symbol_->dim; }
+		std::string GetName() const          { return symbol_->name; }
+		int16_t     GetNumDims() const       { return symbol_->dim; }
 
 		std::vector<SymbolDim> GetDims() const;
 
@@ -227,16 +227,16 @@ public:
 
 	Line   GetLine(ucell address) const;
 	File   GetFile(ucell address) const;
-	Symbol GetFunction(ucell address) const;
+	Symbol GetFunc(ucell address) const;
 	Tag    GetTag(int tagID) const;	
 
-	int32_t     GetLineNumber(ucell addrss) const;
+	int32_t     GetLineNo(ucell addrss) const;
 	std::string GetFileName(ucell address) const;
-	std::string GetFunctionName(ucell address) const;
+	std::string GetFuncName(ucell address) const;
 	std::string GetTagName(ucell address) const;
 
-	ucell GetFunctionAddress(const std::string &functionName, const std::string &fileName) const;
-	ucell GetLineAddress(long line, const std::string &fileName) const;
+	ucell GetFuncAddr(const std::string &functionName, const std::string &fileName) const;
+	ucell GetLineAddr(long line, const std::string &fileName) const;
 
 	typedef Table<AMX_DBG_FILE*, File> FileTable;
 
@@ -274,7 +274,7 @@ private:
 };
 
 static inline bool operator<(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {
-	return left.GetAddress() < right.GetAddress();
+	return left.GetAddr() < right.GetAddr();
 }
 
 #endif // !AMXDEBUGINFO_H

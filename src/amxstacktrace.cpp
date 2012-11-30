@@ -42,7 +42,7 @@ public:
 	IsArgumentOf(ucell function) 
 		: function_(function) {}
 	bool operator()(AMXDebugInfo::Symbol symbol) const {
-		return symbol.IsLocal() && symbol.GetCodeStartAddress() == function_;
+		return symbol.IsLocal() && symbol.GetCodeStartAddr() == function_;
 	}
 private:
 	ucell function_;
@@ -217,7 +217,7 @@ void AMXStackFrame::Init(ucell frameAddr, ucell retAddr, ucell funcAddr) {
 	if (funcAddr_ == 0) {
 		AMXDebugInfo::Symbol func = GetFuncSymbol();
 		if (func) {
-			funcAddr_ = func.GetCodeStartAddress();
+			funcAddr_ = func.GetCodeStartAddr();
 		}
 	}
 }
@@ -250,20 +250,20 @@ AMXStackFrame AMXStackFrame::GetNextFrame() const {
 AMXDebugInfo::Symbol AMXStackFrame::GetFuncSymbol() const {
 	AMXDebugInfo::Symbol func;
 	if (HasDebugInfo()) {
-		func = debugInfo_->GetFunction(retAddr_);
+		func = debugInfo_->GetFunc(retAddr_);
 	}
 	return func;
 }
 
 void AMXStackFrame::GetArgSymbols(std::vector<AMXDebugInfo::Symbol> &args) const {
 	if (HasDebugInfo()) {
-		AMXDebugInfo::Symbol func = debugInfo_->GetFunction(retAddr_);
+		AMXDebugInfo::Symbol func = debugInfo_->GetFunc(retAddr_);
 
 		std::remove_copy_if(
 			debugInfo_->GetSymbols().begin(),
 			debugInfo_->GetSymbols().end(),
 			std::back_inserter(args),
-			std::not1(IsArgumentOf(func.GetCodeStartAddress()))
+			std::not1(IsArgumentOf(func.GetCodeStartAddr()))
 		);
 		std::sort(args.begin(), args.end());
 	}
@@ -289,7 +289,7 @@ std::string AMXStackFrame::AsString() const {
 		if (!funTag.empty() && funTag != "_") {
 			stream << funTag << ":";
 		}		
-		stream << debugInfo_->GetFunctionName(funcAddr_);
+		stream << debugInfo_->GetFuncName(funcAddr_);
 	} else {		
 		const char *name = GetPublicFuncName(amx_, funcAddr_);
 		if (name != 0) {
@@ -403,7 +403,7 @@ std::string AMXStackFrame::AsString() const {
 		if (!fileName.empty()) {
 			stream << " at " << fileName;
 		}
-		long line = debugInfo_->GetLineNumber(retAddr_);
+		long line = debugInfo_->GetLineNo(retAddr_);
 		if (line != 0) {
 			stream << ":" << line;
 		}

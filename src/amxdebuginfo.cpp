@@ -49,7 +49,7 @@ cell AMXDebugInfo::Symbol::GetValue(AMX *amx, ucell frm) const {
 	unsigned char *data = reinterpret_cast<unsigned char*>(amx->base + hdr->dat);
 	unsigned char *code = reinterpret_cast<unsigned char*>(amx->base + hdr->cod);
 
-	ucell address = GetAddress();
+	ucell address = GetAddr();
 	// Pawn Implementer's Guide:
 	// The address is relative to either the code segment (cod), the data segment
 	// (dat) or to the frame of the current function whose address is in the frm
@@ -131,7 +131,7 @@ AMXDebugInfo::Line AMXDebugInfo::GetLine(ucell address) const {
 	LineTable lines = GetLines();
 	LineTable::const_iterator it = lines.begin();
 	LineTable::const_iterator last = lines.begin();
-	while (it != lines.end() && it->GetAddress() <= address) {
+	while (it != lines.end() && it->GetAddr() <= address) {
 		last = it;
 		++it;
 		continue;
@@ -146,7 +146,7 @@ AMXDebugInfo::File AMXDebugInfo::GetFile(ucell address) const {
 	FileTable files = GetFiles();
 	FileTable::const_iterator it = files.begin();
 	FileTable::const_iterator last = files.begin();
-	while (it != files.end() && it->GetAddress() <= address) {
+	while (it != files.end() && it->GetAddr() <= address) {
 		last = it;
 		++it;
 		continue;
@@ -162,13 +162,13 @@ static bool IsBuggedForward(const AMX_DBG_SYMBOL *symbol) {
 	return (symbol->name[0] == '@');
 }
 
-AMXDebugInfo::Symbol AMXDebugInfo::GetFunction(ucell address) const {
+AMXDebugInfo::Symbol AMXDebugInfo::GetFunc(ucell address) const {
 	Symbol function;
 	SymbolTable symbols = GetSymbols();
 	for (SymbolTable::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
 		if (!it->IsFunction())
 			continue;
-		if (it->GetCodeStartAddress() > address || it->GetCodeEndAddress() <= address)
+		if (it->GetCodeStartAddr() > address || it->GetCodeEndAddr() <= address)
 			continue;
 		if (IsBuggedForward(it->GetPOD())) 
 			continue;
@@ -192,10 +192,10 @@ AMXDebugInfo::Tag AMXDebugInfo::GetTag(int tagID) const {
 	return tag;
 }
 
-int32_t AMXDebugInfo::GetLineNumber(ucell address) const {
+int32_t AMXDebugInfo::GetLineNo(ucell address) const {
 	Line line = GetLine(address);
 	if (line) {
-		return line.GetNumber();
+		return line.GetNo();
 	}
 	return 0;
 }
@@ -209,9 +209,9 @@ std::string AMXDebugInfo::GetFileName(ucell address) const {
 	return name;
 }
 
-std::string AMXDebugInfo::GetFunctionName(ucell address) const {
+std::string AMXDebugInfo::GetFuncName(ucell address) const {
 	std::string name;
-	Symbol function = GetFunction(address);
+	Symbol function = GetFunc(address);
 	if (function) {
 		name = function.GetName();
 	}
@@ -227,13 +227,13 @@ std::string AMXDebugInfo::GetTagName(ucell address) const {
 	return name;
 }
 
-ucell AMXDebugInfo::GetFunctionAddress(const std::string &functionName, const std::string &fileName) const {
+ucell AMXDebugInfo::GetFuncAddr(const std::string &functionName, const std::string &fileName) const {
 	ucell functionAddress;
 	dbg_GetFunctionAddress(amxdbg_, functionName.c_str(), fileName.c_str(), &functionAddress);
 	return functionAddress;
 }
 
-ucell AMXDebugInfo::GetLineAddress(long line, const std::string &fileName) const {
+ucell AMXDebugInfo::GetLineAddr(long line, const std::string &fileName) const {
 	ucell lineAddress;
 	dbg_GetLineAddress(amxdbg_, line, fileName.c_str(), &lineAddress);
 	return lineAddress;
