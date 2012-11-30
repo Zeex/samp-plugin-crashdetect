@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cstdarg>
 #include <cstdlib>
+#include <list>
 #include <map>
 #include <stack>
 #include <string>
@@ -302,35 +303,46 @@ void crashdetect::PrintAmxBacktrace() {
 
 			amxutils::PushStack(call->amx(), cip); // push return address
 			amxutils::PushStack(call->amx(), frm); // push frame pointer
-			frm = call->amx()->stk;
 
-			AMXStackTrace trace(call->amx(), debugInfo, frm);
-			std::deque<AMXStackFrame> frames = trace.GetFrames();
+			std::list<AMXStackFrame> frames;
+			{
+				AMXStackTrace trace(call->amx(), call->amx()->stk, &debugInfo);
+				do {
+					AMXStackFrame frame = trace.GetFrame();
+					if (frame) {
+						frames.push_back(frame);
+					} else {
+						break;
+					}
+				} while (trace.Next());
+			}
 
 			frm = amxutils::PopStack(call->amx()); // pop frame pointer
 			cip = amxutils::PopStack(call->amx()); // pop return address
 
 			if (frames.empty()) {
 				ucell epAddr = amxutils::GetPublicAddress(call->amx(), call->index());
-				frames.push_front(AMXStackFrame(call->amx(), frm, 0, epAddr, debugInfo));
+				frames.push_front(AMXStackFrame(call->amx(), frm, 0, epAddr, &debugInfo));
 			} else {
 				if (!debugInfo.IsLoaded()) {
 					AMXStackFrame &bottom = frames.back();
 					bottom = AMXStackFrame(call->amx(),
-						bottom.GetFrameAddress(),
-						bottom.GetReturnAddress(),
+						bottom.GetFrameAddr(),
+						bottom.GetRetAddr(),
 						amxutils::GetPublicAddress(call->amx(), call->index()),
-						debugInfo);
+						&debugInfo);
 				}
 			}
 
 			std::string &amxName = instances_[call->amx()]->amxName_;
-			for (size_t i = 0; i < frames.size(); i++) {
+			for (std::list<AMXStackFrame>::const_iterator iterator = frames.begin();
+					iterator != frames.end(); ++iterator)
+			{
 				std::string from = " from " + amxName;
 				if (amxName.empty() || debugInfo.IsLoaded()) {
 					from.clear();
 				}
-				logprintf("#%d %s%s", level++, frames[i].GetString().c_str(), from.c_str());
+				logprintf("#%d %s%s", level++, iterator->AsString().c_str(), from.c_str());
 			}
 
 			frm = call->frm();

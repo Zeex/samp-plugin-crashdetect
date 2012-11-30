@@ -23,8 +23,8 @@
 #ifndef AMXSTACKTRACE_H
 #define AMXSTACKTRACE_H
 
+#include <iosfwd>
 #include <string>
-#include <deque>
 #include <vector>
 
 #include <amx/amx.h>
@@ -35,44 +35,75 @@ class AMXStackFrame {
 public:
 	static const int kMaxString = 30;
 
-	AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo &debugInfo);
-	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo &debugInfo);
-	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo);
+	std::ostream &operator<<(std::ostream &os) const {
+		return os << AsString();
+	}
 
-	inline ucell GetFrameAddress() const 
-		{ return frmAddr_; }
-	inline ucell GetReturnAddress() const 
-		{ return retAddr_; }
-	inline ucell GetFunctionAddress() const
-		{ return funAddr_; }
-	inline std::string GetString() const 
-		{ return string_; }
-	inline AMXDebugInfo::Symbol GetFunction() const
-		{ return fun_; }
-	inline std::vector<AMXDebugInfo::Symbol> GetArguments() const
-		{ return args_; }
+	operator bool() const {
+		return frameAddr_ != 0;
+	}
+
+	AMXStackFrame(AMX *amx);
+	AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo *debugInfo = 0);
+	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo *debugInfo = 0);
+	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo *debugInfo = 0);
+
+	virtual ~AMXStackFrame();
+
+	AMX *GetAMX() { return amx_; }
+	const AMXDebugInfo *GetDebugInfo() const { return debugInfo_; }
+
+	bool HasDebugInfo() const {
+		return debugInfo_ != 0 && debugInfo_->IsLoaded();
+	}
+
+	ucell GetFrameAddr() const { return frameAddr_; }
+	ucell GetRetAddr() const { return retAddr_; }
+	ucell GetFuncAddr() const { return funcAddr_; }
+
+	cell GetArgValue(int index) const;
+	int GetNumArgs() const;
+
+	AMXStackFrame GetNextFrame() const;
+
+	// Converts to a single-line human-friendly string (good for stack traces).
+	virtual std::string AsString() const;
+
+protected:
+	// Returns debug symbol corresponding to the called function. If debug info
+	// is not present an empty symbol will be returned.
+	AMXDebugInfo::Symbol GetFuncSymbol() const;
+
+	// Returns an array of debug symbols that correspond to function arguments.
+	// The arguments are ordered according to the function definition. If debug
+	// info is not present an empty vector will be returned.
+	void GetArgSymbols(std::vector<AMXDebugInfo::Symbol> &args) const;
 
 private:
-	void Init(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo &debugInfo);
+	void Init(ucell frameAddr, ucell retAddr = 0, ucell funcAddr = 0);
 
-	ucell frmAddr_;
+private:
+	AMX *amx_;
+	ucell frameAddr_;
 	ucell retAddr_;
-	ucell funAddr_;
-
-	AMXDebugInfo::Symbol fun_;
-	std::vector<AMXDebugInfo::Symbol> args_;
-
-	std::string string_;
+	ucell funcAddr_;
+	const AMXDebugInfo *debugInfo_;
 };
 
 class AMXStackTrace {
 public:
-	AMXStackTrace(AMX *amx, const AMXDebugInfo &debugInfo, ucell topFrame = 0);
+	AMXStackTrace(AMX *amx, const AMXDebugInfo *debugInfo = 0);
+	AMXStackTrace(AMX *amx, ucell frameAddr = 0, const AMXDebugInfo *debugInfo = 0);
 
-	std::deque<AMXStackFrame> GetFrames() const { return frames_; }
+	// Move onto next frame or die.
+	bool Next();
 
-private:	
-	std::deque<AMXStackFrame> frames_;
+	AMXStackFrame GetFrame() const {
+		return frame_;
+	}
+
+private:
+	AMXStackFrame frame_;
 };
 
 #endif // !AMXSTACKTRACE_H
