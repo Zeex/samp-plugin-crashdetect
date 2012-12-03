@@ -25,7 +25,7 @@
 
 namespace amxutils {
 
-const char *GetNativeName(AMX *amx, cell index) {
+const char *GetNativeFuncName(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
 	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
@@ -34,7 +34,7 @@ const char *GetNativeName(AMX *amx, cell index) {
 	return 0;
 }
 
-AMX_NATIVE GetNativeAddress(AMX *amx, cell index) {
+AMX_NATIVE GetNativeFuncAddr(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
 	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
@@ -43,7 +43,7 @@ AMX_NATIVE GetNativeAddress(AMX *amx, cell index) {
 	return 0;
 }
 
-ucell GetPublicAddress(AMX *amx, cell index) {
+ucell GetPublicFuncAddr(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
 	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
@@ -54,7 +54,7 @@ ucell GetPublicAddress(AMX *amx, cell index) {
 	return 0;
 }
 
-const char *GetPublicName(AMX *amx, cell index) {
+const char *GetPublicFuncName(AMX *amx, cell index) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
 	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {

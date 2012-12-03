@@ -286,14 +286,14 @@ void crashdetect::PrintAmxBacktrace() {
 		}
 
 		if (call->IsNative()) {
-			AMX_NATIVE address = amxutils::GetNativeAddress(call->amx(), call->index());
+			AMX_NATIVE address = amxutils::GetNativeFuncAddr(call->amx(), call->index());
 			if (address != 0) {
 				std::string module = fileutils::GetFileName(os::GetModulePathFromAddr((void*)address));
 				std::string from = " from " + module;
 				if (module.empty()) {
 					from.clear();
 				}
-				const char *name = amxutils::GetNativeName(call->amx(), call->index());
+				const char *name = amxutils::GetNativeFuncName(call->amx(), call->index());
 				if (name != 0) {
 					logprintf("#%d native %s () [%08x]%s", level++, name, address, from.c_str());
 				}
@@ -321,7 +321,7 @@ void crashdetect::PrintAmxBacktrace() {
 			cip = amxutils::PopStack(call->amx()); // pop return address
 
 			if (frames.empty()) {
-				ucell epAddr = amxutils::GetPublicAddress(call->amx(), call->index());
+				ucell epAddr = amxutils::GetPublicFuncAddr(call->amx(), call->index());
 				frames.push_front(AMXStackFrame(call->amx(), frm, 0, epAddr, &debugInfo));
 			} else {
 				if (!debugInfo.IsLoaded()) {
@@ -329,7 +329,7 @@ void crashdetect::PrintAmxBacktrace() {
 					bottom = AMXStackFrame(call->amx(),
 						bottom.GetFrameAddr(),
 						bottom.GetRetAddr(),
-						amxutils::GetPublicAddress(call->amx(), call->index()),
+						amxutils::GetPublicFuncAddr(call->amx(), call->index()),
 						&debugInfo);
 				}
 			}

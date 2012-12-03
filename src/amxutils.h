@@ -28,11 +28,11 @@
 
 namespace amxutils {
 
-const char *GetNativeName(AMX *amx, cell index);
-AMX_NATIVE GetNativeAddress(AMX *amx, cell index);
+const char *GetNativeFuncName(AMX *amx, cell index);
+AMX_NATIVE GetNativeFuncAddr(AMX *amx, cell index);
 
-ucell GetPublicAddress(AMX *amx, cell index);
-const char *GetPublicName(AMX *amx, cell index);
+ucell GetPublicFuncAddr(AMX *amx, cell index);
+const char *GetPublicFuncName(AMX *amx, cell index);
 
 unsigned char *GetDataPtr(AMX *amx);
 unsigned char *GetCodePtr(AMX *amx);
