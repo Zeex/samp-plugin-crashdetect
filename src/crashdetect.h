@@ -63,9 +63,7 @@ private:
 private:
 	explicit crashdetect(AMX *amx);
 
-	AMX         *amx_;
-	AMX_HEADER  *amxhdr_;
-
+	AMX *amx_;
 	AMXDebugInfo debugInfo_;
 
 	std::string amxPath_;

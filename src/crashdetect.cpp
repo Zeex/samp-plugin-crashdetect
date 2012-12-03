@@ -102,7 +102,6 @@ void crashdetect::DieOrContinue() {
 
 crashdetect::crashdetect(AMX *amx)
 	: amx_(amx)
-	, amxhdr_(reinterpret_cast<AMX_HEADER*>(amx->base))
 {
 	AMXPathFinder pathFinder;
 	pathFinder.AddSearchPath("gamemodes");
@@ -184,38 +183,46 @@ void crashdetect::HandleExecError(int index, int error) {
 
 	switch (error) {
 		case AMX_ERR_BOUNDS: {
-			cell bound = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod + sizeof(cell)));
+			cell bound = *(reinterpret_cast<cell*>(GetCodePtr(amx_) + amx_->cip + sizeof(cell)));
 			cell index = amx_->pri;
+
 			if (index < 0) {
 				logprintf(" Accessing element at negative index %d", index);
 			} else {
 				logprintf(" Accessing element at index %d past array upper bound %d", index, bound);
 			}
+
 			break;
 		}
+
 		case AMX_ERR_NOTFOUND: {
-			AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + amxhdr_->natives);
-			int numNatives = 0;
-			amx_NumNatives(amx_, &numNatives);
+			AMX_FUNCSTUBNT *natives = GetNativeTable(amx_);
+			int numNatives = GetNumNatives(amx_);
+
 			for (int i = 0; i < numNatives; ++i) {
 				if (natives[i].address == 0) {
 					char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
 					logprintf(" %s", name);
 				}
 			}
+
 			break;
 		}
+
 		case AMX_ERR_STACKERR:
 			logprintf(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X", amx_->stk, amx_->hea);
 			break;
+
 		case AMX_ERR_STACKLOW:
 			logprintf(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
 			break;
+
 		case AMX_ERR_HEAPLOW:
 			logprintf(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
 			break;
+
 		case AMX_ERR_INVINSTR: {
-			cell opcode = *(reinterpret_cast<cell*>(amx_->cip + amx_->base + amxhdr_->cod));
+			cell opcode = *(reinterpret_cast<cell*>(GetCodePtr(amx_) + amx_->cip));
 			logprintf(" Unknown opcode 0x%x at address 0x%08X", opcode , amx_->cip);
 			break;
 		}
