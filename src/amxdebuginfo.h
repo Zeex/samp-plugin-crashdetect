@@ -273,7 +273,13 @@ private:
 	AMX_DBG *amxdbg_;
 };
 
-static inline bool operator<(const AMXDebugInfo::Symbol &left, const AMXDebugInfo::Symbol &right) {
+typedef AMXDebugInfo::File      AMXDebugFile;
+typedef AMXDebugInfo::Line      AMXDebugLine;
+typedef AMXDebugInfo::Tag       AMXDebugTag;
+typedef AMXDebugInfo::Symbol    AMXDebugSymbol;
+typedef AMXDebugInfo::SymbolDim AMXDebugSymbolDim;
+
+static inline bool operator<(const AMXDebugSymbol &left, const AMXDebugSymbol &right) {
 	return left.GetAddr() < right.GetAddr();
 }
 

@@ -32,8 +32,8 @@
 
 #include "amxdebuginfo.h"
 
-std::vector<AMXDebugInfo::SymbolDim> AMXDebugInfo::Symbol::GetDims() const {
-	std::vector<AMXDebugInfo::SymbolDim> dims;
+std::vector<AMXDebugSymbolDim> AMXDebugSymbol::GetDims() const {
+	std::vector<AMXDebugSymbolDim> dims;
 	if ((IsArray() || IsArrayRef()) && GetNumDims() > 0) {
 		const char *dimPtr = symbol_->name + std::strlen(symbol_->name) + 1;
 		for (int i = 0; i < GetNumDims(); ++i) {
@@ -43,7 +43,7 @@ std::vector<AMXDebugInfo::SymbolDim> AMXDebugInfo::Symbol::GetDims() const {
 	return dims;
 }
 
-cell AMXDebugInfo::Symbol::GetValue(AMX *amx, ucell frm) const {
+cell AMXDebugSymbol::GetValue(AMX *amx, ucell frm) const {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	unsigned char *data = reinterpret_cast<unsigned char*>(amx->base + hdr->dat);
@@ -126,7 +126,7 @@ void AMXDebugInfo::Free() {
 	delete amxdbg_;
 }
 
-AMXDebugInfo::Line AMXDebugInfo::GetLine(ucell address) const {
+AMXDebugLine AMXDebugInfo::GetLine(ucell address) const {
 	Line line;
 	LineTable lines = GetLines();
 	LineTable::const_iterator it = lines.begin();
@@ -141,7 +141,7 @@ AMXDebugInfo::Line AMXDebugInfo::GetLine(ucell address) const {
 	return line;
 }
 
-AMXDebugInfo::File AMXDebugInfo::GetFile(ucell address) const {
+AMXDebugFile AMXDebugInfo::GetFile(ucell address) const {
 	File file;
 	FileTable files = GetFiles();
 	FileTable::const_iterator it = files.begin();
@@ -162,7 +162,7 @@ static bool IsBuggedForward(const AMX_DBG_SYMBOL *symbol) {
 	return (symbol->name[0] == '@');
 }
 
-AMXDebugInfo::Symbol AMXDebugInfo::GetFunc(ucell address) const {
+AMXDebugSymbol AMXDebugInfo::GetFunc(ucell address) const {
 	Symbol function;
 	SymbolTable symbols = GetSymbols();
 	for (SymbolTable::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
@@ -178,7 +178,7 @@ AMXDebugInfo::Symbol AMXDebugInfo::GetFunc(ucell address) const {
 	return function;
 }
 
-AMXDebugInfo::Tag AMXDebugInfo::GetTag(int tagID) const {
+AMXDebugTag AMXDebugInfo::GetTag(int tagID) const {
 	Tag tag;
 	TagTable tags = GetTags();
 	TagTable::const_iterator it = tags.begin();

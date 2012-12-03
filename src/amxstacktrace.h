@@ -72,12 +72,12 @@ public:
 protected:
 	// Returns debug symbol corresponding to the called function. If debug info
 	// is not present an empty symbol will be returned.
-	AMXDebugInfo::Symbol GetFuncSymbol() const;
+	AMXDebugSymbol GetFuncSymbol() const;
 
 	// Returns an array of debug symbols that correspond to function arguments.
 	// The arguments are ordered according to the function definition. If debug
 	// info is not present an empty vector will be returned.
-	void GetArgSymbols(std::vector<AMXDebugInfo::Symbol> &args) const;
+	void GetArgSymbols(std::vector<AMXDebugSymbol> &args) const;
 
 private:
 	void Init(ucell frameAddr, ucell retAddr = 0, ucell funcAddr = 0);

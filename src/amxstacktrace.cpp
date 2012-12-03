@@ -37,11 +37,11 @@
 #include "amxstacktrace.h"
 #include "amxdebuginfo.h"
 
-class IsArgumentOf : public std::unary_function<AMXDebugInfo::Symbol, bool> {
+class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
 public:
 	IsArgumentOf(ucell function) 
 		: function_(function) {}
-	bool operator()(AMXDebugInfo::Symbol symbol) const {
+	bool operator()(AMXDebugSymbol symbol) const {
 		return symbol.IsLocal() && symbol.GetCodeStartAddr() == function_;
 	}
 private:
@@ -215,7 +215,7 @@ void AMXStackFrame::Init(ucell frameAddr, ucell retAddr, ucell funcAddr) {
 	}
 
 	if (funcAddr_ == 0) {
-		AMXDebugInfo::Symbol func = GetFuncSymbol();
+		AMXDebugSymbol func = GetFuncSymbol();
 		if (func) {
 			funcAddr_ = func.GetCodeStartAddr();
 		}
@@ -247,17 +247,17 @@ AMXStackFrame AMXStackFrame::GetNextFrame() const {
 	}
 }
 
-AMXDebugInfo::Symbol AMXStackFrame::GetFuncSymbol() const {
-	AMXDebugInfo::Symbol func;
+AMXDebugSymbol AMXStackFrame::GetFuncSymbol() const {
+	AMXDebugSymbol func;
 	if (HasDebugInfo()) {
 		func = debugInfo_->GetFunc(retAddr_);
 	}
 	return func;
 }
 
-void AMXStackFrame::GetArgSymbols(std::vector<AMXDebugInfo::Symbol> &args) const {
+void AMXStackFrame::GetArgSymbols(std::vector<AMXDebugSymbol> &args) const {
 	if (HasDebugInfo()) {
-		AMXDebugInfo::Symbol func = debugInfo_->GetFunc(retAddr_);
+		AMXDebugSymbol func = debugInfo_->GetFunc(retAddr_);
 
 		std::remove_copy_if(
 			debugInfo_->GetSymbols().begin(),
@@ -272,7 +272,7 @@ void AMXStackFrame::GetArgSymbols(std::vector<AMXDebugInfo::Symbol> &args) const
 std::string AMXStackFrame::AsString() const {
 	std::stringstream stream;
 
-	AMXDebugInfo::Symbol func = GetFuncSymbol();
+	AMXDebugSymbol func = GetFuncSymbol();
 
 	if (retAddr_ == 0) {
 		stream << "???????? in ";
@@ -307,12 +307,12 @@ std::string AMXStackFrame::AsString() const {
 	if (func && frameAddr_ != 0) {
 		AMXStackFrame nextFrame = GetNextFrame();
 
-		std::vector<AMXDebugInfo::Symbol> args;
+		std::vector<AMXDebugSymbol> args;
 		GetArgSymbols(args);
 
 		// Build a comma-separated list of arguments and their values.
 		for (std::size_t i = 0; i < args.size(); i++) {
-			AMXDebugInfo::Symbol &arg = args[i];
+			AMXDebugSymbol &arg = args[i];
 
 			if (i != 0) {
 				stream << ", ";
@@ -339,7 +339,7 @@ std::string AMXStackFrame::AsString() const {
 					stream << "=" << value;
 				}
 			} else {
-				std::vector<AMXDebugInfo::SymbolDim> dims = arg.GetDims();
+				std::vector<AMXDebugSymbolDim> dims = arg.GetDims();
 				if (arg.IsArray() || arg.IsArrayRef()) {
 					for (std::size_t i = 0; i < dims.size(); ++i) {
 						if (dims[i].GetSize() == 0) {
