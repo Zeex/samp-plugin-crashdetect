@@ -26,6 +26,7 @@
 #include <iosfwd>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <amx/amx.h>
 
@@ -69,7 +70,30 @@ public:
 	// Converts to a single-line human-friendly string (good for stack traces).
 	virtual std::string AsString() const;
 
-protected:
+protected: // utility methods
+	unsigned char *GetDataPtr() const;
+	unsigned char *GetCodePtr() const;
+
+	// Gets a pointer to public function name string stored in the AMX
+	// (i.e. no copying involved).
+	const char *GetPublicFuncName(ucell address) const;
+
+	// Match function address against items stored in public table or main().
+	// Note: IsPublicFuncAddr() returns true for main().
+	bool IsPublicFuncAddr(ucell address) const;
+	bool IsMainAddr(ucell address) const;
+
+	// Determine whether an address belongs to one of the well known segments.
+	bool IsStackAddr(ucell address) const;
+	bool IsDataAddr(ucell address) const;
+	bool IsCodeAddr(ucell address) const;
+
+	// Extract string contents from the AMX image. All of these will terminate
+	// when encounter a non-printable character.
+	std::string GetPackedAMXString(cell *string, std::size_t size) const;
+	std::string GetUnpackedAMXString(cell *string, std::size_t size) const;
+	std::pair<std::string, bool> GetAMXString(cell address, std::size_t size) const;
+
 	// Returns debug symbol corresponding to the called function. If debug info
 	// is not present an empty symbol will be returned.
 	AMXDebugSymbol GetFuncSymbol() const;
