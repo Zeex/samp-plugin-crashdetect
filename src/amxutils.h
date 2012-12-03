@@ -28,14 +28,24 @@
 
 namespace amxutils {
 
-const char *GetNativeFuncName(AMX *amx, cell index);
-AMX_NATIVE GetNativeFuncAddr(AMX *amx, cell index);
-
-ucell GetPublicFuncAddr(AMX *amx, cell index);
-const char *GetPublicFuncName(AMX *amx, cell index);
+AMX_HEADER *GetHeader(AMX *amx);
 
 unsigned char *GetDataPtr(AMX *amx);
 unsigned char *GetCodePtr(AMX *amx);
+
+AMX_FUNCSTUBNT *GetNativeTable(AMX *amx);
+AMX_FUNCSTUBNT *GetPublicTable(AMX *amx);
+
+int GetNumNatives(AMX *amx);
+int GetNumNatives(AMX_HEADER *hdr);
+int GetNumPublics(AMX *amx);
+int GetNumPublics(AMX_HEADER *hdr);
+
+ucell GetNativeAddr(AMX *amx, int index);
+ucell GetPublicAddr(AMX *amx, int index);
+
+const char *GetNativeName(AMX *amx, int index);
+const char *GetPublicName(AMX *amx, int index);
 
 void PushStack(AMX *amx, cell value);
 cell PopStack(AMX *amx);

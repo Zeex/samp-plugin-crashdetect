@@ -25,44 +25,8 @@
 
 namespace amxutils {
 
-const char *GetNativeFuncName(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
-	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
-		return reinterpret_cast<char*>(natives[index].nameofs + amx->base);
-	}
-	return 0;
-}
-
-AMX_NATIVE GetNativeFuncAddr(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
-	if (index >= 0 && index < ((hdr->libraries - hdr->natives) / hdr->defsize)) {
-		return reinterpret_cast<AMX_NATIVE>(natives[index].address);
-	}
-	return 0;
-}
-
-ucell GetPublicFuncAddr(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
-	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
-		return publics[index].address;
-	} else if (index == AMX_EXEC_MAIN) {
-		return hdr->cip;
-	}
-	return 0;
-}
-
-const char *GetPublicFuncName(AMX *amx, cell index) {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
-	if (index >=0 && index < ((hdr->natives - hdr->publics) / hdr->defsize)) {
-		return reinterpret_cast<char*>(amx->base + publics[index].nameofs);
-	} else if (index == AMX_EXEC_MAIN) {
-		return "main";
-	}
-	return 0;
+AMX_HEADER *GetHeader(AMX *amx) {
+	return reinterpret_cast<AMX_HEADER*>(amx->base);
 }
 
 unsigned char *GetDataPtr(AMX *amx) {
@@ -78,6 +42,76 @@ unsigned char *GetCodePtr(AMX *amx) {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 	unsigned char *code = amx->base + hdr->cod;
 	return code;
+}
+
+
+AMX_FUNCSTUBNT *GetNativeTable(AMX *amx) {
+	AMX_HEADER *hdr = GetHeader(amx);
+	return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx->base);
+}
+
+AMX_FUNCSTUBNT *GetPublicTable(AMX *amx) {
+	AMX_HEADER *hdr = GetHeader(amx);
+	return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx->base);
+}
+
+int GetNumNatives(AMX_HEADER *hdr) {
+	return (hdr->libraries - hdr->natives) / hdr->defsize;
+}
+
+int GetNumNatives(AMX *amx) {
+	AMX_HEADER *hdr = GetHeader(amx);
+	return GetNumNatives(hdr);
+}
+
+int GetNumPublics(AMX_HEADER *hdr) {
+	return (hdr->natives - hdr->publics) / hdr->defsize;
+}
+
+int GetNumPublics(AMX *amx) {
+	AMX_HEADER *hdr = GetHeader(amx);
+	return GetNumPublics(hdr);
+}
+
+ucell GetNativeAddr(AMX *amx, int index) {
+	int n = GetNumNatives(amx);
+	AMX_FUNCSTUBNT *natives = GetNativeTable(amx);
+	if (index >= 0 && index < n) {
+		return natives[index].address;
+	}
+	return 0;
+}
+
+ucell GetPublicAddr(AMX *amx, int index) {
+	int n = GetNumPublics(amx);
+	AMX_FUNCSTUBNT *publics = GetPublicTable(amx);
+	if (index >=0 && index < n) {
+		return publics[index].address;
+	} else if (index == AMX_EXEC_MAIN) {
+		AMX_HEADER *hdr = GetHeader(amx);
+		return hdr->cip;
+	}
+	return 0;
+}
+
+const char *GetNativeName(AMX *amx, int index) {
+	int n = GetNumNatives(amx);
+	AMX_FUNCSTUBNT *natives = GetNativeTable(amx);
+	if (index >= 0 && index < n) {
+		return reinterpret_cast<char*>(natives[index].nameofs + amx->base);
+	}
+	return 0;
+}
+
+const char *GetPublicName(AMX *amx, int index) {
+	int n = GetNumPublics(amx);
+	AMX_FUNCSTUBNT *publics = GetPublicTable(amx);
+	if (index >=0 && index < n) {
+		return reinterpret_cast<char*>(amx->base + publics[index].nameofs);
+	} else if (index == AMX_EXEC_MAIN) {
+		return "main";
+	}
+	return 0;
 }
 
 void PushStack(AMX *amx, cell value) {

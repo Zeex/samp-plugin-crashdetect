@@ -45,6 +45,8 @@
 #include "os.h"
 #include "stacktrace.h"
 
+using namespace amxutils;
+
 #define AMX_EXEC_GDK (-10)
 
 bool crashdetect::errorCaught_ = false;
@@ -286,14 +288,14 @@ void crashdetect::PrintAmxBacktrace() {
 		}
 
 		if (call->IsNative()) {
-			AMX_NATIVE address = amxutils::GetNativeFuncAddr(call->amx(), call->index());
+			AMX_NATIVE address = reinterpret_cast<AMX_NATIVE>(GetNativeAddr(call->amx(), call->index()));
 			if (address != 0) {
 				std::string module = fileutils::GetFileName(os::GetModulePathFromAddr((void*)address));
 				std::string from = " from " + module;
 				if (module.empty()) {
 					from.clear();
 				}
-				const char *name = amxutils::GetNativeFuncName(call->amx(), call->index());
+				const char *name = GetNativeName(call->amx(), call->index());
 				if (name != 0) {
 					logprintf("#%d native %s () [%08x]%s", level++, name, address, from.c_str());
 				}
@@ -301,8 +303,8 @@ void crashdetect::PrintAmxBacktrace() {
 		} else if (call->IsPublic()) {
 			AMXDebugInfo &debugInfo = instances_[call->amx()]->debugInfo_;
 
-			amxutils::PushStack(call->amx(), cip); // push return address
-			amxutils::PushStack(call->amx(), frm); // push frame pointer
+			PushStack(call->amx(), cip); // push return address
+			PushStack(call->amx(), frm); // push frame pointer
 
 			std::list<AMXStackFrame> frames;
 			{
@@ -317,11 +319,11 @@ void crashdetect::PrintAmxBacktrace() {
 				} while (trace.Next());
 			}
 
-			frm = amxutils::PopStack(call->amx()); // pop frame pointer
-			cip = amxutils::PopStack(call->amx()); // pop return address
+			frm = PopStack(call->amx()); // pop frame pointer
+			cip = PopStack(call->amx()); // pop return address
 
 			if (frames.empty()) {
-				ucell epAddr = amxutils::GetPublicFuncAddr(call->amx(), call->index());
+				ucell epAddr = GetPublicAddr(call->amx(), call->index());
 				frames.push_front(AMXStackFrame(call->amx(), frm, 0, epAddr, &debugInfo));
 			} else {
 				if (!debugInfo.IsLoaded()) {
@@ -329,7 +331,7 @@ void crashdetect::PrintAmxBacktrace() {
 					bottom = AMXStackFrame(call->amx(),
 						bottom.GetFrameAddr(),
 						bottom.GetRetAddr(),
-						amxutils::GetPublicFuncAddr(call->amx(), call->index()),
+						GetPublicAddr(call->amx(), call->index()),
 						&debugInfo);
 				}
 			}
