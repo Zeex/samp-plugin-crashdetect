@@ -1,4 +1,4 @@
-crashdetect - https://github.com/Zeex/samp-crashdetect-plugin
+crashdetect - https://github.com/Zeex/samp-plugin-crashdetect
 =============================================================
 
 Frequently asked questions
