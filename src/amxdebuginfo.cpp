@@ -95,31 +95,12 @@ bool AMXDebugInfo::IsLoaded() const {
 	return (amxdbg_ != 0);
 }
 
-inline bool LineNumbersAreFine(const AMX_DBG &amxdbg) {
-	uint32_t numLines = amxdbg.hdr->lines;
-
-	static int bits[] = {0, 8, 16, 0, 31};
-	uint32_t maxLines = 1u << bits[sizeof(amxdbg.hdr->lines)];
-
-	for (int i = 0; i < numLines; i++) {
-		uint32_t lineNum = amxdbg.linetbl[i].line;
-		if (lineNum > maxLines) {
-			return false;
-		}
-	}
-	return true;
-}
-
 void AMXDebugInfo::Load(const std::string &filename) {
 	std::FILE* fp = std::fopen(filename.c_str(), "rb");
 	if (fp != 0) {
 		AMX_DBG amxdbg;
 		if (dbg_LoadInfo(&amxdbg, fp) == AMX_ERR_NONE) {
-			if (LineNumbersAreFine(amxdbg)) {
-				amxdbg_ = new AMX_DBG(amxdbg);
-			} else {
-				dbg_FreeInfo(&amxdbg);
-			}
+			amxdbg_ = new AMX_DBG(amxdbg);
 		}
 		fclose(fp);
 	}
