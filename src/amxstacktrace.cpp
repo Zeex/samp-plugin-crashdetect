@@ -125,16 +125,14 @@ AMXStackFrame AMXStackFrame::GetNextFrame() const {
 
 AMXDebugSymbol AMXStackFrame::GetFuncSymbol() const {
 	AMXDebugSymbol func;
-	if (HasDebugInfo()) {
+	if (HasDebugInfo() && retAddr_ != 0) {
 		func = debugInfo_->GetFunc(retAddr_);
 	}
 	return func;
 }
 
 void AMXStackFrame::GetArgSymbols(std::vector<AMXDebugSymbol> &args) const {
-	if (HasDebugInfo()) {
-		AMXDebugSymbol func = debugInfo_->GetFunc(retAddr_);
-
+	if (AMXDebugSymbol func = GetFuncSymbol()) {
 		std::remove_copy_if(
 			debugInfo_->GetSymbols().begin(),
 			debugInfo_->GetSymbols().end(),
