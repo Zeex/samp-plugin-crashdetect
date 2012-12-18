@@ -31,4 +31,4 @@ lib/amx/*.o
 
 *.so
 
-CMakeLists.txt.user
+CMakeLists.txt.user*
