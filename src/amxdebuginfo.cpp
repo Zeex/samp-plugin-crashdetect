@@ -96,10 +96,13 @@ bool AMXDebugInfo::IsLoaded() const {
 }
 
 inline bool LineNumbersAreFine(const AMX_DBG &amxdbg) {
-	int32_t numLines = amxdbg.hdr->lines;
-	int32_t maxLines = (1 << (sizeof(amxdbg.hdr->lines) * 8));
-	for (uint16_t i = 0; i < numLines; i++) {
-		int32_t lineNum = amxdbg.linetbl[i].line;
+	uint32_t numLines = amxdbg.hdr->lines;
+
+	static int bits[] = {0, 8, 16, 0, 31};
+	uint32_t maxLines = 1u << bits[sizeof(amxdbg.hdr->lines)];
+
+	for (int i = 0; i < numLines; i++) {
+		uint32_t lineNum = amxdbg.linetbl[i].line;
 		if (lineNum > maxLines) {
 			return false;
 		}
