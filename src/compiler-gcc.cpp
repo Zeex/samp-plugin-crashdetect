@@ -30,7 +30,7 @@
 	#define SYMBOL(x) x
 #endif
 
-#define GLOBAL(x) ".globl "SYMBOL(x)";"
+#define GLOBAL(x) ".globl "SYMBOL(x)"\n"
 
 #define BEGIN_GLOBAL(x) \
 	GLOBAL(x) \
@@ -39,39 +39,39 @@
 #define FUNC "GetReturnAddress"
 __asm__ (
 	BEGIN_GLOBAL("_ZN8compiler16GetReturnAddressEPvi")
-	"	movl 4(%esp), %eax;"
-	"	cmpl $0, %eax;"
-	"	jnz "FUNC"_init;"
-	"	movl %ebp, %eax;"
+	"	movl 4(%esp), %eax\n"
+	"	cmpl $0, %eax\n"
+	"	jnz "FUNC"_init\n"
+	"	movl %ebp, %eax\n"
 	FUNC"_init:"
-	"	movl 8(%esp), %ecx;"
-	"	movl $0, %edx;"
+	"	movl 8(%esp), %ecx\n"
+	"	movl $0, %edx\n"
 	FUNC"_loop:"
-	"	cmpl $0, %ecx;"
-	"	jl "FUNC"_exit;"
-	"	movl 4(%eax), %edx;"
-	"	movl (%eax), %eax;"
-	"	decl %ecx;"
-	"	jmp "FUNC"_loop;"
+	"	cmpl $0, %ecx\n"
+	"	jl "FUNC"_exit\n"
+	"	movl 4(%eax), %edx\n"
+	"	movl (%eax), %eax\n"
+	"	decl %ecx\n"
+	"	jmp "FUNC"_loop\n"
 	FUNC"_exit:"
-	"	movl %edx, %eax;"
-	"	ret;"
+	"	movl %edx, %eax\n"
+	"	ret\n"
 );
 #undef FUNC
 
 #define FUNC "GetFrameAddress"
 __asm__ (
 	BEGIN_GLOBAL("_ZN8compiler15GetFrameAddressEi")
-	"	movl %ebp, %eax;"
-	"	movl 4(%esp), %ecx;"
+	"	movl %ebp, %eax\n"
+	"	movl 4(%esp), %ecx\n"
 	FUNC"_loop:"
-	"	testl $0, %ecx;"
-	"	jz "FUNC"_exit;"
-	"	movl (%eax), %eax;"
-	"	decl %ecx;"
-	"	jmp "FUNC"_loop;"
+	"	testl $0, %ecx\n"
+	"	jz "FUNC"_exit\n"
+	"	movl (%eax), %eax\n"
+	"	decl %ecx\n"
+	"	jmp "FUNC"_loop\n"
 	FUNC"_exit:"
-	"	ret;"
+	"	ret\n"
 );
 #undef FUNC
 
@@ -79,11 +79,11 @@ __asm__ (
 __asm__ (
 	BEGIN_GLOBAL("_ZN8compiler11GetStackTopEv")
 	#ifdef _WIN32
-	"	movl %fs:(0x04), %eax;"
+	"	movl %fs:(0x04), %eax\n"
 	#else
-	"	xorl %eax, %eax;"
+	"	xorl %eax, %eax\n"
 	#endif
-	"	ret;"
+	"	ret\n"
 );
 #undef FUNC
 
@@ -91,36 +91,36 @@ __asm__ (
 __asm__ (
 	BEGIN_GLOBAL("_ZN8compiler14GetStackBottomEv")
 	#ifdef _WIN32
-	"	movl %fs:(0x08), %eax;"
+	"	movl %fs:(0x08), %eax\n"
 	#else
-	"	xorl %eax, %eax;"
+	"	xorl %eax, %eax\n"
 	#endif
-	"	ret;"
+	"	ret\n"
 );
 #undef FUNC
 
 #define FUNC "CallVariadicFunction"
 __asm__ (
 	BEGIN_GLOBAL("_ZN8compiler20CallVariadicFunctionEPvPKPKvi")
-	"	movl 4(%esp), %eax;"
-	"	movl 8(%esp), %edx;"
-	"	movl 12(%esp), %ecx;"
-	"	pushl %edi;"
-	"	movl %ecx, %edi;"
-	"	sal $2, %edi;"
-	"	pushl %esi;"
+	"	movl 4(%esp), %eax\n"
+	"	movl 8(%esp), %edx\n"
+	"	movl 12(%esp), %ecx\n"
+	"	pushl %edi\n"
+	"	movl %ecx, %edi\n"
+	"	sal $2, %edi\n"
+	"	pushl %esi\n"
 	FUNC"_loop:"
-	"	cmpl $0, %ecx;"
-	"	jle "FUNC"_end_loop;"
-	"	dec %ecx;"
-	"	movl (%edx, %ecx, 4), %esi;"
-	"	pushl %esi;"
-	"	jmp "FUNC"_loop;"
+	"	cmpl $0, %ecx\n"
+	"	jle "FUNC"_end_loop\n"
+	"	dec %ecx\n"
+	"	movl (%edx, %ecx, 4), %esi\n"
+	"	pushl %esi\n"
+	"	jmp "FUNC"_loop\n"
 	FUNC"_end_loop:"
-	"	call *%eax;"
-	"	addl %edi, %esp;"
-	"	popl %esi;"
-	"	popl %edi;"
-	"	ret;"
+	"	call *%eax\n"
+	"	addl %edi, %esp\n"
+	"	popl %esi\n"
+	"	popl %edi\n"
+	"	ret\n"
 );
 #undef FUNC
