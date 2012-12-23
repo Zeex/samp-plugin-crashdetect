@@ -49,7 +49,7 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 }
 
 static int AMXAPI AmxRelease(AMX *amx, cell amx_addr) {
-	return crashdetect::GetInstance(amx)->DoAmxRelease(amx_addr, compiler::GetReturnAddress());
+	return crashdetect::GetInstance(amx)->DoAmxRelease(amx_addr, compiler::GetRetAddr());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {

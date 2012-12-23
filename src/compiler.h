@@ -27,13 +27,12 @@
 
 namespace compiler {
 
-void *GetFrameAddress(int depth = 0);
-void *GetReturnAddress(void *frame = 0, int depth = 0);
-
+void *GetStackFrame(int depth = 0);
 void *GetStackTop();
 void *GetStackBottom();
+void *GetRetAddr(void *frame = 0, int depth = 0);
 
-void *CallVariadicFunction(void *func, const void *const *args, int nargs);
+void *CallCdeclFunc(void *func, const void *const *args, int nargs);
 
 } // namespace compiler
 

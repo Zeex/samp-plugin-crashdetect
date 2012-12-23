@@ -44,7 +44,7 @@ StackTraceManual::StackTraceManual(void *frame, void *pc)
 	: StackTrace(static_cast<HappyCompiler*>(0))
 {
 	void *curFrame = frame == 0
-		? compiler::GetFrameAddress()
+		? compiler::GetStackFrame()
 		: frame;
 
 	void *top = compiler::GetStackTop();

@@ -36,9 +36,9 @@
 	GLOBAL(x) \
 	x":\n"
 
-#define FUNC "GetReturnAddress"
+#define FUNC "GetReturnAddr"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler16GetReturnAddressEPvi")
+	BEGIN_GLOBAL("_ZN8compiler10GetRetAddrEPvi")
 	"	movl 4(%esp), %eax\n"
 	"	cmpl $0, %eax\n"
 	"	jnz "FUNC"_init\n"
@@ -59,9 +59,9 @@ __asm__ (
 );
 #undef FUNC
 
-#define FUNC "GetFrameAddress"
+#define FUNC "GetStackFrame"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler15GetFrameAddressEi")
+	BEGIN_GLOBAL("_ZN8compiler13GetStackFrameEi")
 	"	movl %ebp, %eax\n"
 	"	movl 4(%esp), %ecx\n"
 	FUNC"_begin_loop:"
@@ -99,9 +99,9 @@ __asm__ (
 );
 #undef FUNC
 
-#define FUNC "CallVariadicFunction"
+#define FUNC "CallCdeclFunc"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler20CallVariadicFunctionEPvPKPKvi")
+	BEGIN_GLOBAL("_ZN8compiler13CallCdeclFuncEPvPKPKvi")
 	"	movl 4(%esp), %eax\n"
 	"	movl 8(%esp), %edx\n"
 	"	movl 12(%esp), %ecx\n"

@@ -24,7 +24,7 @@
 
 #include "compiler.h"
 
-__declspec(naked) void *compiler::GetReturnAddress(void *frame, int depth) {
+__declspec(naked) void *compiler::GetRetAddr(void *frame, int depth) {
 	__asm mov eax, dword ptr [esp + 4]
 	__asm cmp eax, 0
 	__asm jnz init
@@ -47,7 +47,7 @@ exit:
 	__asm ret
 }
 
-__declspec(naked) void *compiler::GetFrameAddress(int depth) {
+__declspec(naked) void *compiler::GetStackFrame(int depth) {
 	__asm mov eax, ebp
 	__asm mov ecx, dword ptr [esp + 4]
 
@@ -72,7 +72,7 @@ __declspec(naked) void *compiler::GetStackBottom() {
 	__asm ret
 }
 
-__declspec(naked) void *compiler::CallVariadicFunction(void *func,
+__declspec(naked) void *compiler::CallCdeclFunc(void *func,
 	const void *const *args, int nargs)
 {
 	__asm mov eax, dword ptr [esp + 4]

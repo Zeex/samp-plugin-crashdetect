@@ -57,5 +57,5 @@ void vlogprintf(const char *format, std::va_list args) {
 		}
 	}
 
-	compiler::CallVariadicFunction((void*)::logprintf, &words[0], words.size());
+	compiler::CallCdeclFunc((void*)::logprintf, &words[0], words.size());
 }
