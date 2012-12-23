@@ -2,14 +2,10 @@ cmake_minimum_required(VERSION 2.8.6)
 
 project(crashdetect)
 
-if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-	set(CMAKE_COMPILER_IS_GNUCC TRUE)
-endif()
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	set(CMAKE_COMPILER_IS_GNUCXX TRUE)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+	include("cmake/GlobalBuildConfig.cmake")
 endif()
 
-# Alter CMake module path so it will see our modules.
 list(APPEND CMAKE_MODULE_PATH "${crashdetect_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
