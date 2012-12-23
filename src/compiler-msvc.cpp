@@ -22,9 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "compiler.h"
+namespace compiler {
 
-__declspec(naked) void *compiler::GetRetAddr(void *frame, int depth) {
+__declspec(naked) void *GetRetAddr(void *frame, int depth) {
 	__asm mov eax, dword ptr [esp + 4]
 	__asm cmp eax, 0
 	__asm jnz init
@@ -47,7 +47,7 @@ exit:
 	__asm ret
 }
 
-__declspec(naked) void *compiler::GetStackFrame(int depth) {
+__declspec(naked) void *GetStackFrame(int depth) {
 	__asm mov eax, ebp
 	__asm mov ecx, dword ptr [esp + 4]
 
@@ -62,18 +62,17 @@ exit:
 	__asm ret
 }
 
-__declspec(naked) void *compiler::GetStackTop() {
+__declspec(naked) void *GetStackTop() {
 	__asm mov eax, fs:[0x04]
 	__asm ret
 }
 
-__declspec(naked) void *compiler::GetStackBottom() {
+__declspec(naked) void *GetStackBottom() {
 	__asm mov eax, fs:[0x08]
 	__asm ret
 }
 
-__declspec(naked) void *compiler::CallCdeclFunc(void *func,
-	const void *const *args, int nargs)
+__declspec(naked) void *CallCdeclFunc(void *func, const void *const *args, int nargs)
 {
 	__asm mov eax, dword ptr [esp + 4]
 	__asm mov edx, dword ptr [esp + 8]
@@ -96,3 +95,5 @@ end_loop:
 	__asm pop edi
 	__asm ret
 }
+
+} // namespace compiler
