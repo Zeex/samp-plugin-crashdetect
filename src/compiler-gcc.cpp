@@ -122,3 +122,24 @@ __asm__ (
 	"	ret\n"
 );
 #undef FUNC
+
+#define FUNC "CallStdcallFunc"
+__asm__ (
+	BEGIN_GLOBAL("_ZN8compiler15CallStdcallFuncEPvPKPKvi")
+	"	movl 4(%esp), %eax\n"
+	"	movl 8(%esp), %edx\n"
+	"	movl 12(%esp), %ecx\n"
+	"	pushl %esi\n"
+	FUNC"_begin_loop:"
+	"	cmpl $0, %ecx\n"
+	"	jle "FUNC"_end_loop\n"
+	"	dec %ecx\n"
+	"	movl (%edx, %ecx, 4), %esi\n"
+	"	pushl %esi\n"
+	"	jmp "FUNC"_begin_loop\n"
+	FUNC"_end_loop:"
+	"	call *%eax\n"
+	"	popl %esi\n"
+	"	ret\n"
+);
+#undef FUNC

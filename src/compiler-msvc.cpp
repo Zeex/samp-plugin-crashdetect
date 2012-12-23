@@ -96,4 +96,23 @@ end_loop:
 	__asm ret
 }
 
+__declspec(naked) void *CallStdcallFunc(void *func, const void *const *args, int nargs)
+{
+	__asm mov eax, dword ptr [esp + 4]
+	__asm mov edx, dword ptr [esp + 8]
+	__asm mov ecx, dword ptr [esp + 12]
+	__asm push esi
+begin_loop:
+	__asm cmp ecx, 0
+	__asm jle end_loop
+	__asm dec ecx
+	__asm mov esi, dword ptr [edx + ecx * 4]
+	__asm push esi
+	__asm jmp begin_loop
+end_loop:
+	__asm call eax
+	__asm pop esi
+	__asm ret
+}
+
 } // namespace compiler

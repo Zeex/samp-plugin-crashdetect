@@ -33,6 +33,7 @@ void *GetStackBottom();
 void *GetRetAddr(void *frame = 0, int depth = 0);
 
 void *CallCdeclFunc(void *func, const void *const *args, int nargs);
+void *CallStdcallFunc(void *func, const void *const *args, int nargs);
 
 } // namespace compiler
 
