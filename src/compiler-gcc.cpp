@@ -24,107 +24,103 @@
 
 #include "compiler.h"
 
-__asm__ (
-#ifdef __MINGW32__
-".globl __ZN8compiler16GetReturnAddressEPvi;"
-"__ZN8compiler16GetReturnAddressEPvi:"
+#ifdef _WIN32
+	#define SYMBOL(x) "_"x
 #else
-"_ZN8compiler16GetReturnAddressEPvi:"
-".globl _ZN8compiler16GetReturnAddressEPvi;"
+	#define SYMBOL(x) x
 #endif
-"	movl 4(%esp), %eax;"
-"	cmpl $0, %eax;"
-"	jnz GetReturnAddress_init;"
-"	movl %ebp, %eax;"
-"GetReturnAddress_init:"
-"	movl 8(%esp), %ecx;"
-"	movl $0, %edx;"
-"GetReturnAddress_loop:"
-"	cmpl $0, %ecx;"
-"	jl GetReturnAddress_exit;"
-"	movl 4(%eax), %edx;"
-"	movl (%eax), %eax;"
-"	decl %ecx;"
-"	jmp GetReturnAddress_loop;"
-"GetReturnAddress_exit:"
-"	movl %edx, %eax;"
-"	ret;"
-);
 
-__asm__ (
-#ifdef __MINGW32__
-".globl __ZN8compiler15GetFrameAddressEi;"
-"__ZN8compiler15GetFrameAddressEi:"
-#else
-".globl _ZN8compiler15GetFrameAddressEi;"
-"_ZN8compiler15GetFrameAddressEi:"
-#endif
-"	movl %ebp, %eax;"
-"	movl 4(%esp), %ecx;"
-"GetFrameAddress_loop:"
-"	testl $0, %ecx;"
-"	jz GetFrameAddress_exit;"
-"	movl (%eax), %eax;"
-"	decl %ecx;"
-"	jmp GetFrameAddress_loop;"
-"GetFrameAddress_exit:"
-"	ret;"
-);
+#define GLOBAL(x) ".globl "SYMBOL(x)";"
 
-__asm__ (
-#ifdef __MINGW32__
-".globl __ZN8compiler11GetStackTopEv;"
-"__ZN8compiler11GetStackTopEv:"
-"	movl %fs:(0x04), %eax;"
-"	ret;"
-#else
-".globl _ZN8compiler11GetStackTopEv;"
-"_ZN8compiler11GetStackTopEv:"
-"	xorl %eax, %eax;"
-"	ret;"
-#endif
-);
+#define BEGIN_GLOBAL(x) \
+	GLOBAL(x) \
+	x":\n"
 
+#define FUNC "GetReturnAddress"
 __asm__ (
-#ifdef __MINGW32__
-".globl __ZN8compiler14GetStackBottomEv;"
-"__ZN8compiler14GetStackBottomEv:"
-"	movl %fs:(0x08), %eax;"
-"	ret;"
-#else
-".globl _ZN8compiler14GetStackBottomEv;"
-"_ZN8compiler14GetStackBottomEv:"
-"	xorl %eax, %eax;"
-"	ret;"
-#endif
+	BEGIN_GLOBAL("_ZN8compiler16GetReturnAddressEPvi")
+	"	movl 4(%esp), %eax;"
+	"	cmpl $0, %eax;"
+	"	jnz "FUNC"_init;"
+	"	movl %ebp, %eax;"
+	FUNC"_init:"
+	"	movl 8(%esp), %ecx;"
+	"	movl $0, %edx;"
+	FUNC"_loop:"
+	"	cmpl $0, %ecx;"
+	"	jl "FUNC"_exit;"
+	"	movl 4(%eax), %edx;"
+	"	movl (%eax), %eax;"
+	"	decl %ecx;"
+	"	jmp "FUNC"_loop;"
+	FUNC"_exit:"
+	"	movl %edx, %eax;"
+	"	ret;"
 );
+#undef FUNC
 
+#define FUNC "GetFrameAddress"
 __asm__ (
-#ifdef __MINGW32__
-".globl __ZN8compiler20CallVariadicFunctionEPvPKPKvi;"
-"__ZN8compiler20CallVariadicFunctionEPvPKPKvi:"
-#else
-".globl _ZN8compiler20CallVariadicFunctionEPvPKPKvi;"
-"_ZN8compiler20CallVariadicFunctionEPvPKPKvi:"
-#endif
-"	movl 4(%esp), %eax;"
-"	movl 8(%esp), %edx;"
-"	movl 12(%esp), %ecx;"
-"	pushl %edi;"
-"	movl %ecx, %edi;"
-"	sal $2, %edi;"
-"	pushl %esi;"
-"CallVariadicFunction_loop:"
-"	cmpl $0, %ecx;"
-"	jle CallVariadicFunction_end_loop;"
-"	dec %ecx;"
-"	movl (%edx, %ecx, 4), %esi;"
-"	pushl %esi;"
-"	jmp CallVariadicFunction_loop;"
-"CallVariadicFunction_end_loop:"
-"	call *%eax;"
-"	addl %edi, %esp;"
-"	popl %esi;"
-"	popl %edi;"
-"	ret;"
+	BEGIN_GLOBAL("_ZN8compiler15GetFrameAddressEi")
+	"	movl %ebp, %eax;"
+	"	movl 4(%esp), %ecx;"
+	FUNC"_loop:"
+	"	testl $0, %ecx;"
+	"	jz "FUNC"_exit;"
+	"	movl (%eax), %eax;"
+	"	decl %ecx;"
+	"	jmp "FUNC"_loop;"
+	FUNC"_exit:"
+	"	ret;"
 );
+#undef FUNC
+
+#define FUNC "GetStackTop"
+__asm__ (
+	BEGIN_GLOBAL("_ZN8compiler11GetStackTopEv")
+	#ifdef _WIN32
+	"	movl %fs:(0x04), %eax;"
+	#else
+	"	xorl %eax, %eax;"
+	#endif
+	"	ret;"
+);
+#undef FUNC
+
+#define FUNC "GetStackBottom"
+__asm__ (
+	BEGIN_GLOBAL("_ZN8compiler14GetStackBottomEv")
+	#ifdef _WIN32
+	"	movl %fs:(0x08), %eax;"
+	#else
+	"	xorl %eax, %eax;"
+	#endif
+	"	ret;"
+);
+#undef FUNC
+
+#define FUNC "CallVariadicFunction"
+__asm__ (
+	BEGIN_GLOBAL("_ZN8compiler20CallVariadicFunctionEPvPKPKvi")
+	"	movl 4(%esp), %eax;"
+	"	movl 8(%esp), %edx;"
+	"	movl 12(%esp), %ecx;"
+	"	pushl %edi;"
+	"	movl %ecx, %edi;"
+	"	sal $2, %edi;"
+	"	pushl %esi;"
+	FUNC"_loop:"
+	"	cmpl $0, %ecx;"
+	"	jle "FUNC"_end_loop;"
+	"	dec %ecx;"
+	"	movl (%edx, %ecx, 4), %esi;"
+	"	pushl %esi;"
+	"	jmp "FUNC"_loop;"
+	FUNC"_end_loop:"
+	"	call *%eax;"
+	"	addl %edi, %esp;"
+	"	popl %esi;"
+	"	popl %edi;"
+	"	ret;"
+);
+#undef FUNC
