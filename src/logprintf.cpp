@@ -60,8 +60,8 @@ void vlogprintf(const char *format, std::va_list args) {
 	uint32_t *newEsp;
 	int i = 0;
 
-	// Since this line new local variables must not be allocated!
-	// ----------------------------------------------------------
+	// Do NOT create new locals below this line!
+	// -------------------------------------------------------------------------
 
 	#if defined __GNUC__
 		__asm__ __volatile__ ("movl %%esp, %0" : "=r"(oldEsp));
