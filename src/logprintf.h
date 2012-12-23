@@ -1,14 +1,14 @@
-// Copyright (c) 2011-2012, Zeex
+// Copyright (c) 2012, Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -26,7 +26,10 @@
 
 #include <cstdarg>
 
-void logprintf(const char *format, ...);
+typedef void (*logprintf_t)(const char *format, ...);
+
+extern logprintf_t logprintf;
+
 void vlogprintf(const char *format, std::va_list args);
 
-#endif
+#endif // !LOGPRINTF_H

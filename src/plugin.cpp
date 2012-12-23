@@ -57,6 +57,7 @@ PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	void **exports = reinterpret_cast<void**>(ppData[PLUGIN_DATA_AMX_EXPORTS]);
+	::logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 
 	void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
 	void *amx_Exec_sub = Hook::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));

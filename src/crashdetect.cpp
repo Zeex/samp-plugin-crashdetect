@@ -45,9 +45,9 @@
 #include "os.h"
 #include "stacktrace.h"
 
-using namespace amxutils;
-
 #define AMX_EXEC_GDK (-10)
+
+using namespace amxutils;
 
 bool crashdetect::errorCaught_ = false;
 std::stack<NPCall*> crashdetect::npCalls_;
@@ -390,11 +390,10 @@ void crashdetect::logprintf(const char *format, ...) {
 	std::va_list args;
 	va_start(args, format);
 
-	std::string prefixed_format;
-	prefixed_format.append("[debug] ");
-	prefixed_format.append(format);
+	std::string newFormat;
+	newFormat.append("[debug] ");
+	newFormat.append(format);
 
-	::vlogprintf(prefixed_format.c_str(), args);
-
+	vlogprintf(newFormat.c_str(), args);
 	va_end(args);
 }

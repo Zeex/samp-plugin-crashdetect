@@ -1,14 +1,14 @@
-// Copyright (c) 2011-2012, Zeex
+// Copyright (c) 2012, Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met: 
+// modification, are permitted provided that the following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer. 
+//    list of conditions and the following disclaimer.
 // 2. Redistributions in binary form must reproduce the above copyright notice,
 //    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution. 
+//    and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -22,103 +22,94 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstdarg>
-#include <cstdio>
-#include <ctime>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 
-#include "configreader.h"
+#include <amx/amx.h> // for uint32_t
 
-static const char *kServerCfgPath = "server.cfg";
-static const char *kServerLogPath = "server_log.txt"; 
+#include "logprintf.h"
 
-static const int kMaxTimeStampLength = 256;
-static const char *kDefaultTimeFormat = "[%H:%M:%S]";
-
-class Log {
-public:
-	Log();
-	~Log();
-
-	std::string GetTimeStamp() const;
-
-	void vprintf(const char *format, va_list args);
-
-private:
-	std::FILE *fp_;
-
-	// Same as "logtimeformat" option of "server.cfg".
-	std::string time_format_;
-
-	// Duplicate log messages in stdout?
-	bool dup_stdout_;
-};
-
-Log::Log() 
-	: fp_(std::fopen(kServerLogPath, "a"))
-	, dup_stdout_(false)
-{
-	ConfigReader server_cfg(kServerCfgPath);
-
-	time_format_.assign(server_cfg.GetOption("logtimeformat",
-			std::string(kDefaultTimeFormat)));
-
-	#if defined LINUX
-		// On Linux logprintf doesn't print stuff to console (stdout) unless 
-		// otherwise specified.
-		if (server_cfg.GetOption("output", false)) {
-			dup_stdout_ = true;
-		}
-	#else
-		// But on Windows it always does.
-		dup_stdout_ = true;
-	#endif
-}
-
-Log::~Log() {
-	if (fp_ != 0) {
-		std::fclose(fp_);
-	}
-}
-
-std::string Log::GetTimeStamp() const {
-	std::time_t time;
-	std::time(&time);
-
-	struct tm *time_info = std::localtime(&time);
-
-	char buffer[kMaxTimeStampLength];
-	std::strftime(buffer, sizeof(buffer), time_format_.c_str(), time_info);
-
-	return std::string(buffer);
-}
-
-void Log::vprintf(const char *format, va_list args) {
-	std::string time = GetTimeStamp();
-
-	if (fp_ != 0) {
-		if (!time.empty()) {
-			std::fputs(time.c_str(), fp_);
-			std::fputs(" ", fp_);
-		}
-		std::vfprintf(fp_, format, args);
-		std::fputs("\n", fp_);
-		std::fflush(fp_);
-	}
-
-	if (dup_stdout_) {
-		std::vfprintf(stdout, format, args);
-		std::fputs("\n", stdout);
-		std::fflush(stdout);
-	}
-}
+logprintf_t logprintf;
 
 void vlogprintf(const char *format, std::va_list args) {
-	static Log server_log;
-	server_log.vprintf(format, args);
-}
+	int nargs = 0;
 
-void logprintf(const char *format, ...) {
-	std::va_list args;
-	va_start(args, format);
-	::vlogprintf(format, args);
-	va_end(args);
+	// Since the number of arguments isn't known we can only guess...
+	//
+	// Best method I came up with is to count number of format specifiers in the
+	// format string. But there's one issue with this - generally printf()-like
+	// functions can take arguments of various size - from 1 byte to 8. Things
+	// that are smaller than 4 bytes are actually pushed as dwords anyway so
+	// they are fine. Bigger values are pushed as sequences of two dwords (and
+	// read by printf accordingly if the size matches the speficier).
+	//
+	// Because I have no idea whether logprintf() accepts the latter ones this
+	// code will assume that each of the unnamed arguments is exactly one mahine
+	// word (32 bits) in size so things should go smooth (otherwise it may not
+	// work).
+	std::size_t length = strlen(format);
+	for (std::size_t i = 0; i < length; i++) {
+		if (format[i] == '%' && format[i + 1] != '%') {
+			nargs++;
+		}
+	}
+
+	uint32_t *oldEsp;
+	uint32_t *newEsp;
+	int i = 0;
+
+	// Since this line new local variables must not be allocated!
+	// ----------------------------------------------------------
+
+	#if defined __GNUC__
+		__asm__ __volatile__ ("movl %%esp, %0" : "=r"(oldEsp));
+	#elif defined _MSC_VER
+		__asm mov dword ptr [oldEsp], esp
+	#else
+		#error Unsupported compiler
+	#endif
+
+	oldEsp -= 4; /* for saved registers */
+	newEsp = oldEsp - (nargs + 1); /* args + format */
+
+	newEsp[0] = reinterpret_cast<uint32_t>(format);
+	for (i = 0; i < nargs; i++) {
+		newEsp[i + 1] = va_arg(args, uint32_t);
+	}
+
+	#if defined __GNUC__
+		__asm__ __volatile__ (
+			"push %%eax\n\t"
+			"push %%ecx\n\t"
+			"push %%edx\n\t"
+			"push %%esi\n\t"
+			"movl %0, %%esi\n\t"
+			"movl %1, %%esp\n\t"
+			"call *%2\n\t"
+			"movl %%esi, %%esp\n\t"
+			"pop %%esi\n\t"
+			"pop %%edx\n\t"
+			"pop %%ecx\n\t"
+			"pop %%eax\n\t"
+		: : "r"(oldEsp), "r"(newEsp), "r"(::logprintf));
+	#elif defined _MSC_VER
+		__asm {
+			push eax
+			push ecx
+			push edx
+			push esi
+			mov esi, dword ptr [oldEsp]
+			mov esp, dword ptr [newEsp]
+			mov eax, dword ptr [logprintf]
+			call eax
+			mov esp, esi
+			pop esi
+			pop edx
+			pop ecx
+			pop eax
+		}
+	#else
+		#error Unsupported compiler
+	#endif
 }
