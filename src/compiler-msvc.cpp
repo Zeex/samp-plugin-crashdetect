@@ -71,3 +71,28 @@ __declspec(naked) void *compiler::GetStackBottom() {
 	__asm mov eax, fs:[0x08]
 	__asm ret
 }
+
+__declspec(naked) void *compiler::CallVariadicFunction(void *func,
+	const void *const *args, int nargs)
+{
+	__asm mov eax, dword ptr [esp + 4]
+	__asm mov edx, dword ptr [esp + 8]
+	__asm mov ecx, dword ptr [esp + 12]
+	__asm push edi
+	__asm mov edi, ecx
+	__asm sal edi, 2
+	__asm push esi
+loop:
+	__asm cmp ecx, 0
+	__asm jle CallVariadicFunc_end_loop
+	__asm dec ecx
+	__asm mov esi, dword ptr [edx + ecx * 4]
+	__asm push esi
+	__asm jmp CallVariadicFunc_loop
+end_loop:
+	__asm call eax
+	__asm add esp, edi
+	__asm pop esi
+	__asm pop edi
+	__asm ret
+}

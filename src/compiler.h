@@ -33,6 +33,8 @@ void *GetReturnAddress(void *frame = 0, int depth = 0);
 void *GetStackTop();
 void *GetStackBottom();
 
+void *CallVariadicFunction(void *func, const void *const *args, int nargs);
+
 } // namespace compiler
 
 #endif // !COMPILER_H

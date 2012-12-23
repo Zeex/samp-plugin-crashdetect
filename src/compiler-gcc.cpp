@@ -32,16 +32,13 @@ __asm__ (
 "_ZN8compiler16GetReturnAddressEPvi:"
 ".globl _ZN8compiler16GetReturnAddressEPvi;"
 #endif
-
 "	movl 4(%esp), %eax;"
 "	cmpl $0, %eax;"
 "	jnz GetReturnAddress_init;"
 "	movl %ebp, %eax;"
-
 "GetReturnAddress_init:"
 "	movl 8(%esp), %ecx;"
 "	movl $0, %edx;"
-
 "GetReturnAddress_loop:"
 "	cmpl $0, %ecx;"
 "	jl GetReturnAddress_exit;"
@@ -49,7 +46,6 @@ __asm__ (
 "	movl (%eax), %eax;"
 "	decl %ecx;"
 "	jmp GetReturnAddress_loop;"
-
 "GetReturnAddress_exit:"
 "	movl %edx, %eax;"
 "	ret;"
@@ -63,17 +59,14 @@ __asm__ (
 ".globl _ZN8compiler15GetFrameAddressEi;"
 "_ZN8compiler15GetFrameAddressEi:"
 #endif
-
 "	movl %ebp, %eax;"
 "	movl 4(%esp), %ecx;"
-
 "GetFrameAddress_loop:"
 "	testl $0, %ecx;"
 "	jz GetFrameAddress_exit;"
 "	movl (%eax), %eax;"
 "	decl %ecx;"
 "	jmp GetFrameAddress_loop;"
-
 "GetFrameAddress_exit:"
 "	ret;"
 );
@@ -82,13 +75,11 @@ __asm__ (
 #ifdef __MINGW32__
 ".globl __ZN8compiler11GetStackTopEv;"
 "__ZN8compiler11GetStackTopEv:"
-
 "	movl %fs:(0x04), %eax;"
 "	ret;"
 #else
 ".globl _ZN8compiler11GetStackTopEv;"
 "_ZN8compiler11GetStackTopEv:"
-
 "	xorl %eax, %eax;"
 "	ret;"
 #endif
@@ -98,14 +89,42 @@ __asm__ (
 #ifdef __MINGW32__
 ".globl __ZN8compiler14GetStackBottomEv;"
 "__ZN8compiler14GetStackBottomEv:"
-
 "	movl %fs:(0x08), %eax;"
 "	ret;"
 #else
 ".globl _ZN8compiler14GetStackBottomEv;"
 "_ZN8compiler14GetStackBottomEv:"
-
 "	xorl %eax, %eax;"
 "	ret;"
 #endif
+);
+
+__asm__ (
+#ifdef __MINGW32__
+".globl __ZN8compiler20CallVariadicFunctionEPvPKPKvi;"
+"__ZN8compiler20CallVariadicFunctionEPvPKPKvi:"
+#else
+".globl _ZN8compiler20CallVariadicFunctionEPvPKPKvi;"
+"_ZN8compiler20CallVariadicFunctionEPvPKPKvi:"
+#endif
+"	movl 4(%esp), %eax;"
+"	movl 8(%esp), %edx;"
+"	movl 12(%esp), %ecx;"
+"	pushl %edi;"
+"	movl %ecx, %edi;"
+"	sal $2, %edi;"
+"	pushl %esi;"
+"CallVariadicFunction_loop:"
+"	cmpl $0, %ecx;"
+"	jle CallVariadicFunction_end_loop;"
+"	dec %ecx;"
+"	movl (%edx, %ecx, 4), %esi;"
+"	pushl %esi;"
+"	jmp CallVariadicFunction_loop;"
+"CallVariadicFunction_end_loop:"
+"	call *%eax;"
+"	addl %edi, %esp;"
+"	popl %esi;"
+"	popl %edi;"
+"	ret;"
 );

@@ -26,15 +26,19 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 #include <amx/amx.h> // for uint32_t
 
+#include "compiler.h"
 #include "logprintf.h"
 
 logprintf_t logprintf;
 
 void vlogprintf(const char *format, std::va_list args) {
-	int nargs = 0;
+	std::vector<const void*> words;
+
+	words.push_back(reinterpret_cast<const void*>(format));
 
 	// Since the number of arguments isn't known we can only guess...
 	//
@@ -52,65 +56,9 @@ void vlogprintf(const char *format, std::va_list args) {
 	std::size_t length = strlen(format);
 	for (std::size_t i = 0; i < length; i++) {
 		if (format[i] == '%' && format[i + 1] != '%') {
-			nargs++;
+			words.push_back(va_arg(args, const void *));
 		}
 	}
 
-	uint32_t *oldEsp;
-	uint32_t *newEsp;
-	int i = 0;
-
-	// Do NOT create new locals below this line!
-	// -------------------------------------------------------------------------
-
-	#if defined __GNUC__
-		__asm__ __volatile__ ("movl %%esp, %0" : "=r"(oldEsp));
-	#elif defined _MSC_VER
-		__asm mov dword ptr [oldEsp], esp
-	#else
-		#error Unsupported compiler
-	#endif
-
-	oldEsp -= 4; /* for saved registers */
-	newEsp = oldEsp - (nargs + 1); /* args + format */
-
-	newEsp[0] = reinterpret_cast<uint32_t>(format);
-	for (i = 0; i < nargs; i++) {
-		newEsp[i + 1] = va_arg(args, uint32_t);
-	}
-
-	#if defined __GNUC__
-		__asm__ __volatile__ (
-			"push %%eax\n\t"
-			"push %%ecx\n\t"
-			"push %%edx\n\t"
-			"push %%esi\n\t"
-			"movl %0, %%esi\n\t"
-			"movl %1, %%esp\n\t"
-			"call *%2\n\t"
-			"movl %%esi, %%esp\n\t"
-			"pop %%esi\n\t"
-			"pop %%edx\n\t"
-			"pop %%ecx\n\t"
-			"pop %%eax\n\t"
-		: : "r"(oldEsp), "r"(newEsp), "r"(::logprintf));
-	#elif defined _MSC_VER
-		__asm {
-			push eax
-			push ecx
-			push edx
-			push esi
-			mov esi, dword ptr [oldEsp]
-			mov esp, dword ptr [newEsp]
-			mov eax, dword ptr [logprintf]
-			call eax
-			mov esp, esi
-			pop esi
-			pop edx
-			pop ecx
-			pop eax
-		}
-	#else
-		#error Unsupported compiler
-	#endif
+	compiler::CallVariadicFunction((void*)::logprintf, &words[0], words.size());
 }
