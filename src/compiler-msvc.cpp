@@ -34,13 +34,13 @@ init:
 	__asm mov ecx, dword ptr [esp + 8]
 	__asm mov edx, 0
 
-iteration:
+begin_loop:
 	__asm cmp ecx, 0
 	__asm jl exit
 	__asm mov edx, dword ptr [eax + 4]
 	__asm mov eax, dword ptr [eax]
 	__asm dec ecx
-	__asm jmp iteration
+	__asm jmp begin_loop
 
 exit:
 	__asm mov eax, edx
@@ -51,12 +51,12 @@ __declspec(naked) void *compiler::GetFrameAddress(int depth) {
 	__asm mov eax, ebp
 	__asm mov ecx, dword ptr [esp + 4]
 
-iteration:
+begin_loop:
 	__asm test ecx, 0
 	__asm jz exit
 	__asm mov eax, dword ptr [eax]
 	__asm dec ecx
-	__asm jmp iteration
+	__asm jmp begin_loop
 
 exit:
 	__asm ret
@@ -82,13 +82,13 @@ __declspec(naked) void *compiler::CallVariadicFunction(void *func,
 	__asm mov edi, ecx
 	__asm sal edi, 2
 	__asm push esi
-loop:
+begin_loop:
 	__asm cmp ecx, 0
-	__asm jle CallVariadicFunc_end_loop
+	__asm jle end_loop
 	__asm dec ecx
 	__asm mov esi, dword ptr [edx + ecx * 4]
 	__asm push esi
-	__asm jmp CallVariadicFunc_loop
+	__asm jmp begin_loop
 end_loop:
 	__asm call eax
 	__asm add esp, edi
