@@ -24,11 +24,8 @@
 
 #include <cstdarg>
 #include <cstddef>
-#include <cstdlib>
 #include <cstring>
 #include <vector>
-
-#include <amx/amx.h> // for uint32_t
 
 #include "compiler.h"
 #include "logprintf.h"
