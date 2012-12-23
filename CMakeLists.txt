@@ -6,7 +6,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	include("cmake/GlobalBuildConfig.cmake")
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${crashdetect_SOURCE_DIR}/cmake/Modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
 include(CheckFunctionExists)
@@ -93,7 +93,7 @@ add_library(crashdetect MODULE ${SOURCES})
 set_property(TARGET crashdetect PROPERTY PREFIX "")
 
 if(WIN32)
-	set(DEF_FILE "${crashdetect_SOURCE_DIR}/src/plugin.def")
+	set(DEF_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.def")
 	if(MSVC)
 		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY
@@ -121,7 +121,7 @@ if(description)
 	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
 else()
 	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
-	file(READ "${crashdetect_SOURCE_DIR}/VERSION.txt" version)
+	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
 	string(STRIP ${version} version)
 endif()
 
@@ -137,13 +137,13 @@ set(PLUGIN_VERSION ${version})
 set(PLUGIN_VERSION_RC ${version_rc})
 
 configure_file(
-	"${crashdetect_SOURCE_DIR}/src/plugin.rc.in"
-	"${crashdetect_SOURCE_DIR}/src/plugin.rc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc"
 	@ONLY
 )
 configure_file(
-	"${crashdetect_SOURCE_DIR}/src/version.h.in"
-	"${crashdetect_SOURCE_DIR}/src/version.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h"
 	@ONLY
 )
 
