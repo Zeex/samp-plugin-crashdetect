@@ -23,8 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstdarg>
-#include <cstddef>
-#include <cstring>
 #include <vector>
 
 #include "compiler.h"
@@ -32,30 +30,19 @@
 
 logprintf_t logprintf;
 
-void vlogprintf(const char *format, std::va_list args) {
-	std::vector<const void*> words;
+void vlogprintf(const char *format, std::va_list va) {
+	std::vector<const void*> args;
 
-	words.push_back(reinterpret_cast<const void*>(format));
+	args.push_back(reinterpret_cast<const void*>(format));
 
-	// Since the number of arguments isn't known we can only guess...
-	//
-	// Best method I came up with is to count number of format specifiers in the
-	// format string. But there's one issue with this - generally printf()-like
-	// functions can take arguments of various size - from 1 byte to 8. Things
-	// that are smaller than 4 bytes are actually pushed as dwords anyway so
-	// they are fine. Bigger values are pushed as sequences of two dwords (and
-	// read by printf accordingly if the size matches the speficier).
-	//
-	// Because I have no idea whether logprintf() accepts the latter ones this
-	// code will assume that each of the unnamed arguments is exactly one mahine
-	// word (32 bits) in size so things should go smooth (otherwise it may not
-	// work).
-	std::size_t length = strlen(format);
-	for (std::size_t i = 0; i < length; i++) {
+	// For each format speficier there has to be one dword argument. This will
+	// not work for long values that are longer than 4 bytes e.g. long double
+	// or long long.
+	for (int i = 0; format[i] != '\0'; i++) {
 		if (format[i] == '%' && format[i + 1] != '%') {
-			words.push_back(va_arg(args, const void *));
+			args.push_back(va_arg(va, const void *));
 		}
 	}
 
-	compiler::CallCdeclFunc((void*)::logprintf, &words[0], words.size());
+	compiler::CallCdeclFunc((void*)::logprintf, &args[0], args.size());
 }

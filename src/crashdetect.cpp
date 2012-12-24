@@ -388,13 +388,13 @@ void crashdetect::PrintSystemBacktrace(void *context) {
 
 // static
 void crashdetect::logprintf(const char *format, ...) {
-	std::va_list args;
-	va_start(args, format);
+	std::va_list va;
+	va_start(va, format);
 
 	std::string newFormat;
 	newFormat.append("[debug] ");
 	newFormat.append(format);
 
-	vlogprintf(newFormat.c_str(), args);
-	va_end(args);
+	vlogprintf(newFormat.c_str(), va);
+	va_end(va);
 }

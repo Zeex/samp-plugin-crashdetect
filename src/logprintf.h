@@ -31,6 +31,6 @@ typedef void (*logprintf_t)(const char *format, ...);
 
 extern logprintf_t logprintf;
 
-void vlogprintf(const char *format, std::va_list args);
+void vlogprintf(const char *format, std::va_list va);
 
 #endif // !LOGPRINTF_H
