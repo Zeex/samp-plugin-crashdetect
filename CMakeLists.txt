@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.8.6)
-
 project(crashdetect)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -12,21 +11,38 @@ include(AmxConfig)
 include(CheckFunctionExists)
 include(GetGitRevisionDescription)
 
-if(UNIX)
-	check_function_exists(backtrace HAVE_BACKTRACE)
-	if(HAVE_BACKTRACE)
-		add_definitions(-DHAVE_BACKTRACE)
-	endif()
-	check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
-	if(HAVE_BACKTRACE_SYMBOLS)
-		add_definitions(-DHAVE_BACKTRACE_SYMBOLS)
-	endif()
+set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
+set(PLUGIN_DESCRIPTION "${PLUGIN_NAME} plugin for SA:MP server")
+set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
+
+# Get latest version tag from Git or version file.
+git_describe(description --match v[0-9]*.[0-9]**)
+if(description)
+	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
+	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
+else()
+	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
+	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
+	string(STRIP ${version} version)
 endif()
 
-include_directories(".")
-include_directories("amx")
+# Convert version string to a comma-separated list for RC.
+string(REGEX REPLACE "[.-]" "," version_rc ${version})
+string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
+string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
+
+set(PLUGIN_VERSION     ${version})
+set(PLUGIN_VERSION_RC ${version_rc})
+
+message(STATUS "You're going to build ${PLUGIN_NAME} v${version}")
 
 add_subdirectory("amx")
+add_subdirectory("src")
+
+include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}
+	"amx"
+)
 
 set(SOURCES
 	"src/amxdebuginfo.cpp"
@@ -89,13 +105,30 @@ endif()
 
 add_library(crashdetect MODULE ${SOURCES})
 
-# Don't prefix output file with "lib".
-set_property(TARGET crashdetect PROPERTY PREFIX "")
+if(UNIX OR MINGW)
+	# Remove "lib" prefix of the output library.
+	set_property(TARGET crashdetect PROPERTY PREFIX "")
+endif()
+
+if(WIN32 AND MSVC)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()	
+
+if(UNIX)
+	check_function_exists(backtrace HAVE_BACKTRACE)
+	if(HAVE_BACKTRACE)
+		add_definitions(-DHAVE_BACKTRACE)
+	endif()
+	check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
+	if(HAVE_BACKTRACE_SYMBOLS)
+		add_definitions(-DHAVE_BACKTRACE_SYMBOLS)
+	endif()
+	add_definitions(-DLINUX)
+endif()
 
 if(WIN32)
 	set(DEF_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.def")
 	if(MSVC)
-		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY
 			COMPILE_FLAGS " /Oy-")
  		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
@@ -104,50 +137,15 @@ if(WIN32)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
 			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
 	endif()
-elseif(UNIX)
-	add_definitions(-DLINUX)
+endif()
+
+if(UNIX AND NOT WIN32)
 	if(CMAKE_COMPILER_IS_GNUCXX)
-		list(APPEND LIBRARIES "-ldl")
+		target_link_libraries(crashdetect "-ldl")
 	endif()
 endif()
 
-list(APPEND LIBRARIES "amx")
-target_link_Libraries(crashdetect ${LIBRARIES})
-
-# Get latest version tag from Git.
-git_describe(description --match v[0-9]*.[0-9]**)
-if(description)
-	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
-	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
-else()
-	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
-	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
-	string(STRIP ${version} version)
-endif()
-
-# Convert version to a comma separated list for RC.
-string(REGEX REPLACE "[.-]" "," version_rc ${version})
-string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
-string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
-
-set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
-set(PLUGIN_DESCRIPTION "crashdetect plugin for SA-MP server")
-set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012, Zeex")
-set(PLUGIN_VERSION ${version})
-set(PLUGIN_VERSION_RC ${version_rc})
-
-configure_file(
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.rc"
-	@ONLY
-)
-configure_file(
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/version.h"
-	@ONLY
-)
-
-message(STATUS "You're going to build crashdetect v${version}")
+target_link_Libraries(crashdetect "amx")
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
 
