@@ -83,7 +83,7 @@ void crashdetect::OnException(void *context) {
 }
 
 // static
-void crashdetect::SystemInterrupt(void *context) {
+void crashdetect::OnInterrupt(void *context) {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top()->amx();
 		GetInstance(amx)->HandleInterrupt();

@@ -42,7 +42,7 @@ public:
 	static void DestroyInstance(AMX *amx);
 
 	static void OnException(void *context);
-	static void SystemInterrupt(void *context);
+	static void OnInterrupt(void *context);
 
 	int DoAmxCallback(cell index, cell *result, cell *params);
 	int DoAmxExec(cell *retval, int index);
