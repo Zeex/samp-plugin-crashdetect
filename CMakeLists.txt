@@ -45,6 +45,7 @@ include_directories(
 )
 
 set(SOURCES
+	"src/amx.h"
 	"src/amxdebuginfo.cpp"
 	"src/amxdebuginfo.h"
 	"src/amxpathfinder.cpp"

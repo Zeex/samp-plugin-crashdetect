@@ -25,7 +25,7 @@
 #ifndef AMXUTILS_H
 #define AMXUTILS_H
 
-#include <amx/amx.h>
+#include "amx.h"
 
 namespace amxutils {
 

@@ -30,8 +30,7 @@
 #include <string>
 #include <vector>
 
-#include <amx/amx.h>
-#include <amx/amxdbg.h>
+#include "amx.h"
 
 class AMXDebugInfo {
 public:

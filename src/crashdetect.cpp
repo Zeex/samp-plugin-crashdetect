@@ -30,9 +30,7 @@
 #include <stack>
 #include <string>
 
-#include <amx/amx.h>
-#include <amx/amxaux.h>
-
+#include "amx.h"
 #include "amxdebuginfo.h"
 #include "amxpathfinder.h"
 #include "amxstacktrace.h"

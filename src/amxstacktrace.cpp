@@ -32,9 +32,7 @@
 #include <utility>
 #include <vector>
 
-#include <amx/amx.h>
-#include <amx/amxdbg.h>
-
+#include "amx.h"
 #include "amxstacktrace.h"
 #include "amxdebuginfo.h"
 

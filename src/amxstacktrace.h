@@ -30,8 +30,7 @@
 #include <vector>
 #include <utility>
 
-#include <amx/amx.h>
-
+#include "amx.h"
 #include "amxdebuginfo.h"
 
 class AMXStackFrame {
