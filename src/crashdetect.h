@@ -41,7 +41,7 @@ public:
 	static crashdetect *GetInstance(AMX *amx);
 	static void DestroyInstance(AMX *amx);
 
-	static void SystemException(void *context);
+	static void OnException(void *context);
 	static void SystemInterrupt(void *context);
 
 	int DoAmxCallback(cell index, cell *result, cell *params);

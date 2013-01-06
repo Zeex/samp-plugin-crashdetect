@@ -80,7 +80,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		new Hook(amx_Release_ptr, (void*)AmxRelease);
 	}
 
-	os::SetExceptionHandler(crashdetect::SystemException);
+	os::SetExceptionHandler(crashdetect::OnException);
 	os::SetInterruptHandler(crashdetect::SystemInterrupt);
 
 	logprintf("  crashdetect v"PLUGIN_VERSION_STRING" is OK.");

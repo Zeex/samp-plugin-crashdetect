@@ -72,7 +72,7 @@ void crashdetect::DestroyInstance(AMX *amx) {
 }
 
 // static
-void crashdetect::SystemException(void *context) {
+void crashdetect::OnException(void *context) {
 	if (!npCalls_.empty()) {
 		AMX *amx = npCalls_.top()->amx();
 		GetInstance(amx)->HandleException();
