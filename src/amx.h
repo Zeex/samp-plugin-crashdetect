@@ -6,6 +6,10 @@
 	#pragma GCC diagnostic ignored "-Wattributes"
 #endif
 
+#ifdef _WIN32
+	#include <malloc.h>
+#endif
+
 #include <amx/amx.h>
 #include <amx/amxaux.h>
 #include <amx/amxdbg.h>
