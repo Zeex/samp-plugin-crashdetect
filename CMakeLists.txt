@@ -13,11 +13,10 @@ include(CTest)
 include(GetGitRevisionDescription)
 include(SampPlugin)
 
-set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
+set(PLUGIN_NAME ${PROJECT_NAME})
 set(PLUGIN_DESCRIPTION "${PLUGIN_NAME} plugin for SA:MP server")
 set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
 
-# Get latest version tag from Git or version file.
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
 	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
@@ -25,23 +24,20 @@ if(description)
 else()
 	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
 	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
-	string(STRIP ${version} version)
+	string(STRIP "${version}" version)
 endif()
 
-# Convert version string to a comma-separated list for RC.
 string(REGEX REPLACE "[.-]" "," version_rc ${version})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
-set(PLUGIN_VERSION    ${version})
-set(PLUGIN_VERSION_RC ${version_rc})
+set(PLUGIN_VERSION    "${version}")
+set(PLUGIN_VERSION_RC "${version_rc}")
 
 message(STATUS "You're going to build ${PLUGIN_NAME} v${version}")
 
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}
-	"amx"
-)
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/amx")
 
 set(SOURCES
 	"src/amx.h"
@@ -104,11 +100,10 @@ else()
 	message(FATAL_ERROR "Unsupported compiler.")
 endif()
 
-add_samp_plugin(crashdetect ${SOURCES})
+add_samp_plugin(${PROJECT_NAME} ${SOURCES})
 
 if(UNIX OR MINGW)
-	# Remove "lib" prefix of the output library.
-	set_property(TARGET crashdetect PROPERTY PREFIX "")
+	set_property(TARGET ${PROJECT_NAME} PROPERTY PREFIX "")
 endif()
 
 if(WIN32 AND MSVC)
@@ -127,25 +122,18 @@ if(UNIX)
 	add_definitions(-DLINUX)
 endif()
 
-if(UNIX AND NOT WIN32)
-	if(CMAKE_COMPILER_IS_GNUCXX)
-		target_link_libraries(crashdetect "-ldl")
-	endif()
-endif()
-
-target_link_Libraries(crashdetect "amx")
+target_link_Libraries(${PROJECT_NAME} amx)
 
 add_subdirectory("amx")
 add_subdirectory("src")
 add_subdirectory("test")
 
-install(TARGETS crashdetect LIBRARY DESTINATION ".")
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 if(MSVC)
-	# Install the PDB file. This works only for Debug/RelWithDebInfo.
-	set(PDB_NAME "crashdetect.pdb")
+	set(PDB_NAME "${PROJECT_NAME}.pdb")
 	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
-	install(FILES ${PDB_PATH} DESTINATION ".")
+	install(FILES ${PDB_PATH} DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
 
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
@@ -157,4 +145,3 @@ elseif(UNIX)
 	set(CPACK_GENERATOR TGZ)
 endif()
 include(CPack)
-
