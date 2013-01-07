@@ -127,19 +127,6 @@ if(UNIX)
 	add_definitions(-DLINUX)
 endif()
 
-if(WIN32)
-	set(DEF_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/plugin.def")
-	if(MSVC)
-		set_property(TARGET crashdetect APPEND_STRING PROPERTY
-			COMPILE_FLAGS " /Oy-")
-		set_property(TARGET crashdetect APPEND_STRING PROPERTY
-			LINK_FLAGS " /DEF:${DEF_FILE}")
-	elseif(MINGW)
-		set_property(TARGET crashdetect APPEND_STRING PROPERTY
-			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
-	endif()
-endif()
-
 if(UNIX AND NOT WIN32)
 	if(CMAKE_COMPILER_IS_GNUCXX)
 		target_link_libraries(crashdetect "-ldl")
