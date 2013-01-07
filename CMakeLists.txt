@@ -9,6 +9,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 include(AmxConfig)
 include(CheckFunctionExists)
+include(CTest)
 include(GetGitRevisionDescription)
 
 set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
@@ -31,13 +32,10 @@ string(REGEX REPLACE "[.-]" "," version_rc ${version})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
-set(PLUGIN_VERSION     ${version})
+set(PLUGIN_VERSION    ${version})
 set(PLUGIN_VERSION_RC ${version_rc})
 
 message(STATUS "You're going to build ${PLUGIN_NAME} v${version}")
-
-add_subdirectory("amx")
-add_subdirectory("src")
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}
@@ -147,6 +145,10 @@ if(UNIX AND NOT WIN32)
 endif()
 
 target_link_Libraries(crashdetect "amx")
+
+add_subdirectory("amx")
+add_subdirectory("src")
+add_subdirectory("test")
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
 

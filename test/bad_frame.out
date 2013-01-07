@@ -1,0 +1,13 @@
+Started server on port: 7777, with maxplayers: 500 lanmode is OFF\.
+
+
+Filterscripts
+---------------
+  Loaded 0 filterscripts\.
+
+\[debug\] Run time error 4: "Array index out of bounds"
+\[debug\]  Accessing element at index 305419896 past array upper bound 0
+\[debug\] AMX backtrace:
+\[debug\] #0 000000b0 in function1 \(... <76354974 variable arguments>\) at bad_frame\.pwn:13
+Script\[.*bad_frame.amx\]: Run time error 4: "Array index out of bounds"
+Number of vehicle models: 0

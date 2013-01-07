@@ -1,0 +1,14 @@
+Started server on port: 7777, with maxplayers: 500 lanmode is OFF\.
+
+
+Filterscripts
+---------------
+  Loaded 0 filterscripts\.
+
+Hello!
+\[debug\] Run time error 7: "Stack underflow"
+\[debug\]  Stack pointer \(STK\) is 0xFB9, stack top \(STP\) is 0xFB8
+\[debug\] AMX backtrace:
+\[debug\] #0 00000048 in main \(\.\.\. <4608 variable arguments>\) at stacklow.pwn:12
+Script\[.*stacklow.amx\]: Run time error 7: "Stack underflow"
+Number of vehicle models: 0
