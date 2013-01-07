@@ -17,8 +17,8 @@ Download
 Get latest binaries for Windows and Linux from the [**`downloads`**](https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads) branch.
 
 
-Something you might want to know
---------------------------------
+Things you might want to know
+-----------------------------
 
 **How do I get function names, line numbers, etc in stack trace?**
 
