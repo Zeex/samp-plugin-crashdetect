@@ -157,7 +157,7 @@ if(MSVC)
 	install(FILES ${PDB_PATH} DESTINATION ".")
 endif()
 
-install(FILES "LICENSE.txt" "README.txt" DESTINATION ".")
+install(FILES "LICENSE.txt" "README.md" DESTINATION ".")
 
 set(CPACK_PACKAGE_NAME ${CMAKE_PROJECT_NAME})
 if(WIN32)
