@@ -27,8 +27,8 @@
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 1 VERSIONINFO
-	FILEVERSION     @PLUGIN_VERSION_RC@
-	PRODUCTVERSION  @PLUGIN_VERSION_RC@
+	FILEVERSION     @PROJECT_VERSION_RC@
+	PRODUCTVERSION  @PROJECT_VERSION_RC@
 	FILEOS         	VOS_NT_WINDOWS32
 	FILETYPE       	VFT_DLL
 {
@@ -36,13 +36,11 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 	{
 		BLOCK "04090025"
 		{
-			VALUE "FileDescription",  "@PLUGIN_DESCRIPTION@"
-			VALUE "FileVersion",      "@PLUGIN_VERSION@"
-			VALUE "ProductVersion",   "@PLUGIN_VERSION@"
-			VALUE "InternalName",     "@PLUGIN_NAME@"
-			VALUE "LegalCopyright",   "@PLUGIN_COPYRIGHT@"
-			VALUE "OriginalFilename", "@PLUGIN_NAME@.dll"
-			VALUE "ProductName",      "@PLUGIN_NAME@"
+			VALUE "FileVersion",      "@PROJECT_VERSION@"
+			VALUE "ProductVersion",   "@PROJECT_VERSION@"
+			VALUE "InternalName",     "@PROJECT_NAME@"
+			VALUE "OriginalFilename", "@PROJECT_NAME@.dll"
+			VALUE "ProductName",      "@PROJECT_NAME@"
 		}
 	}
 	BLOCK "VarFileInfo"

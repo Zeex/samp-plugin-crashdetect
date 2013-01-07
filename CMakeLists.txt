@@ -13,29 +13,6 @@ include(CTest)
 include(GetGitRevisionDescription)
 include(SampPlugin)
 
-set(PLUGIN_NAME ${PROJECT_NAME})
-set(PLUGIN_DESCRIPTION "${PLUGIN_NAME} plugin for SA:MP server")
-set(PLUGIN_COPYRIGHT "Copyright (c) 2011-2012 Zeex")
-
-git_describe(description --match v[0-9]*.[0-9]**)
-if(description)
-	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
-	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
-else()
-	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
-	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
-	string(STRIP "${version}" version)
-endif()
-
-string(REGEX REPLACE "[.-]" "," version_rc ${version})
-string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
-string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
-
-set(PLUGIN_VERSION    "${version}")
-set(PLUGIN_VERSION_RC "${version_rc}")
-
-message(STATUS "You're going to build ${PLUGIN_NAME} v${version}")
-
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/amx")
 
@@ -124,6 +101,23 @@ endif()
 
 target_link_Libraries(${PROJECT_NAME} amx)
 
+git_describe(description --match v[0-9]*.[0-9]**)
+if(description)
+	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
+	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
+else()
+	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
+	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
+	string(STRIP "${version}" version)
+endif()
+
+string(REGEX REPLACE "[.-]" "," version_rc ${version})
+string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
+string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
+
+set(PROJECT_VERSION    "${version}")
+set(PROJECT_VERSION_RC "${version_rc}")
+
 add_subdirectory("amx")
 add_subdirectory("src")
 add_subdirectory("test")
@@ -145,3 +139,5 @@ elseif(UNIX)
 	set(CPACK_GENERATOR TGZ)
 endif()
 include(CPack)
+
+message(STATUS "You're going to build ${PROJECT_NAME} v${PROJECT_VERSION}")
