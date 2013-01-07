@@ -1,0 +1,1 @@
+[Downloads moved](https://github.com/Zeex/samp-plugin-crashdetect#download)
