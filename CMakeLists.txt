@@ -120,7 +120,7 @@ set(PROJECT_VERSION_RC "${version_rc}")
 
 add_subdirectory("amx")
 add_subdirectory("src")
-add_subdirectory("test")
+add_subdirectory("tests")
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX})
 
