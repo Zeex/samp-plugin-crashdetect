@@ -11,6 +11,7 @@ include(AmxConfig)
 include(CheckFunctionExists)
 include(CTest)
 include(GetGitRevisionDescription)
+include(SampPlugin)
 
 set(PLUGIN_NAME ${CMAKE_PROJECT_NAME})
 set(PLUGIN_DESCRIPTION "${PLUGIN_NAME} plugin for SA:MP server")
@@ -67,6 +68,7 @@ set(SOURCES
 	"src/npcall.h"
 	"src/os.h"
 	"src/plugin.cpp"
+	"src/plugin.def"
 	"src/plugin.rc"
 	"src/plugincommon.h"
 	"src/stacktrace.cpp"
@@ -102,7 +104,7 @@ else()
 	message(FATAL_ERROR "Unsupported compiler.")
 endif()
 
-add_library(crashdetect MODULE ${SOURCES})
+add_samp_plugin(crashdetect ${SOURCES})
 
 if(UNIX OR MINGW)
 	# Remove "lib" prefix of the output library.
@@ -130,10 +132,10 @@ if(WIN32)
 	if(MSVC)
 		set_property(TARGET crashdetect APPEND_STRING PROPERTY
 			COMPILE_FLAGS " /Oy-")
- 		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
+		set_property(TARGET crashdetect APPEND_STRING PROPERTY
 			LINK_FLAGS " /DEF:${DEF_FILE}")
 	elseif(MINGW)
-		set_property(TARGET crashdetect APPEND_STRING PROPERTY 
+		set_property(TARGET crashdetect APPEND_STRING PROPERTY
 			LINK_FLAGS " -Wl,--kill-at --def ${DEF_FILE}")
 	endif()
 endif()
