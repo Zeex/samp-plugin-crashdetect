@@ -20,20 +20,19 @@
 include(CMakeParseArguments)
 
 function(add_plugin_test)
-	set(options "NAME" "OUTFILE" "SCRIPT" "TIMEOUT" "EXEC")
+	set(name "${ARGV0}")
+
+	set(options "NAME" "OUTFILE" "SCRIPT" "TIMEOUT")
 	cmake_parse_arguments(ARG "" "${options}" ${ARGN})
 
-	if(NOT ARG_NAME)
-		message(FATAL_ERROR "NAME is not set")
-	endif()
 	if(NOT ARG_OUTFILE)
-		set(ARG_OUTFILE "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_NAME}.out")
+		set(ARG_OUTFILE "${CMAKE_CURRENT_SOURCE_DIR}/${name}.out")
 	endif()
 	if(NOT ARG_SCRIPT)
-		message(FATAL_ERROR "SCRIPT is not set")
+		set(ARG_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/${name}")
 	endif()
 	if(NOT ARG_TIMEOUT)
-		set(ARG_TMIEOUT "0.5")
+		set(ARG_TIMEOUT "0.5")
 	endif()
 
 	list(APPEND arguments
@@ -43,25 +42,23 @@ function(add_plugin_test)
 		"--gamemode" "${ARG_SCRIPT}"
 	)
 
-	if(ARG_EXEC)
-		list(APPEND arguments "--exec" "${ARG_EXEC}")
+	set(config "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cfg")
+	if(EXISTS ${config})
+		list(APPEND arguments "--exec" "${config}")
 	endif()
 
 	file(READ "${ARG_OUTFILE}" out)
 
-	add_test("${ARG_NAME}" "samp-server-cli" ${arguments})
-	set_tests_properties("${ARG_NAME}" PROPERTIES
+	add_test(${name} "samp-server-cli" ${arguments})
+	set_tests_properties(${name} PROPERTIES
 		ENVIRONMENT "AMX_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
 		PASS_REGULAR_EXPRESSION "${out}"
 	)
 endfunction()
 
-file(GLOB amx_files "*.amx")
-foreach(amx IN LISTS amx_files)
-	get_filename_component(amx_name ${amx} NAME_WE)
-	add_plugin_test(CMAKE_IS_BUGGED
-		NAME ${amx_name}
-		SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/${amx_name}"
-		TIMEOUT 0.5
-	)
-endforeach()
+add_plugin_test("args")
+add_plugin_test("bounds")
+add_plugin_test("crash")
+add_plugin_test("invinstr")
+add_plugin_test("not_found")
+add_plugin_test("stacklow")
