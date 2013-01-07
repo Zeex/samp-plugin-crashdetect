@@ -9,5 +9,5 @@ Filterscripts
 \[debug\]  NonexistentNative1
 \[debug\]  NonexistentNative3
 \[debug\]  NonexistentNative2
-Script\[.*notfound.amx\]: Run time error 19: "File or function is not found"
+Script\[.*not_found.amx\]: Run time error 19: "File or function is not found"
 Number of vehicle models: 0
