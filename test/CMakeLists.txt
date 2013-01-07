@@ -9,24 +9,22 @@
 #          the server's root directory because otherwise the samp-server-cli
 #          script will not run.
 #
-# NOTE #4: Before running the tests you must copy the plugin to the server's
-#          %SAMP_SERVER_ROOT%/plugins. To semi-automate this you can make
-#          CMAKE_INSTALL_PREFIX point to %SAMP_SERVER_ROOT%/plugins and build
-#          the install target.
-#
-# NOTE #5: If some test do not complete in time because of slow server startup
-#          increase the timeout value (--timeout or -T option).
+# NOTE #5: If some tests do not complete in time because of slow server startup
+#          consider increasing the timeout (TIMEOUT argument).
 
 include(CMakeParseArguments)
 
 function(add_plugin_test)
 	set(name "${ARGV0}")
 
-	set(options "NAME" "OUTFILE" "SCRIPT" "TIMEOUT")
+	set(options "TARGET" "OUT_FILE" "SCRIPT" "TIMEOUT")
 	cmake_parse_arguments(ARG "" "${options}" ${ARGN})
 
-	if(NOT ARG_OUTFILE)
-		set(ARG_OUTFILE "${CMAKE_CURRENT_SOURCE_DIR}/${name}.out")
+	if(NOT ARG_TARGET)
+		set(ARG_TARGET ${CMAKE_PROJECT_NAME})
+	endif()
+	if(NOT ARG_OUT_FILE)
+		set(ARG_OUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${name}.out")
 	endif()
 	if(NOT ARG_SCRIPT)
 		set(ARG_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/${name}")
@@ -35,10 +33,12 @@ function(add_plugin_test)
 		set(ARG_TIMEOUT "0.5")
 	endif()
 
+	get_target_property(PLUGIN_PATH ${CMAKE_PROJECT_NAME} LOCATION)
+
 	list(APPEND arguments
 		"--output"
-		"--timeout" "${ARG_TIMEOUT}"
-		"--plugin" ${CMAKE_PROJECT_NAME}
+		"--timeout"  "${ARG_TIMEOUT}"
+		"--plugin"   "${PLUGIN_PATH}"
 		"--gamemode" "${ARG_SCRIPT}"
 	)
 
@@ -47,7 +47,7 @@ function(add_plugin_test)
 		list(APPEND arguments "--exec" "${config}")
 	endif()
 
-	file(READ "${ARG_OUTFILE}" out)
+	file(READ "${ARG_OUT_FILE}" out)
 
 	add_test(${name} "samp-server-cli" ${arguments})
 	set_tests_properties(${name} PROPERTIES
@@ -56,9 +56,13 @@ function(add_plugin_test)
 	)
 endfunction()
 
-add_plugin_test("args")
-add_plugin_test("bounds")
-add_plugin_test("crash")
-add_plugin_test("invinstr")
-add_plugin_test("not_found")
-add_plugin_test("stacklow")
+function(add_crashdetect_test)
+	add_plugin_test(${ARGN} TARGET crashdetect)
+endfunction()
+
+add_crashdetect_test(args)
+add_crashdetect_test(bounds)
+add_crashdetect_test(crash)
+add_crashdetect_test(invinstr)
+add_crashdetect_test(not_found)
+add_crashdetect_test(stacklow)
