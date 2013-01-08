@@ -28,7 +28,9 @@
 #include <list>
 #include <vector>
 
-#include "amx.h"
+#include <amx/amx.h>
+#include <amx/amxaux.h>
+
 #include "amxpathfinder.h"
 #include "fileutils.h"
 

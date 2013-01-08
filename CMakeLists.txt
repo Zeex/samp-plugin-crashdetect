@@ -17,7 +17,6 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/amx")
 
 set(SOURCES
-	"src/amx.h"
 	"src/amxdebuginfo.cpp"
 	"src/amxdebuginfo.h"
 	"src/amxpathfinder.cpp"

@@ -22,7 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "amx.h"
+#include <amx/amx.h>
+
 #include "compiler.h"
 #include "crashdetect.h"
 #include "fileutils.h"

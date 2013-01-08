@@ -22,7 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "amx.h"
+#include <amx/amx.h>
+
 #include "npcall.h"
 
 NPCall::NPCall(Type type, AMX *amx, cell index)

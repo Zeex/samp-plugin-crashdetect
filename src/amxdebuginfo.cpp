@@ -28,7 +28,9 @@
 #include <cstring>
 #include <vector>
 
-#include "amx.h"
+#include <amx/amx.h>
+#include <amx/amxdbg.h>
+
 #include "amxdebuginfo.h"
 
 std::vector<AMXDebugSymbolDim> AMXDebugSymbol::GetDims() const {

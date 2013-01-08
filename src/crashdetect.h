@@ -29,7 +29,8 @@
 #include <stack>
 #include <string>
 
-#include "amx.h"
+#include <amx/amx.h>
+
 #include "amxdebuginfo.h"
 #include "configreader.h"
 
