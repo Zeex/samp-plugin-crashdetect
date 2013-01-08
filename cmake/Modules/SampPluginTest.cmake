@@ -32,7 +32,7 @@ function(add_samp_plugin_test)
 		set(ARG_TIMEOUT "0.5")
 	endif()
 
-	get_target_property(PLUGIN_PATH ${CMAKE_PROJECT_NAME} LOCATION)
+	get_target_property(PLUGIN_PATH ${ARG_TARGET} LOCATION)
 
 	list(APPEND arguments
 		"--output"
