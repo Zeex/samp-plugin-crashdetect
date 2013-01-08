@@ -16,7 +16,7 @@ include(CMakeParseArguments)
 function(add_samp_plugin_test)
 	set(name "${ARGV0}")
 
-	set(options "TARGET" "OUT_FILE" "SCRIPT" "TIMEOUT")
+	set(options "TARGET" "OUT_FILE" "SCRIPT" "TIMEOUT" "EXEC")
 	cmake_parse_arguments(ARG "" "${options}" ${ARGN})
 
 	if(NOT ARG_TARGET)
@@ -31,6 +31,9 @@ function(add_samp_plugin_test)
 	if(NOT ARG_TIMEOUT)
 		set(ARG_TIMEOUT "0.5")
 	endif()
+	if(NOT ARG_EXEC)
+		set(ARG_EXEC "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cfg")
+	endif()
 
 	get_target_property(PLUGIN_PATH ${ARG_TARGET} LOCATION)
 
@@ -41,9 +44,8 @@ function(add_samp_plugin_test)
 		"--gamemode" "${ARG_SCRIPT}"
 	)
 
-	set(config "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cfg")
-	if(EXISTS ${config})
-		list(APPEND arguments "--exec" "${config}")
+	if(EXISTS "${ARG_EXEC}")
+		list(APPEND arguments "--exec" "${ARG_EXEC}")
 	endif()
 
 	file(READ "${ARG_OUT_FILE}" out)
