@@ -28,25 +28,23 @@ function(add_samp_plugin_test)
 	if(NOT ARG_SCRIPT)
 		set(ARG_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/${name}")
 	endif()
-	if(NOT ARG_TIMEOUT)
-		set(ARG_TIMEOUT "0.5")
-	endif()
 	if(NOT ARG_EXEC)
 		set(ARG_EXEC "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cfg")
+	endif()
+	if(ARG_TIMEOUT)
+		list(APPEND arguments "--timeout" "${ARG_TIMEOUT}")
+	endif()
+	if(EXISTS "${ARG_EXEC}")
+		list(APPEND arguments "--exec" "${ARG_EXEC}")
 	endif()
 
 	get_target_property(PLUGIN_PATH ${ARG_TARGET} LOCATION)
 
 	list(APPEND arguments
 		"--output"
-		"--timeout"  "${ARG_TIMEOUT}"
 		"--plugin"   "${PLUGIN_PATH}"
 		"--gamemode" "${ARG_SCRIPT}"
 	)
-
-	if(EXISTS "${ARG_EXEC}")
-		list(APPEND arguments "--exec" "${ARG_EXEC}")
-	endif()
 
 	file(READ "${ARG_OUT_FILE}" out)
 
