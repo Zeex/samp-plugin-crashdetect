@@ -20,7 +20,7 @@ function(add_samp_plugin_test)
 	cmake_parse_arguments(ARG "" "${options}" ${ARGN})
 
 	if(NOT ARG_TARGET)
-		set(ARG_TARGET ${CMAKE_PROJECT_NAME})
+		set(ARG_TARGET ${PROJECT_NAME})
 	endif()
 	if(NOT ARG_OUT_FILE)
 		set(ARG_OUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${name}.out")
