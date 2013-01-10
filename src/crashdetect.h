@@ -38,14 +38,15 @@ class AMXError;
 class NPCall;
 
 class CrashDetect : public AMXService<CrashDetect> {
-public:
 	friend class AMXService<CrashDetect>;
-
+public:
 	virtual int Load();
 	virtual int Unload();
 
+public:
 	CrashDetect(AMX *amx);
 
+public:
 	int DoAmxCallback(cell index, cell *result, cell *params);
 	int DoAmxExec(cell *retval, int index);
 	int DoAmxRelease(cell amx_addr, void *releaser);
@@ -55,10 +56,11 @@ public:
 	void HandleExecError(int index, const AMXError &error);
 	void HandleReleaseError(cell address, void *releaser);
 
+	void DieOrContinue();
+
+public:
 	static void OnException(void *context);
 	static void OnInterrupt(void *context);
-
-	static void DieOrContinue();
 
 	static void PrintAmxBacktrace();
 	static void PrintSystemBacktrace(void *context = 0);
@@ -67,15 +69,13 @@ public:
 
 private:
 	AMXDebugInfo debugInfo_;
-
 	std::string amxPath_;
 	std::string amxName_;
-
 	AMX_CALLBACK prevCallback_;
+	ConfigReader serverCfg;
 
 	static std::stack<NPCall*> npCalls_;
 	static bool errorCaught_;
-	static ConfigReader serverCfg;
 };
 
 #endif // !CRASHDETECT_H

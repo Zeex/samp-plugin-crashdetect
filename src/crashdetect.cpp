@@ -50,8 +50,7 @@
 using namespace amxutils;
 
 bool CrashDetect::errorCaught_ = false;
-std::stack<NPCall*> CrashDetect::npCalls_;
-ConfigReader CrashDetect::serverCfg("server.cfg");
+std::stack<NPCall*> CrashDetect::npCalls_;;
 
 // static
 void CrashDetect::OnException(void *context) {
@@ -85,6 +84,7 @@ void CrashDetect::DieOrContinue() {
 
 CrashDetect::CrashDetect(AMX *amx)
 	: AMXService<CrashDetect>(amx)
+	, serverCfg("server.cfg")
 {
 }
 
