@@ -98,6 +98,11 @@ if(UNIX)
 	add_definitions(-DLINUX)
 endif()
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
+		COMPILE_FLAGS " -Wno-attributes -Wno-ignored-attributes")
+endif()
+
 target_link_Libraries(${PROJECT_NAME} amx)
 
 git_describe(description --match v[0-9]*.[0-9]**)
