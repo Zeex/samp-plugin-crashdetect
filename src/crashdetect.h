@@ -31,6 +31,7 @@
 
 #include "amx.h"
 #include "amxdebuginfo.h"
+#include "amxscript.h"
 #include "amxservice.h"
 #include "configreader.h"
 
@@ -68,12 +69,14 @@ public:
 	static void logprintf(const char *format, ...);
 
 private:
+	AMXScript amx_;
 	AMXDebugInfo debugInfo_;
 	std::string amxPath_;
 	std::string amxName_;
 	AMX_CALLBACK prevCallback_;
 	ConfigReader serverCfg;
 
+private:
 	static std::stack<NPCall*> npCalls_;
 	static bool errorCaught_;
 };

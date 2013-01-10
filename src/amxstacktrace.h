@@ -30,8 +30,8 @@
 #include <vector>
 #include <utility>
 
-#include "amx.h"
 #include "amxdebuginfo.h"
+#include "amxscript.h"
 
 class AMXStackFrame {
 public:
@@ -45,14 +45,14 @@ public:
 		return frameAddr_ != 0;
 	}
 
-	AMXStackFrame(AMX *amx);
-	AMXStackFrame(AMX *amx, ucell frmAddr, const AMXDebugInfo *debugInfo = 0);
-	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo *debugInfo = 0);
-	AMXStackFrame(AMX *amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo *debugInfo = 0);
+	AMXStackFrame(AMXScript amx);
+	AMXStackFrame(AMXScript amx, ucell frmAddr, const AMXDebugInfo *debugInfo = 0);
+	AMXStackFrame(AMXScript amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo *debugInfo = 0);
+	AMXStackFrame(AMXScript amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo *debugInfo = 0);
 
 	virtual ~AMXStackFrame();
 
-	AMX *GetAMX() { return amx_; }
+	AMXScript amx() { return amx_; }
 	const AMXDebugInfo *GetDebugInfo() const { return debugInfo_; }
 
 	bool HasDebugInfo() const {
@@ -71,14 +71,7 @@ public:
 	// Converts to a single-line human-friendly string (good for stack traces).
 	virtual std::string AsString() const;
 
-protected: // utility methods
-	unsigned char *GetDataPtr() const;
-	unsigned char *GetCodePtr() const;
-
-	// Gets a pointer to public function name string stored in the AMX
-	// (i.e. no copying involved).
-	const char *GetPublicFuncName(ucell address) const;
-
+protected:
 	// Match function address against items stored in public table or main().
 	// Note: IsPublicFuncAddr() returns true for main().
 	bool IsPublicFuncAddr(ucell address) const;
@@ -91,8 +84,8 @@ protected: // utility methods
 
 	// Extract string contents from the AMX image. All of these will terminate
 	// when encounter a non-printable character.
-	std::string GetPackedAMXString(cell *string, std::size_t size) const;
-	std::string GetUnpackedAMXString(cell *string, std::size_t size) const;
+	std::string GetPackedAMXString(const cell *string, std::size_t size) const;
+	std::string GetUnpackedAMXString(const cell *string, std::size_t size) const;
 	std::pair<std::string, bool> GetAMXString(cell address, std::size_t size) const;
 
 	// Returns debug symbol corresponding to the called function. If debug info
@@ -108,7 +101,7 @@ private:
 	void Init(ucell frameAddr, ucell retAddr = 0, ucell funcAddr = 0);
 
 private:
-	AMX *amx_;
+	AMXScript amx_;
 	ucell frameAddr_;
 	ucell retAddr_;
 	ucell funcAddr_;

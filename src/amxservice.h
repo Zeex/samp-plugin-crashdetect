@@ -27,26 +27,25 @@
 
 #include <map>
 
-#include "amx.h"
+#include "amxscript.h"
 
 template<typename T>
 class AMXService {
 public:
-	AMXService(AMX *amx) : amx_(amx) {}
+	AMXService(AMXScript amx) : amx_(amx) {}
 
-	AMX *amx() { return amx_; }
-	const AMX *amx() const { return amx_; }
+	AMXScript amx() { return amx_; }
 
 	virtual int Load() = 0;
 	virtual int Unload() = 0;
 
 public:
-	static T *Create(AMX *amx);
-	static T *Get(AMX *amx);
-	static void Destroy(AMX *amx);
+	static T *Create(AMXScript amx);
+	static T *Get(AMXScript amx);
+	static void Destroy(AMXScript amx);
 
 private:
-	AMX *amx_;
+	AMXScript amx_;
 
 private:
 	typedef std::map<AMX*, T*> ServiceMap;
@@ -58,7 +57,7 @@ typename AMXService<T>::ServiceMap AMXService<T>::service_map_;
 
 // static
 template<typename T>
-T *AMXService<T>::Create(AMX *amx) {
+T *AMXService<T>::Create(AMXScript amx) {
 	T *service = new T(amx);
 	service_map_.insert(std::make_pair(amx, service));
 	return service;
@@ -66,7 +65,7 @@ T *AMXService<T>::Create(AMX *amx) {
 
 // static
 template<typename T>
-T *AMXService<T>::Get(AMX *amx) {
+T *AMXService<T>::Get(AMXScript amx) {
 	typename ServiceMap::const_iterator iterator = service_map_.find(amx);
 	if (iterator != service_map_.end()) {
 		return iterator->second;
@@ -76,7 +75,7 @@ T *AMXService<T>::Get(AMX *amx) {
 
 // static
 template<typename T>
-void AMXService<T>::Destroy(AMX *amx) {
+void AMXService<T>::Destroy(AMXScript amx) {
 	typename ServiceMap::iterator iterator = service_map_.find(amx);
 	if (iterator != service_map_.end()) {
 		T *service = iterator->second;

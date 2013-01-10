@@ -25,20 +25,20 @@
 #ifndef NPCALL_H
 #define NPCALL_H
 
-#include "amx.h"
+#include "amxscript.h"
 
 class NPCall {
 public:
 	enum Type { NATIVE, PUBLIC };
 
-	NPCall(Type type, AMX *amx, cell index);
-	NPCall(Type type, AMX *amx, cell index, cell frm, cell cip);
+	NPCall(Type type, AMXScript amx, cell index);
+	NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip);
 
-	static NPCall Public(AMX *amx, cell index);
-	static NPCall Native(AMX *amx, cell index);
+	static NPCall Public(AMXScript amx, cell index);
+	static NPCall Native(AMXScript amx, cell index);
 
 	inline Type type() const { return type_; }
-	inline AMX *amx() const { return amx_; }
+	inline AMXScript amx() const { return amx_; }
 	inline cell index() const { return index_; }
 	inline cell frm() const { return frm_; }
 	inline cell cip() const { return cip_; }
@@ -48,7 +48,7 @@ public:
 
 private:
 	Type type_;
-	AMX  *amx_;
+	AMXScript amx_;
 	cell frm_;
 	cell cip_;
 	cell index_;
