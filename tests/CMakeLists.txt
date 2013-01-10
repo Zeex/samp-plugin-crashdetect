@@ -6,7 +6,5 @@ endmacro()
 
 test("args")
 test("bounds")
-test("crash")
-test("invinstr")
 test("not_found")
 test("stacklow")
