@@ -1,5 +1,12 @@
 \[debug\] Run time error 4: "Array index out of bounds"
-\[debug\]  Accessing element at index 100 past array upper bound 4
+\[debug\]  Accessing element at index 100 past array upper bound 0
 \[debug\] AMX backtrace:
-\[debug\] #0 000000b0 in do_out_of_bounds \(\) at test.pwn:18
-\[debug\] #1 00000034 in public OnGameModeInit \(\) at test.pwn:8
+\[debug\] #0 000000d8 in public out_of_bounds_pos \(\) at test\.pwn:15
+\[debug\] #1 native CallLocalFunction \(\) \[080dc980\] from samp03svr
+\[debug\] #2 00000038 in main \(\) at test\.pwn:7
+\[debug\] Run time error 4: "Array index out of bounds"
+\[debug\]  Accessing element at negative index -100
+\[debug\] AMX backtrace:
+\[debug\] #0 0000015c in public out_of_bounds_neg \(\) at test\.pwn:22
+\[debug\] #1 native CallLocalFunction \(\) \[080dc980\] from samp03svr
+\[debug\] #2 0000006c in main \(\) at test\.pwn:8

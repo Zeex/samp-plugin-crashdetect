@@ -1,21 +1,23 @@
 #include <a_samp>
 
-main() {}
+public out_of_bounds_pos();
+public out_of_bounds_neg();
 
-public OnGameModeInit()
-{
-	do_out_of_bounds();
-	return 1;
+main() {
+	CallLocalFunction("out_of_bounds_pos", "");
+	CallLocalFunction("out_of_bounds_neg", "");
 }
 
-stock do_out_of_bounds()
+public out_of_bounds_pos()
 {
-	new bla[5];
+	new a[1];
+	new i = 100;
+	return a[i];
+}
 
-	new fffuuuu = 0;
-
-	fffuuuu = 100;
-	bla[fffuuuu] = 100;
-
-	return bla[fffuuuu];
+public out_of_bounds_neg()
+{
+	new a[5];
+	new i = -100;
+	return a[i];
 }
