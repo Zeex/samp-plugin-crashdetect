@@ -1,29 +1,60 @@
 #include <a_samp>
 
-forward call_f1(argument);
+end() {
+	#emit halt 27
+}
 
 main() {
-	do_f1("HELL YEAH BABY!");
+	f1(123);
 }
 
-do_f1(text[]) {
-	print(text);
-	CallLocalFunction("call_f1", "i", 0);
+f1(x) {
+	f2(true, false);
+	return x;
 }
 
-public call_f1(argument) {
-	f1(argument);
+f2(bool:b1, bool:b2) {
+	f3(1.5);
+	return b1 && b2;
 }
 
-f1(i) {
-	return f2(i + 100);
+f3(Float:f) {
+	f4("hi there");
+	return _:f;
 }
 
-f2(j) {
-	return f3(j + 200);
+f4(s[]) {
+	new a[] = {3, 2, 1};
+	f5(a);
+	return s[0];
 }
 
-f3(k) {
-	new a[5];
-	return a[k];
+f5(a[3]) {
+	new aa[][] = {
+		{0, 0, 0, 0},
+		{0, 0, 0, 0},
+		{0, 0, 0, 0}
+	};
+	f6(aa);
+	return a[0];
+}
+
+enum struct {
+	abc
+};
+
+f6(aa[3][4]) {
+	new e[struct] = { 0xdeadbeef };
+	f7(e);
+	return aa[0][0];
+}
+
+f7(e[struct]) {
+	f8(UknownTag:999);
+	return e[abc];
+}
+
+f8(UknownTag:n) {
+	end();
+	return _:n;
 }

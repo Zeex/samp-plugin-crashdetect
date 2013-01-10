@@ -13,14 +13,16 @@ Filterscripts
 ---------------.*
   Loaded [0-9]+ filterscripts\.
 
-HELL YEAH BABY!
-\[debug\] Run time error 4: "Array index out of bounds"
-\[debug\]  Accessing element at index 300 past array upper bound 4
+\[debug\] Run time error 27: "General error \(unknown or unspecific error\)"
 \[debug\] AMX backtrace:
-\[debug\] #0 000001a0 in f3 \(k=300\) at test.pwn:28
-\[debug\] #1 0000015c in f2 \(j=100\) at test.pwn:23
-\[debug\] #2 00000124 in f1 \(i=0\) at test.pwn:19
-\[debug\] #3 000000e8 in public call_f1 \(argument=0\) at test.pwn:15
-\[debug\] #4 native CallLocalFunction \(\) \[080dc980\] from samp03svr
-\[debug\] #5 000000a8 in do_f1 \(text\[\]=@0x00000000 "HELL YEAH BABY!"\) at test.pwn:11
-\[debug\] #6 0000002c in main \(\) at test.pwn:6
+\[debug\] #0 00000018 in end \(\) at test\.pwn:3
+\[debug\] #1 000002dc in f8 \(UknownTag:n=999\) at test\.pwn:59
+\[debug\] #2 000002ac in f7 \(e\[struct:1\]=@0x00003f7c\) at test\.pwn:54
+\[debug\] #3 00000258 in f6 \(aa\[3\]\[4\]=@0x00003f90\) at test\.pwn:49
+\[debug\] #4 000001f0 in f5 \(a\[3\]=@0x00003fdc ""\) at test\.pwn:39
+\[debug\] #5 00000174 in f4 \(s\[\]=@0x00000000 "hi there"\) at test\.pwn:29
+\[debug\] #6 00000118 in f3 \(Float:f=1\.50000\) at test\.pwn:23
+\[debug\] #7 000000b8 in f2 \(bool:b1=true, bool:b2=false\) at test\.pwn:18
+\[debug\] #8 00000080 in f1 \(x=123\) at test\.pwn:13
+\[debug\] #9 00000048 in main \(\) at test\.pwn:8
+Script\[.*test\.amx\]: Run time error 27: "\(unknown\)"
