@@ -1,10 +1,16 @@
 #include <a_samp>
-
-end() {
-	#emit halt 27
-}
+#include <test>
 
 main() {
+	CallLocalFunction("test", "");
+	TestExit();
+}
+
+public test() {
+	begin();
+}
+
+begin() {
 	f1(123);
 }
 
@@ -57,4 +63,8 @@ f7(e[struct]) {
 f8(UknownTag:n) {
 	end();
 	return _:n;
+}
+
+end() {
+	#emit halt 27
 }

@@ -1,4 +1,13 @@
+#include <test>
+
+public test();
+
 main() {
+	CallLocalFunction("test", "");
+	TestExit();
+}
+
+public test() {
 	function1();
 }
 

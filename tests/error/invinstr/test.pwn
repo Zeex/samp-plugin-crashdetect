@@ -1,7 +1,9 @@
 #include <a_samp>
+#include <test>
 
 main() {
 	f();
+	TestExit();
 }
 
 f() {
