@@ -7,14 +7,15 @@ may contain a description of the error, the stack trace of the offending script
 and additionally the system call stack in case of a server crash. This can
 greatly reduce amount of time spent spotting the erroneous code and fixing it.
 
-See the [original](http://forum.sa-mp.com/showthread.php?t=262796) topic on
-the SA-MP Forums for more information and examples.
+See the [original][forum] topic on the SA-MP Forums for more information and
+examples.
 
 
 Download
 --------
 
-Get latest binaries for Windows and Linux from the [**`downloads`**](https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads) branch.
+Get latest binaries for Windows and Linux from the [**`downloads`**][downloads]
+branch.
 
 
 Things you might want to know
@@ -62,3 +63,6 @@ by setting the `run_on_error` option in `server.cfg`, e.g.
 You might want to make the server automatically exit on first runtime error:
 
     die_on_error 1
+
+[forum]: http://forum.sa-mp.com/showthread.php?t=262796
+[downloads]: https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads
