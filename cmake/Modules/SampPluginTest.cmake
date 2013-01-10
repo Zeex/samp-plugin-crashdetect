@@ -50,7 +50,7 @@ function(add_samp_plugin_test)
 
 	add_test(${name} "samp-server-cli" ${arguments})
 	set_tests_properties(${name} PROPERTIES
-		ENVIRONMENT "AMX_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
+		ENVIRONMENT "AMX_PATH=${CMAKE_CURRENT_SOURCE_DIR}/${name}"
 		PASS_REGULAR_EXPRESSION "${out}"
 	)
 endfunction()
