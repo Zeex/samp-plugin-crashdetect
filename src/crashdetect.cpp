@@ -34,9 +34,10 @@
 #include <amx/amxaux.h>
 
 #include "amxdebuginfo.h"
+#include "amxerror.h"
 #include "amxpathfinder.h"
+#include "amxscript.h"
 #include "amxstacktrace.h"
-#include "amxutils.h"
 #include "compiler.h"
 #include "configreader.h"
 #include "crashdetect.h"
@@ -48,34 +49,13 @@
 
 #define AMX_EXEC_GDK (-10)
 
-using namespace amxutils;
-
-bool crashdetect::errorCaught_ = false;
-std::stack<NPCall*> crashdetect::npCalls_;
-ConfigReader crashdetect::serverCfg("server.cfg");
-crashdetect::InstanceMap crashdetect::instances_;
+bool CrashDetect::errorCaught_ = false;
+std::stack<NPCall*> CrashDetect::npCalls_;;
 
 // static
-crashdetect *crashdetect::GetInstance(AMX *amx) {
-	InstanceMap::const_iterator iterator = instances_.find(amx);
-	if (iterator == instances_.end()) {
-		crashdetect *c = new crashdetect(amx);
-		instances_.insert(std::make_pair(amx, c));
-		return c;
-	}
-	return iterator->second;
-}
-
-// static
-void crashdetect::DestroyInstance(AMX *amx) {
-	instances_.erase(amx);
-}
-
-// static
-void crashdetect::OnException(void *context) {
+void CrashDetect::OnException(void *context) {
 	if (!npCalls_.empty()) {
-		AMX *amx = npCalls_.top()->amx();
-		GetInstance(amx)->HandleException();
+		CrashDetect::Get(npCalls_.top()->amx())->HandleException();
 	} else {
 		logprintf("Server crashed due to an unknown error");
 	}
@@ -83,10 +63,9 @@ void crashdetect::OnException(void *context) {
 }
 
 // static
-void crashdetect::OnInterrupt(void *context) {
+void CrashDetect::OnInterrupt(void *context) {
 	if (!npCalls_.empty()) {
-		AMX *amx = npCalls_.top()->amx();
-		GetInstance(amx)->HandleInterrupt();
+		CrashDetect::Get(npCalls_.top()->amx())->HandleInterrupt();
 	} else {
 		logprintf("Server received interrupt signal");
 	}
@@ -94,16 +73,22 @@ void crashdetect::OnInterrupt(void *context) {
 }
 
 // static
-void crashdetect::DieOrContinue() {
+void CrashDetect::DieOrContinue() {
 	if (serverCfg.GetOption("die_on_error", false)) {
 		logprintf("Aborting...");
 		std::exit(EXIT_FAILURE);
 	}
 }
 
-crashdetect::crashdetect(AMX *amx)
-	: amx_(amx)
+CrashDetect::CrashDetect(AMX *amx)
+	: AMXService<CrashDetect>(amx)
+	, amx_(amx)
+	, prevCallback_(0)
+	, serverCfg("server.cfg")
 {
+}
+
+int CrashDetect::Load() {
 	AMXPathFinder pathFinder;
 	pathFinder.AddSearchPath("gamemodes");
 	pathFinder.AddSearchPath("filterscripts");
@@ -127,112 +112,103 @@ crashdetect::crashdetect(AMX *amx)
 		}
 	}
 
-	amxPath_ = pathFinder.FindAMX(amx_);
+	amxPath_ = pathFinder.FindAMX(this->amx());
 	amxName_ = fileutils::GetFileName(amxPath_);
 
-	if (!amxPath_.empty() && AMXDebugInfo::IsPresent(amx_)) {
+	if (!amxPath_.empty() && AMXDebugInfo::IsPresent(this->amx())) {
 		debugInfo_.Load(amxPath_);
 	}
 
-	amx_->sysreq_d = 0;
-	prevCallback_ = amx_->callback;
+	amx_.DisableSysreqD();
+	prevCallback_ = amx_.GetCallback();
+
+	return AMX_ERR_NONE;
 }
 
-int crashdetect::DoAmxCallback(cell index, cell *result, cell *params) {
-	NPCall call = NPCall::Native(amx_, index);
+int CrashDetect::Unload() {
+	return AMX_ERR_NONE;
+}
 
+int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
+	NPCall call = NPCall::Native(amx(), index);
 	npCalls_.push(&call);
-	int retcode = prevCallback_(amx_, index, result, params);
+	int retcode = prevCallback_(amx(), index, result, params);
 	npCalls_.pop();
-
 	return retcode;
 }
 
-int crashdetect::DoAmxExec(cell *retval, int index) {
-	NPCall call = NPCall::Public(amx_, index);
-
+int CrashDetect::DoAmxExec(cell *retval, int index) {	
+	NPCall call = NPCall::Public(amx(), index);
 	npCalls_.push(&call);
 
-	int retcode = ::amx_Exec(amx_, retval, index);
+	int retcode = ::amx_Exec(amx(), retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
-		amx_Error(amx_, index, retcode);
+		amx_Error(amx(), index, retcode);
 	} else {
 		errorCaught_ = false;
 	}
 
 	npCalls_.pop();
-
 	return retcode;
 }
 
-int crashdetect::DoAmxRelease(cell amx_addr, void *releaser) {
-	if (amx_addr < amx_->hlw || amx_addr >= amx_->stk) {
+int CrashDetect::DoAmxRelease(cell amx_addr, void *releaser) {
+	if (amx_addr < amx_.GetHlw() || amx_addr >= amx_.GetStk()) {
 		HandleReleaseError(amx_addr, releaser);
 	}
-	return amx_Release(amx_, amx_addr);
+	return amx_Release(amx(), amx_addr);
 }
 
-void crashdetect::HandleExecError(int index, int error) {
-	crashdetect::errorCaught_ = true;
+void CrashDetect::HandleExecError(int index, const AMXError &error) {
+	CrashDetect::errorCaught_ = true;
 
-	if (error == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
-		error = AMX_ERR_NONE;
+	if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		return;
 	}
 
-	logprintf("Run time error %d: \"%s\"", error, aux_StrError(error));
+	logprintf("Run time error %d: \"%s\"", error, error.string());
 
-	switch (error) {
+	switch (error.code()) {
 		case AMX_ERR_BOUNDS: {
-			cell bound = *(reinterpret_cast<cell*>(GetCodePtr(amx_) + amx_->cip + sizeof(cell)));
-			cell index = amx_->pri;
-
+			cell bound = *(reinterpret_cast<cell*>(amx_.GetCode() + amx_.GetCip() + sizeof(cell)));
+			cell index = amx_.GetPri();
 			if (index < 0) {
 				logprintf(" Accessing element at negative index %d", index);
 			} else {
 				logprintf(" Accessing element at index %d past array upper bound %d", index, bound);
 			}
-
 			break;
 		}
-
 		case AMX_ERR_NOTFOUND: {
-			AMX_FUNCSTUBNT *natives = GetNativeTable(amx_);
-			int numNatives = GetNumNatives(amx_);
-
+			AMX_FUNCSTUBNT *natives = amx_.GetNatives();
+			int numNatives = amx_.GetNumNatives();
 			for (int i = 0; i < numNatives; ++i) {
 				if (natives[i].address == 0) {
-					char *name = reinterpret_cast<char*>(natives[i].nameofs + amx_->base);
-					logprintf(" %s", name);
+					logprintf(" %s", amx_.GetName(natives[i].nameofs));
 				}
 			}
-
 			break;
 		}
-
 		case AMX_ERR_STACKERR:
-			logprintf(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X", amx_->stk, amx_->hea);
+			logprintf(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X", amx_.GetStk(), amx_.GetHea());
 			break;
-
 		case AMX_ERR_STACKLOW:
-			logprintf(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X", amx_->stk, amx_->stp);
+			logprintf(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X", amx_.GetStk(), amx_.GetStp());
 			break;
-
 		case AMX_ERR_HEAPLOW:
-			logprintf(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_->hea, amx_->hlw);
+			logprintf(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx_.GetHea(), amx_.GetHlw());
 			break;
-
 		case AMX_ERR_INVINSTR: {
-			cell opcode = *(reinterpret_cast<cell*>(GetCodePtr(amx_) + amx_->cip));
-			logprintf(" Unknown opcode 0x%x at address 0x%08X", opcode , amx_->cip);
+			cell opcode = *(reinterpret_cast<cell*>(amx_.GetCode() + amx_.GetCip()));
+			logprintf(" Unknown opcode 0x%x at address 0x%08X", opcode , amx_.GetCip());
 			break;
 		}
 	}
 
-	if (error != AMX_ERR_NOTFOUND &&
-		error != AMX_ERR_INDEX &&
-		error != AMX_ERR_CALLBACK &&
-		error != AMX_ERR_INIT)
+	if (error.code() != AMX_ERR_NOTFOUND &&
+		error.code() != AMX_ERR_INDEX &&
+		error.code() != AMX_ERR_CALLBACK &&
+		error.code() != AMX_ERR_INIT)
 	{
 		PrintAmxBacktrace();
 	}
@@ -245,17 +221,17 @@ void crashdetect::HandleExecError(int index, int error) {
 	DieOrContinue();
 }
 
-void crashdetect::HandleException() {
+void CrashDetect::HandleException() {
 	logprintf("Server crashed while executing %s", amxName_.c_str());
 	PrintAmxBacktrace();
 }
 
-void crashdetect::HandleInterrupt() {
+void CrashDetect::HandleInterrupt() {
 	logprintf("Server received interrupt signal while executing %s", amxName_.c_str());
 	PrintAmxBacktrace();
 }
 
-void crashdetect::HandleReleaseError(cell address, void *releaser) {
+void CrashDetect::HandleReleaseError(cell address, void *releaser) {
 	std::string plugin = fileutils::GetFileName(os::GetModulePathFromAddr(releaser));
 	if (plugin.empty()) {
 		plugin.assign("<unknown>");
@@ -266,15 +242,15 @@ void crashdetect::HandleReleaseError(cell address, void *releaser) {
 }
 
 // static
-void crashdetect::PrintAmxBacktrace() {
+void CrashDetect::PrintAmxBacktrace() {
 	if (npCalls_.empty()) {
 		return;
 	}
 
-	AMX *topAmx = npCalls_.top()->amx();
+	AMXScript topAmx = npCalls_.top()->amx();
 
-	cell frm = topAmx->frm;
-	cell cip = topAmx->cip;
+	cell frm = topAmx.GetFrm();
+	cell cip = topAmx.GetCip();
 	int level = 0;
 
 	if (cip == 0) {
@@ -287,36 +263,37 @@ void crashdetect::PrintAmxBacktrace() {
 
 	while (!npCalls.empty() && cip != 0) {
 		const NPCall *call = npCalls.top();
+		AMXScript amx = call->amx();
 
 		// We don't trace calls across AMX bounds i.e. outside of top-level
 		// function's AMX instance.
-		if (call->amx() != topAmx) {
+		if (amx != topAmx) {
 			assert(level != 0);
 			break;
 		}
 
 		if (call->IsNative()) {
-			AMX_NATIVE address = reinterpret_cast<AMX_NATIVE>(GetNativeAddr(call->amx(), call->index()));
+			AMX_NATIVE address = reinterpret_cast<AMX_NATIVE>(amx.GetNativeAddr(call->index()));
 			if (address != 0) {
 				std::string module = fileutils::GetFileName(os::GetModulePathFromAddr((void*)address));
 				std::string from = " from " + module;
 				if (module.empty()) {
 					from.clear();
 				}
-				const char *name = GetNativeName(call->amx(), call->index());
+				const char *name = amx.GetNativeName(call->index());
 				if (name != 0) {
 					logprintf("#%d native %s () [%08x]%s", level++, name, address, from.c_str());
 				}
 			}
 		} else if (call->IsPublic()) {
-			AMXDebugInfo &debugInfo = instances_[call->amx()]->debugInfo_;
+			AMXDebugInfo &debugInfo = CrashDetect::Get(amx)->debugInfo_;
 
-			PushStack(call->amx(), cip); // push return address
-			PushStack(call->amx(), frm); // push frame pointer
+			amx.PushStack(cip); // push return address
+			amx.PushStack(frm); // push frame pointer
 
 			std::list<AMXStackFrame> frames;
 			{
-				AMXStackTrace trace(call->amx(), call->amx()->stk, &debugInfo);
+				AMXStackTrace trace(amx, amx.GetStk(), &debugInfo);
 				do {
 					AMXStackFrame frame = trace.GetFrame();
 					if (frame) {
@@ -327,24 +304,24 @@ void crashdetect::PrintAmxBacktrace() {
 				} while (trace.Next());
 			}
 
-			frm = PopStack(call->amx()); // pop frame pointer
-			cip = PopStack(call->amx()); // pop return address
+			frm = amx.PopStack(); // pop frame pointer
+			cip = amx.PopStack(); // pop return address
 
 			if (frames.empty()) {
-				ucell epAddr = GetPublicAddr(call->amx(), call->index());
-				frames.push_front(AMXStackFrame(call->amx(), frm, 0, epAddr, &debugInfo));
+				ucell epAddr = amx.GetPublicAddr(call->index());
+				frames.push_front(AMXStackFrame(amx, frm, 0, epAddr, &debugInfo));
 			} else {
 				if (!debugInfo.IsLoaded()) {
 					AMXStackFrame &bottom = frames.back();
-					bottom = AMXStackFrame(call->amx(),
+					bottom = AMXStackFrame(amx,
 						bottom.GetFrameAddr(),
 						bottom.GetRetAddr(),
-						GetPublicAddr(call->amx(), call->index()),
+						amx.GetPublicAddr(call->index()),
 						&debugInfo);
 				}
 			}
 
-			std::string &amxName = instances_[call->amx()]->amxName_;
+			std::string &amxName = CrashDetect::Get(amx)->amxName_;
 			for (std::list<AMXStackFrame>::const_iterator iterator = frames.begin();
 					iterator != frames.end(); ++iterator)
 			{
@@ -364,7 +341,7 @@ void crashdetect::PrintAmxBacktrace() {
 }
 
 // static
-void crashdetect::PrintSystemBacktrace(void *context) {
+void CrashDetect::PrintSystemBacktrace(void *context) {
 	logprintf("System backtrace:");
 
 	int level = 0;
@@ -387,7 +364,7 @@ void crashdetect::PrintSystemBacktrace(void *context) {
 }
 
 // static
-void crashdetect::logprintf(const char *format, ...) {
+void CrashDetect::logprintf(const char *format, ...) {
 	std::va_list va;
 	va_start(va, format);
 

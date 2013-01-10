@@ -22,27 +22,20 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "amxscript.h"
-#include "npcall.h"
+#ifndef AMXERROR_H
+#define AMXERROR_H
 
-NPCall::NPCall(Type type, AMXScript amx, cell index)
-	: type_(type), amx_(amx), index_(index)
-{
-	frm_ = amx_.GetFrm();
-	cip_ = amx_.GetCip();
-}
+class AMXError {
+public:
+	AMXError(int error_code);
 
-NPCall::NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
-	: type_(type), amx_(amx), index_(index), frm_(frm), cip_(cip)
-{
-}
+	int code() const { return code_; }
+	void set_code(int code) { code_ = code; }
 
-// static
-NPCall NPCall::Public(AMXScript amx, cell index) {
-	return NPCall(PUBLIC, amx, index);
-}
+	const char *string() const;
 
-// static
-NPCall NPCall::Native(AMXScript amx, cell index) {
-	return NPCall(NATIVE, amx, index);
-}
+private:
+	int code_;
+};
+
+#endif // !AMXERROR_H

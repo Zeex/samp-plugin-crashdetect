@@ -32,6 +32,7 @@
 #include <amx/amxaux.h>
 
 #include "amxpathfinder.h"
+#include "amxscript.h"
 #include "fileutils.h"
 
 AMXPathFinder::AMXFile::AMXFile(const std::string &name)
@@ -66,7 +67,7 @@ void AMXPathFinder::AddSearchPath(const std::string &path) {
 	searchPaths_.push_back(path);
 }
 
-std::string AMXPathFinder::FindAMX(AMX *amx) {
+std::string AMXPathFinder::FindAMX(AMXScript amx) {
 	// Look up in cache first 
 	AMXToStringMap::const_iterator it = amxToString_.find(amx);
 	if (it != amxToString_.end()) {
@@ -110,7 +111,7 @@ std::string AMXPathFinder::FindAMX(AMX *amx) {
 			mapIter != stringToAMXFile_.end(); ++mapIter) 
 	{
 		const AMX *otherAmx = mapIter->second->GetAmx();
-		if (std::memcmp(amx->base, otherAmx->base, sizeof(AMX_HEADER)) == 0) {
+		if (std::memcmp(amx.GetHeader(), otherAmx->base, sizeof(AMX_HEADER)) == 0) {
 			result = mapIter->first;
 			amxToString_.insert(std::make_pair(amx, result));
 			break;

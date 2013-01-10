@@ -32,29 +32,37 @@
 #include <amx/amx.h>
 
 #include "amxdebuginfo.h"
+#include "amxscript.h"
+#include "amxservice.h"
 #include "configreader.h"
 
+class AMXError;
 class NPCall;
 
-class crashdetect {
+class CrashDetect : public AMXService<CrashDetect> {
+	friend class AMXService<CrashDetect>;
 public:
-	static crashdetect *GetInstance(AMX *amx);
-	static void DestroyInstance(AMX *amx);
+	virtual int Load();
+	virtual int Unload();
 
-	static void OnException(void *context);
-	static void OnInterrupt(void *context);
+public:
+	explicit CrashDetect(AMX *amx);
 
+public:
 	int DoAmxCallback(cell index, cell *result, cell *params);
 	int DoAmxExec(cell *retval, int index);
 	int DoAmxRelease(cell amx_addr, void *releaser);
 
 	void HandleException();
 	void HandleInterrupt();
-	void HandleExecError(int index, int error);
+	void HandleExecError(int index, const AMXError &error);
 	void HandleReleaseError(cell address, void *releaser);
 
-private:
-	static void DieOrContinue();
+	void DieOrContinue();
+
+public:
+	static void OnException(void *context);
+	static void OnInterrupt(void *context);
 
 	static void PrintAmxBacktrace();
 	static void PrintSystemBacktrace(void *context = 0);
@@ -62,22 +70,16 @@ private:
 	static void logprintf(const char *format, ...);
 
 private:
-	explicit crashdetect(AMX *amx);
-
-	AMX *amx_;
+	AMXScript amx_;
 	AMXDebugInfo debugInfo_;
-
 	std::string amxPath_;
 	std::string amxName_;
-
 	AMX_CALLBACK prevCallback_;
+	ConfigReader serverCfg;
 
+private:
 	static std::stack<NPCall*> npCalls_;
 	static bool errorCaught_;
-	static ConfigReader serverCfg;
-
-	typedef std::map<AMX*, crashdetect*> InstanceMap;
-	static InstanceMap instances_;
 };
 
 #endif // !CRASHDETECT_H

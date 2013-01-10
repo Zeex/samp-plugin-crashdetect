@@ -32,11 +32,9 @@
 #include <utility>
 #include <vector>
 
-#include <amx/amx.h>
-#include <amx/amxdbg.h>
-
-#include "amxstacktrace.h"
 #include "amxdebuginfo.h"
+#include "amxscript.h"
+#include "amxstacktrace.h"
 
 class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
 public:
@@ -49,16 +47,16 @@ private:
 	ucell function_;
 };
 
-AMXStackFrame::AMXStackFrame(AMX *amx)
+AMXStackFrame::AMXStackFrame(AMXScript amx)
 	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0)
 {
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, const AMXDebugInfo *debugInfo)
+AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frameAddr, const AMXDebugInfo *debugInfo)
 	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0), debugInfo_(debugInfo)
 {
-	ucell data = reinterpret_cast<ucell>(GetDataPtr());
-	ucell code = reinterpret_cast<ucell>(GetCodePtr());
+	ucell data = reinterpret_cast<ucell>(amx_.GetData());
+	ucell code = reinterpret_cast<ucell>(amx_.GetCode());
 
 	if (IsStackAddr(frameAddr)) {
 		ucell retAddr = *(reinterpret_cast<ucell*>(data + frameAddr) + 1);
@@ -68,13 +66,13 @@ AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, const AMXDebugInfo *debu
 	}
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, const AMXDebugInfo *debugInfo)
+AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frameAddr, ucell retAddr, const AMXDebugInfo *debugInfo)
 	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0), debugInfo_(debugInfo)
 {
 	Init(frameAddr, retAddr);
 }
 
-AMXStackFrame::AMXStackFrame(AMX *amx, ucell frameAddr, ucell retAddr, ucell funcAddr, const AMXDebugInfo *debugInfo)
+AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frameAddr, ucell retAddr, ucell funcAddr, const AMXDebugInfo *debugInfo)
 	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0), debugInfo_(debugInfo)
 {
 	Init(frameAddr, retAddr, funcAddr);
@@ -103,22 +101,22 @@ AMXStackFrame::~AMXStackFrame() {
 }
 
 cell AMXStackFrame::GetArgValue(int index) const {
-	unsigned char *data = GetDataPtr();
-	return *reinterpret_cast<cell*>(data + frameAddr_ + (3 + index) * sizeof(cell));
+	const unsigned char *data = amx_.GetData();
+	return *reinterpret_cast<const cell*>(data + frameAddr_ + (3 + index) * sizeof(cell));
 }
 
 int AMXStackFrame::GetNumArgs() const {
 	if (frameAddr_ > 0) {
-		unsigned char *data = GetDataPtr();
-		return *reinterpret_cast<cell*>(data + frameAddr_ + 2*sizeof(cell)) / sizeof(cell);
+		const unsigned char *data = amx_.GetData();
+		return *reinterpret_cast<const cell*>(data + frameAddr_ + 2*sizeof(cell)) / sizeof(cell);
 	}
 	return -1;
 }
 
 AMXStackFrame AMXStackFrame::GetNextFrame() const {
 	if (frameAddr_ != 0 && retAddr_ != 0) {
-		unsigned char *data = GetDataPtr();
-		return AMXStackFrame(amx_, *reinterpret_cast<cell*>(data + frameAddr_), debugInfo_);
+		const unsigned char *data = amx_.GetData();
+		return AMXStackFrame(amx_, *reinterpret_cast<const cell*>(data + frameAddr_), debugInfo_);
 	} else {
 		return AMXStackFrame(amx_);
 	}
@@ -166,7 +164,7 @@ std::string AMXStackFrame::AsString() const {
 		}		
 		stream << debugInfo_->GetFuncName(funcAddr_);
 	} else {		
-		const char *name = GetPublicFuncName(funcAddr_);
+		const char *name = amx_.FindPublic(funcAddr_);
 		if (name != 0) {
 			if (!IsMainAddr(funcAddr_)) {
 				stream << "public ";
@@ -287,59 +285,26 @@ std::string AMXStackFrame::AsString() const {
 	return stream.str();
 }
 
-unsigned char *AMXStackFrame::GetDataPtr() const{
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
-	unsigned char *data = amx_->data;
-	if (data == 0) {
-		data = amx_->base + hdr->dat;
-	}
-	return data;
-}
-
-unsigned char *AMXStackFrame::GetCodePtr() const {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
-	return amx_->base + hdr->cod;
-}
-
-const char *AMXStackFrame::GetPublicFuncName(ucell address) const {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
-
-	if (address == hdr->cip) {
-		return "main";
-	}
-
-	AMX_FUNCSTUBNT *publics = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + hdr->publics);
-	AMX_FUNCSTUBNT *natives = reinterpret_cast<AMX_FUNCSTUBNT*>(amx_->base + hdr->natives);
-
-	for (AMX_FUNCSTUBNT *p = publics; p < natives; ++p) {
-		if (p->address == address) {
-			return reinterpret_cast<const char*>(p->nameofs + amx_->base);
-		}
-	}
-
-	return 0;
-}
-
 bool AMXStackFrame::IsPublicFuncAddr(ucell address) const {
-	return GetPublicFuncName(address) != 0;
+	return amx_.FindPublic(address) != 0;
 }
 
 bool AMXStackFrame::IsMainAddr(ucell address) const {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
+	const AMX_HEADER *hdr = amx_.GetHeader();
 	return static_cast<cell>(address) == hdr->cip;
 }
 
 bool AMXStackFrame::IsStackAddr(ucell address) const {
-	return (address >= static_cast<ucell>(amx_->hlw)
-		&& address < static_cast<ucell>(amx_->stp));
+	return (address >= static_cast<ucell>(amx_.GetHlw())
+		&& address < static_cast<ucell>(amx_.GetStp()));
 }
 
 bool AMXStackFrame::IsDataAddr(ucell address) const {
-	return address < static_cast<ucell>(amx_->stp);
+	return address < static_cast<ucell>(amx_.GetStp());
 }
 
 bool AMXStackFrame::IsCodeAddr(ucell address) const {
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
+	const AMX_HEADER *hdr = amx_.GetHeader();
 	return address < static_cast<ucell>(hdr->dat - hdr->cod);
 }
 
@@ -351,7 +316,7 @@ inline char IsPrintableChar(cell c) {
 	return IsPrintableChar(static_cast<char>(c & 0xFF));
 }
 
-std::string AMXStackFrame::GetPackedAMXString(cell *string, std::size_t size) const {
+std::string AMXStackFrame::GetPackedAMXString(const cell *string, std::size_t size) const {
 	std::string s;
 	for (std::size_t i = 0; i < size; i++) {
 		cell cp = string[i / sizeof(cell)] >> ((sizeof(cell) - i % sizeof(cell) - 1) * 8);
@@ -365,7 +330,7 @@ std::string AMXStackFrame::GetPackedAMXString(cell *string, std::size_t size) co
 	return s;
 }
 
-std::string AMXStackFrame::GetUnpackedAMXString(cell *string, std::size_t size) const {
+std::string AMXStackFrame::GetUnpackedAMXString(const cell *string, std::size_t size) const {
 	std::string s;
 	for (std::size_t i = 0; i < size; i++) {
 		char c = IsPrintableChar(string[i]) ? string[i] : '\0';
@@ -380,20 +345,20 @@ std::string AMXStackFrame::GetUnpackedAMXString(cell *string, std::size_t size) 
 std::pair<std::string, bool> AMXStackFrame::GetAMXString(cell address, std::size_t size) const {
 	std::pair<std::string, bool> result = std::make_pair("", false);
 
-	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
+	const AMX_HEADER *hdr = amx_.GetHeader();
 
 	if (!IsDataAddr(address)) {
 		return result;
 	}
 
-	cell *cstr = reinterpret_cast<cell*>(amx_->base + hdr->dat + address);
+	const cell *cstr = reinterpret_cast<const cell*>(amx_.GetData() + address);
 
 	if (size == 0) {
 		// Size is unknown - copy up to the end of data.
 		size = hdr->stp - address;
 	}
 
-	if (*reinterpret_cast<ucell*>(cstr) > UNPACKEDMAX) {
+	if (*reinterpret_cast<const ucell*>(cstr) > UNPACKEDMAX) {
 		result.first = GetPackedAMXString(cstr, size);
 		result.second = true;
 	} else {

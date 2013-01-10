@@ -22,36 +22,66 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXUTILS_H
-#define AMXUTILS_H
+#ifndef AMXSERVICE_H
+#define AMXSERVICE_H
 
-#include <amx/amx.h>
+#include <map>
 
-namespace amxutils {
+#include "amxscript.h"
 
-AMX_HEADER *GetHeader(AMX *amx);
+template<typename T>
+class AMXService {
+public:
+	AMXService(AMXScript amx) : amx_(amx) {}
 
-unsigned char *GetDataPtr(AMX *amx);
-unsigned char *GetCodePtr(AMX *amx);
+	AMXScript amx() { return amx_; }
 
-AMX_FUNCSTUBNT *GetNativeTable(AMX *amx);
-AMX_FUNCSTUBNT *GetPublicTable(AMX *amx);
+	virtual int Load() = 0;
+	virtual int Unload() = 0;
 
-int GetNumNatives(AMX *amx);
-int GetNumNatives(AMX_HEADER *hdr);
-int GetNumPublics(AMX *amx);
-int GetNumPublics(AMX_HEADER *hdr);
+public:
+	static T *Create(AMXScript amx);
+	static T *Get(AMXScript amx);
+	static void Destroy(AMXScript amx);
 
-ucell GetNativeAddr(AMX *amx, int index);
-ucell GetPublicAddr(AMX *amx, int index);
+private:
+	AMXScript amx_;
 
-const char *GetNativeName(AMX *amx, int index);
-const char *GetPublicName(AMX *amx, int index);
+private:
+	typedef std::map<AMX*, T*> ServiceMap;
+	static ServiceMap service_map_;
+};
 
-void PushStack(AMX *amx, cell value);
-cell PopStack(AMX *amx);
-void PopStack(AMX *amx, int ncells);
+template<typename T>
+typename AMXService<T>::ServiceMap AMXService<T>::service_map_;
 
-} // namespace amxutils
+// static
+template<typename T>
+T *AMXService<T>::Create(AMXScript amx) {
+	T *service = new T(amx);
+	service_map_.insert(std::make_pair(amx, service));
+	return service;
+}
 
-#endif // !AMXUTILS_H
+// static
+template<typename T>
+T *AMXService<T>::Get(AMXScript amx) {
+	typename ServiceMap::const_iterator iterator = service_map_.find(amx);
+	if (iterator != service_map_.end()) {
+		return iterator->second;
+	}
+	return Create(amx);
+}
+
+// static
+template<typename T>
+void AMXService<T>::Destroy(AMXScript amx) {
+	typename ServiceMap::iterator iterator = service_map_.find(amx);
+	if (iterator != service_map_.end()) {
+		T *service = iterator->second;
+		service_map_.erase(iterator);
+		delete service;
+	}
+}
+
+#endif // !AMXSERVICE_H
