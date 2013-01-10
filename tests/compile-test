@@ -1,0 +1,65 @@
+#!/bin/bash
+
+me="$(basename "${BASH_SOURCE[0]}")"
+my_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  echo "Usage: $me <test_name> [options]"
+  echo ""
+  echo "  -h | --help          show this message and exit"
+  echo "  -d | --debug         compile in debug mode (full debug info)"
+  echo "  -r | --release       compile in release mode"
+  echo "  -a | --assembly      produce assembly listing"
+  echo ""
+  echo "Examples:"
+  echo "  $me intrinsics/floatadd --release"
+  exit
+}
+
+if [ $# -lt 1 ]
+then
+  usage
+else
+  test_name=$1
+  if [ ! -d "$test_name" ]
+  then
+    echo "The specified test \"$test_name\" does not exist"
+    exit 1
+  fi
+  shift
+fi
+
+flags="-\;+ -\(+"
+
+while test $# -gt 0
+do
+  case "$1" in
+  "-h" | "--help")
+    usage
+    ;;
+  "-d" | "--debug")
+    flags="$flags -d3"
+    ;;
+  "-r" | "--release")
+    flags="$flags -d0"
+    ;;
+  "-a" | "--assembly")
+    flags="$flags -a"
+    ;;
+  esac
+  shift
+done
+
+include="$SAMP_SERVER_ROOT/pawno/include"
+if [ -d "$include" ]
+then
+  flags="$flags -i$include"
+fi
+
+include="$my_dir/include"
+if [ -d "$include" ]
+then
+  flags="$flags -i$include"
+fi
+
+pawncc $flags "$test_name/test.pwn" -o"$test_name/test.amx"
