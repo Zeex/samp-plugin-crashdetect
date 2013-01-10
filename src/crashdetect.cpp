@@ -32,6 +32,7 @@
 
 #include "amx.h"
 #include "amxdebuginfo.h"
+#include "amxerror.h"
 #include "amxpathfinder.h"
 #include "amxstacktrace.h"
 #include "amxutils.h"
@@ -158,17 +159,16 @@ int CrashDetect::DoAmxRelease(cell amx_addr, void *releaser) {
 	return amx_Release(amx(), amx_addr);
 }
 
-void CrashDetect::HandleExecError(int index, int error) {
+void CrashDetect::HandleExecError(int index, const AMXError &error) {
 	CrashDetect::errorCaught_ = true;
 
-	if (error == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
-		error = AMX_ERR_NONE;
+	if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		return;
 	}
 
-	logprintf("Run time error %d: \"%s\"", error, aux_StrError(error));
+	logprintf("Run time error %d: \"%s\"", error, error.string());
 
-	switch (error) {
+	switch (error.code()) {
 		case AMX_ERR_BOUNDS: {
 			cell bound = *(reinterpret_cast<cell*>(GetCodePtr(amx()) + amx()->cip + sizeof(cell)));
 			cell index = amx()->pri;
@@ -206,10 +206,10 @@ void CrashDetect::HandleExecError(int index, int error) {
 		}
 	}
 
-	if (error != AMX_ERR_NOTFOUND &&
-		error != AMX_ERR_INDEX &&
-		error != AMX_ERR_CALLBACK &&
-		error != AMX_ERR_INIT)
+	if (error.code() != AMX_ERR_NOTFOUND &&
+		error.code() != AMX_ERR_INDEX &&
+		error.code() != AMX_ERR_CALLBACK &&
+		error.code() != AMX_ERR_INIT)
 	{
 		PrintAmxBacktrace();
 	}

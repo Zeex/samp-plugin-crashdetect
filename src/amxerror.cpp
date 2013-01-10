@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2012 Zeex
+// Copyright (c) 2012 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,60 +22,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef CRASHDETECT_H
-#define CRASHDETECT_H
+#include <amx/amxaux.h>
 
-#include <map>
-#include <stack>
-#include <string>
+#include "amxerror.h"
 
-#include "amx.h"
-#include "amxdebuginfo.h"
-#include "amxservice.h"
-#include "configreader.h"
+AMXError::AMXError(int error_code)
+	: code_(error_code)
+{
+}
 
-class AMXError;
-class NPCall;
-
-class CrashDetect : public AMXService<CrashDetect> {
-public:
-	friend class AMXService<CrashDetect>;
-
-	virtual int Load();
-	virtual int Unload();
-
-	CrashDetect(AMX *amx);
-
-	int DoAmxCallback(cell index, cell *result, cell *params);
-	int DoAmxExec(cell *retval, int index);
-	int DoAmxRelease(cell amx_addr, void *releaser);
-
-	void HandleException();
-	void HandleInterrupt();
-	void HandleExecError(int index, const AMXError &error);
-	void HandleReleaseError(cell address, void *releaser);
-
-	static void OnException(void *context);
-	static void OnInterrupt(void *context);
-
-	static void DieOrContinue();
-
-	static void PrintAmxBacktrace();
-	static void PrintSystemBacktrace(void *context = 0);
-
-	static void logprintf(const char *format, ...);
-
-private:
-	AMXDebugInfo debugInfo_;
-
-	std::string amxPath_;
-	std::string amxName_;
-
-	AMX_CALLBACK prevCallback_;
-
-	static std::stack<NPCall*> npCalls_;
-	static bool errorCaught_;
-	static ConfigReader serverCfg;
-};
-
-#endif // !CRASHDETECT_H
+const char *AMXError::string() const {
+	return aux_StrError(code_);
+}

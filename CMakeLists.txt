@@ -48,6 +48,8 @@ set(SOURCES
 	"src/amx.h"
 	"src/amxdebuginfo.cpp"
 	"src/amxdebuginfo.h"
+	"src/amxerror.cpp"
+	"src/amxerror.h"
 	"src/amxpathfinder.cpp"
 	"src/amxpathfinder.h"
 	"src/amxservice.h"
