@@ -50,6 +50,7 @@ set(SOURCES
 	"src/amxdebuginfo.h"
 	"src/amxpathfinder.cpp"
 	"src/amxpathfinder.h"
+	"src/amxservice.h"
 	"src/amxstacktrace.cpp"
 	"src/amxstacktrace.h"
 	"src/amxutils.cpp"

@@ -34,21 +34,24 @@
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
-		crashdetect::GetInstance(amx)->HandleExecError(index, error);
+		CrashDetect::Get(amx)->HandleExecError(index, error);
 	}
 	return AMX_ERR_NONE;
 }
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-	return crashdetect::GetInstance(amx)->DoAmxCallback(index, result, params);
+	return CrashDetect::Get(amx)->DoAmxCallback(index, result, params);
 }
 
 static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
-	return crashdetect::GetInstance(amx)->DoAmxExec(retval, index);
+	if (amx->flags & AMX_FLAG_BROWSE) {
+		return amx_Exec(amx, retval, index);
+	}
+	return CrashDetect::Get(amx)->DoAmxExec(retval, index);
 }
 
 static int AMXAPI AmxRelease(AMX *amx, cell amx_addr) {
-	return crashdetect::GetInstance(amx)->DoAmxRelease(amx_addr, compiler::GetRetAddr());
+	return CrashDetect::Get(amx)->DoAmxRelease(amx_addr, compiler::GetRetAddr());
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
@@ -68,7 +71,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		std::string module = fileutils::GetFileName(os::GetModulePathFromAddr(amx_Exec_sub));
 		if (!module.empty()) {
 			logprintf("  Warning: Runtime error detection will not work during this run because ");
-			logprintf("           %s has been loaded before crashdetect.", module.c_str());
+			logprintf("           %s has been loaded before CrashDetect.", module.c_str());
 		}
 	}
 
@@ -79,20 +82,23 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 		new Hook(amx_Release_ptr, (void*)AmxRelease);
 	}
 
-	os::SetExceptionHandler(crashdetect::OnException);
-	os::SetInterruptHandler(crashdetect::OnInterrupt);
+	os::SetExceptionHandler(CrashDetect::OnException);
+	os::SetInterruptHandler(CrashDetect::OnInterrupt);
 
 	logprintf("  crashdetect v"PLUGIN_VERSION_STRING" is OK.");
 	return true;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-	(void)crashdetect::GetInstance(amx); // force instance creation
-	amx_SetCallback(amx, AmxCallback);
-	return AMX_ERR_NONE;
+	int error = CrashDetect::Create(amx)->Load();
+	if (error == AMX_ERR_NONE) {
+		amx_SetCallback(amx, AmxCallback);
+	}
+	return error;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-	crashdetect::DestroyInstance(amx);
-	return AMX_ERR_NONE;
+	int error = CrashDetect::Get(amx)->Unload();
+	CrashDetect::Destroy(amx);
+	return error;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2012 Zeex
+// Copyright (c) 2012 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,59 +22,67 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef CRASHDETECT_H
-#define CRASHDETECT_H
+#ifndef AMXSERVICE_H
+#define AMXSERVICE_H
 
 #include <map>
-#include <stack>
-#include <string>
 
 #include "amx.h"
-#include "amxdebuginfo.h"
-#include "amxservice.h"
-#include "configreader.h"
 
-class NPCall;
-
-class CrashDetect : public AMXService<CrashDetect> {
+template<typename T>
+class AMXService {
 public:
-	friend class AMXService<CrashDetect>;
+	AMXService(AMX *amx) : amx_(amx) {}
 
-	virtual int Load();
-	virtual int Unload();
+	AMX *amx() { return amx_; }
+	const AMX *amx() const { return amx_; }
 
-	CrashDetect(AMX *amx);
+	virtual int Load() = 0;
+	virtual int Unload() = 0;
 
-	int DoAmxCallback(cell index, cell *result, cell *params);
-	int DoAmxExec(cell *retval, int index);
-	int DoAmxRelease(cell amx_addr, void *releaser);
-
-	void HandleException();
-	void HandleInterrupt();
-	void HandleExecError(int index, int error);
-	void HandleReleaseError(cell address, void *releaser);
-
-	static void OnException(void *context);
-	static void OnInterrupt(void *context);
-
-	static void DieOrContinue();
-
-	static void PrintAmxBacktrace();
-	static void PrintSystemBacktrace(void *context = 0);
-
-	static void logprintf(const char *format, ...);
+public:
+	static T *Create(AMX *amx);
+	static T *Get(AMX *amx);
+	static void Destroy(AMX *amx);
 
 private:
-	AMXDebugInfo debugInfo_;
+	AMX *amx_;
 
-	std::string amxPath_;
-	std::string amxName_;
-
-	AMX_CALLBACK prevCallback_;
-
-	static std::stack<NPCall*> npCalls_;
-	static bool errorCaught_;
-	static ConfigReader serverCfg;
+private:
+	typedef std::map<AMX*, T*> ServiceMap;
+	static ServiceMap service_map_;
 };
 
-#endif // !CRASHDETECT_H
+template<typename T>
+typename AMXService<T>::ServiceMap AMXService<T>::service_map_;
+
+// static
+template<typename T>
+T *AMXService<T>::Create(AMX *amx) {
+	T *service = new T(amx);
+	service_map_.insert(std::make_pair(amx, service));
+	return service;
+}
+
+// static
+template<typename T>
+T *AMXService<T>::Get(AMX *amx) {
+	typename ServiceMap::const_iterator iterator = service_map_.find(amx);
+	if (iterator != service_map_.end()) {
+		return iterator->second;
+	}
+	return Create(amx);
+}
+
+// static
+template<typename T>
+void AMXService<T>::Destroy(AMX *amx) {
+	typename ServiceMap::iterator iterator = service_map_.find(amx);
+	if (iterator != service_map_.end()) {
+		T *service = iterator->second;
+		service_map_.erase(iterator);
+		delete service;
+	}
+}
+
+#endif // !AMXSERVICE_H
