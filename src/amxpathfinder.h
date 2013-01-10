@@ -30,6 +30,8 @@
 #include <map>
 #include <string>
 
+#include <amx/amx.h>
+
 class AMXScript;
 
 // AMXPathFinder can search for an .amx file corresponding to a given AMX instance.

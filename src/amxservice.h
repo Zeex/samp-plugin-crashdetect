@@ -27,6 +27,8 @@
 
 #include <map>
 
+#include <amx/amx.h>
+
 #include "amxscript.h"
 
 template<typename T>

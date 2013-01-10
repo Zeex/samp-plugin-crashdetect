@@ -30,6 +30,8 @@
 #include <vector>
 #include <utility>
 
+#include <amx/amx.h>
+
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 

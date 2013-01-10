@@ -32,6 +32,8 @@
 #include <utility>
 #include <vector>
 
+#include <amx/amx.h>
+
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 #include "amxstacktrace.h"

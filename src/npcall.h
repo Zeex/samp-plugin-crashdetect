@@ -25,6 +25,8 @@
 #ifndef NPCALL_H
 #define NPCALL_H
 
+#include <amx/amx.h>
+
 #include "amxscript.h"
 
 class NPCall {

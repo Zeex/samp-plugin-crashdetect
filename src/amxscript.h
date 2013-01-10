@@ -25,7 +25,7 @@
 #ifndef AMXSCRIPT_H
 #define AMXSCRIPT_H
 
-#include "amx.h"
+#include <amx/amx.h>
 
 class AMXScript {
 public:
