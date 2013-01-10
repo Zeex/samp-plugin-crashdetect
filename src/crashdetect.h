@@ -44,7 +44,7 @@ public:
 	virtual int Unload();
 
 public:
-	CrashDetect(AMX *amx);
+	explicit CrashDetect(AMX *amx);
 
 public:
 	int DoAmxCallback(cell index, cell *result, cell *params);
