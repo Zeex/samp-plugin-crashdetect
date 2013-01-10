@@ -1,0 +1,16 @@
+Server Plugins
+--------------.*
+ Loading plugin: .*crashdetect.*
+  crashdetect v.* is OK\.
+  Loaded\..*
+ Loaded [1-9]+ plugins.
+
+
+Started server on port: [0-9]+, with maxplayers: [0-9]+ lanmode is (ON|OFF)\.
+
+
+Filterscripts
+---------------.*
+  Loaded [0-9]+ filterscripts\.
+
+@TEST_OUTPUT@

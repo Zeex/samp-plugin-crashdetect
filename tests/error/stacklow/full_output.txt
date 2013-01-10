@@ -1,0 +1,21 @@
+Server Plugins
+--------------.*
+ Loading plugin: .*crashdetect.*
+  crashdetect v.* is OK\.
+  Loaded\..*
+ Loaded [1-9]+ plugins.
+
+
+Started server on port: [0-9]+, with maxplayers: [0-9]+ lanmode is (ON|OFF)\.
+
+
+Filterscripts
+---------------.*
+  Loaded [0-9]+ filterscripts\.
+
+Hello!
+\[debug\] Run time error 7: "Stack underflow"
+\[debug\]  Stack pointer \(STK\) is 0xFB9, stack top \(STP\) is 0xFB8
+\[debug\] AMX backtrace:
+\[debug\] #0 00000048 in main \(\.\.\. <4608 variable arguments>\) at test.pwn:12
+Script\[.*test.amx\]: Run time error 7: "Stack underflow"

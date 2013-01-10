@@ -1,0 +1,5 @@
+\[debug\] Run time error 4: "Array index out of bounds"
+\[debug\]  Accessing element at index 100 past array upper bound 4
+\[debug\] AMX backtrace:
+\[debug\] #0 000000b0 in do_out_of_bounds \(\) at test.pwn:18
+\[debug\] #1 00000034 in public OnGameModeInit \(\) at test.pwn:8
