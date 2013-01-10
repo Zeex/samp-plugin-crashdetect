@@ -84,6 +84,7 @@ void CrashDetect::DieOrContinue() {
 
 CrashDetect::CrashDetect(AMX *amx)
 	: AMXService<CrashDetect>(amx)
+	, prevCallback_(0)
 	, serverCfg("server.cfg")
 {
 }
