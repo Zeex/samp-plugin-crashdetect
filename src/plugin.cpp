@@ -53,10 +53,6 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 	return CrashDetect::Get(amx)->DoAmxExec(retval, index);
 }
 
-static int AMXAPI AmxRelease(AMX *amx, cell amx_addr) {
-	return CrashDetect::Get(amx)->DoAmxRelease(amx_addr, compiler::GetRetAddr());
-}
-
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
 	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
@@ -76,13 +72,6 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 			logprintf("  Warning: Runtime error detection will not work during this run because ");
 			logprintf("           %s has been loaded before CrashDetect.", module.c_str());
 		}
-	}
-
-	void *amx_Release_ptr = exports[PLUGIN_AMX_EXPORT_Release];
-	void *amx_Release_sub = Hook::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Release_ptr));
-
-	if (amx_Release_sub == 0) {
-		new Hook(amx_Release_ptr, (void*)AmxRelease);
 	}
 
 	os::SetExceptionHandler(CrashDetect::OnException);

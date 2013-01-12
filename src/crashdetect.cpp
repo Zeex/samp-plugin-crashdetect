@@ -152,13 +152,6 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
 	return retcode;
 }
 
-int CrashDetect::DoAmxRelease(cell amx_addr, void *releaser) {
-	if (amx_addr < amx_.GetHlw() || amx_addr >= amx_.GetStk()) {
-		HandleReleaseError(amx_addr, releaser);
-	}
-	return amx_Release(amx(), amx_addr);
-}
-
 void CrashDetect::HandleExecError(int index, const AMXError &error) {
 	CrashDetect::errorCaught_ = true;
 
@@ -229,16 +222,6 @@ void CrashDetect::HandleException() {
 void CrashDetect::HandleInterrupt() {
 	logprintf("Server received interrupt signal while executing %s", amxName_.c_str());
 	PrintAmxBacktrace();
-}
-
-void CrashDetect::HandleReleaseError(cell address, void *releaser) {
-	std::string plugin = fileutils::GetFileName(os::GetModulePathFromAddr(releaser));
-	if (plugin.empty()) {
-		plugin.assign("<unknown>");
-	}
-	logprintf("Bad heap release detected:");
-	logprintf(" %s [%08x] is releasing memory at %08x which is out of heap", plugin.c_str(), releaser, address);
-	PrintSystemBacktrace();
 }
 
 // static

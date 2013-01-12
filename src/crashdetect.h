@@ -51,12 +51,10 @@ public:
 public:
 	int DoAmxCallback(cell index, cell *result, cell *params);
 	int DoAmxExec(cell *retval, int index);
-	int DoAmxRelease(cell amx_addr, void *releaser);
 
 	void HandleException();
 	void HandleInterrupt();
 	void HandleExecError(int index, const AMXError &error);
-	void HandleReleaseError(cell address, void *releaser);
 
 	void DieOrContinue();
 
