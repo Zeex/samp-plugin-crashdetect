@@ -60,6 +60,10 @@ public:
 			}
 		}
 
+	private:
+		ScopedRemove(const ScopedRemove &);
+		void operator=(const ScopedRemove &);
+
 	private:		
 		Hook *jmp_;
 		bool removed_;
@@ -82,12 +86,20 @@ public:
 		}
 
 	private:
+		ScopedInstall(const ScopedInstall &);
+		void operator=(const ScopedInstall &);
+
+	private:
 		Hook *jmp_;
 		bool installed_;
 	};
 
 private:
 	static void Unprotect(void *address, int size);
+
+private:
+	Hook(const Hook &);
+	void operator=(const Hook &);
 
 private:
 	void *src_;
