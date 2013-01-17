@@ -10,7 +10,6 @@ greatly reduce amount of time spent spotting the erroneous code and fixing it.
 See the [original][forum] topic on the SA-MP Forums for more information and
 examples.
 
-
 Download
 --------
 
@@ -64,5 +63,11 @@ You might want to make the server automatically exit on first runtime error:
 
     die_on_error 1
 
+Donate
+------
+
+If you like crashdetect and want to support its development, consider making a [donation][donate].
+
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [downloads]: https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads
+[donate]: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UWRM2DBX5UZHN
