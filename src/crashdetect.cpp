@@ -143,7 +143,7 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
 
 	int retcode = ::amx_Exec(amx(), retval, index);
 	if (retcode != AMX_ERR_NONE && !errorCaught_) {
-		amx_Error(amx(), index, retcode);
+		HandleExecError(index, retcode);
 	} else {
 		errorCaught_ = false;
 	}
