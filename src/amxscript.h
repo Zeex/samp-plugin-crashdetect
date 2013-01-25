@@ -27,6 +27,8 @@
 
 #include <amx/amx.h>
 
+#include "amxerror.h"
+
 class AMXScript {
 public:
 	AMXScript(AMX *amx);
@@ -39,6 +41,8 @@ public:
 
 	bool operator!=(const AMX *rhs) const { return amx_ != rhs; }
 	bool operator!=(AMXScript rhs) const { return amx_ != rhs.amx_; }
+
+	AMXError GetError() const { return AMXError(amx_->error); }
 
 	AMX_DEBUG GetDebugHook() { return amx_->debug; }
 	AMX_CALLBACK GetCallback() { return amx_->callback; }
