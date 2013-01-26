@@ -69,14 +69,14 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	} else {
 		std::string module = fileutils::GetFileName(os::GetModulePathFromAddr(amx_Exec_sub));
 		if (!module.empty()) {
-			logprintf("  In order for runtime error detection to work crashdetect must be loaded before %s.",module.c_str());
+			logprintf("  In order for runtime error detection to work CrashDetect must be loaded before %s.",module.c_str());
 		}
 	}
 
 	os::SetExceptionHandler(CrashDetect::OnException);
 	os::SetInterruptHandler(CrashDetect::OnInterrupt);
 
-	logprintf("  crashdetect v"PROJECT_VERSION_STRING" is OK.");
+	logprintf("  CrashDetect v"PROJECT_VERSION_STRING" is OK.");
 	return true;
 }
 

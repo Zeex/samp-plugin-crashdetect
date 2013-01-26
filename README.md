@@ -1,4 +1,4 @@
-[crashdetect]( https://github.com/Zeex/samp-plugin-crashdetect)
+[CrashDetect]( https://github.com/Zeex/samp-plugin-crashdetect)
 ===============================================================
 
 This plugin will help you debug runtime errors and server crashes. When
@@ -42,7 +42,7 @@ It might be easier to add the exta flags via your editor's options.
 **Still doesn't work! Why??**
 
 If you put the AMX file in some custom directory other than `gamemodes` or
-`filterscripts` or in ia subdirectory of these crashdetect will not be able to
+`filterscripts` or in ia subdirectory of these CrashDetect will not be able to
 find it when loading debug info. In order to fix this you have to specify the
 path manually via the `AMX_PATH` environment variable which is a
 semicolon-separated (or colon-separated on Linux) list of paths, similar to
@@ -66,7 +66,7 @@ You might want to make the server automatically exit on first runtime error:
 Donate
 ------
 
-If you like crashdetect and want to support its development, consider making a [donation][donate].
+If you like CrashDetect and want to support its development, consider making a [donation][donate].
 
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [downloads]: https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads
