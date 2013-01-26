@@ -1,8 +1,0 @@
-To cross-compile crashdetect on Linux for Windows target you have
-to set CMAKE_TOOLCHAIN_FILE variable when invoking CMake, e.g.
-
-	cmake -DCMAKE_TOOLCHAIN_FILE=Toolchain-mingw32.cmake
-
-This assumes that you installed the MinGW toolchain:
-
-	sudo apt-get install mingw32
