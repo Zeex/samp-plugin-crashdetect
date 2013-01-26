@@ -15,6 +15,7 @@ include(SampPlugin)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/amx")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/src")
 
 set(SOURCES
 	"src/amxdebuginfo.cpp"
@@ -44,13 +45,13 @@ set(SOURCES
 	"src/os.h"
 	"src/plugin.cpp"
 	"src/plugin.def"
-	"src/plugin.rc"
 	"src/plugincommon.h"
 	"src/stacktrace.cpp"
 	"src/stacktrace.h"
 	"src/stacktrace-manual.cpp"
 	"src/stacktrace-manual.h"
-	"src/version.h"
+	"${CMAKE_CURRENT_BINARY_DIR}/src/plugin.rc"
+	"${CMAKE_CURRENT_BINARY_DIR}/src/version.h"
 )
 
 if(WIN32)
