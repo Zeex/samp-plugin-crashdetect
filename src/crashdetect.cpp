@@ -174,8 +174,8 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 		}
 		case AMX_ERR_NOTFOUND: {
 			AMX_FUNCSTUBNT *natives = amx_.GetNatives();
-			int numNatives = amx_.GetNumNatives();
-			for (int i = 0; i < numNatives; ++i) {
+			int num_natives = amx_.GetNumNatives();
+			for (int i = 0; i < num_natives; ++i) {
 				if (natives[i].address == 0) {
 					logprintf(" %s", amx_.GetName(natives[i].nameofs));
 				}
@@ -351,10 +351,10 @@ void CrashDetect::logprintf(const char *format, ...) {
 	std::va_list va;
 	va_start(va, format);
 
-	std::string new_format_;
-	new_format_.append("[debug] ");
-	new_format_.append(format);
+	std::string new_format;
+	new_format.append("[debug] ");
+	new_format.append(format);
 
-	vlogprintf(new_format_.c_str(), va);
+	vlogprintf(new_format.c_str(), va);
 	va_end(va);
 }
