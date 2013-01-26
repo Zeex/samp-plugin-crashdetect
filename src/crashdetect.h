@@ -69,15 +69,15 @@ public:
 
 private:
 	AMXScript amx_;
-	AMXDebugInfo debugInfo_;
-	std::string amxPath_;
-	std::string amxName_;
-	AMX_CALLBACK prevCallback_;
-	ConfigReader serverCfg;
+	AMXDebugInfo debug_info_;
+	std::string amx_path_;
+	std::string amx_name_;
+	AMX_CALLBACK prev_callback_;
+	ConfigReader server_cfg_;
 
 private:
-	static std::stack<NPCall*> npCalls_;
-	static bool errorCaught_;
+	static std::stack<NPCall*> np_calls_;
+	static bool error_detected_;
 };
 
 #endif // !CRASHDETECT_H

@@ -34,16 +34,16 @@ public:
 		return os << AsString();
 	}
 
-	StackFrame(void *retAddr, const std::string &name = std::string());
+	StackFrame(void *ret_addr, const std::string &name = std::string());
 	virtual ~StackFrame();
 
-	void *GetRetAddr() const { return retAddr_; }
+	void *GetRetAddr() const { return ret_addr_; }
 	std::string GetFuncName() const { return name_; }
 
 	virtual std::string AsString() const;
 
 private:
-	void *retAddr_;
+	void *ret_addr_;
 	std::string name_;
 };
 

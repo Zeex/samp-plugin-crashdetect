@@ -49,13 +49,13 @@
 
 #define AMX_EXEC_GDK (-10)
 
-bool CrashDetect::errorCaught_ = false;
-std::stack<NPCall*> CrashDetect::npCalls_;;
+bool CrashDetect::error_detected_ = false;
+std::stack<NPCall*> CrashDetect::np_calls_;;
 
 // static
 void CrashDetect::OnException(void *context) {
-	if (!npCalls_.empty()) {
-		CrashDetect::Get(npCalls_.top()->amx())->HandleException();
+	if (!np_calls_.empty()) {
+		CrashDetect::Get(np_calls_.top()->amx())->HandleException();
 	} else {
 		logprintf("Server crashed due to an unknown error");
 	}
@@ -64,8 +64,8 @@ void CrashDetect::OnException(void *context) {
 
 // static
 void CrashDetect::OnInterrupt(void *context) {
-	if (!npCalls_.empty()) {
-		CrashDetect::Get(npCalls_.top()->amx())->HandleInterrupt();
+	if (!np_calls_.empty()) {
+		CrashDetect::Get(np_calls_.top()->amx())->HandleInterrupt();
 	} else {
 		logprintf("Server received interrupt signal");
 	}
@@ -74,7 +74,7 @@ void CrashDetect::OnInterrupt(void *context) {
 
 // static
 void CrashDetect::DieOrContinue() {
-	if (serverCfg.GetOption("die_on_error", false)) {
+	if (server_cfg_.GetOption("die_on_error", false)) {
 		logprintf("Aborting...");
 		std::exit(EXIT_FAILURE);
 	}
@@ -83,8 +83,8 @@ void CrashDetect::DieOrContinue() {
 CrashDetect::CrashDetect(AMX *amx)
 	: AMXService<CrashDetect>(amx)
 	, amx_(amx)
-	, prevCallback_(0)
-	, serverCfg("server.cfg")
+	, prev_callback_(0)
+	, server_cfg_("server.cfg")
 {
 }
 
@@ -112,15 +112,15 @@ int CrashDetect::Load() {
 		}
 	}
 
-	amxPath_ = pathFinder.FindAMX(this->amx());
-	amxName_ = fileutils::GetFileName(amxPath_);
+	amx_path_ = pathFinder.FindAMX(this->amx());
+	amx_name_ = fileutils::GetFileName(amx_path_);
 
-	if (!amxPath_.empty() && AMXDebugInfo::IsPresent(this->amx())) {
-		debugInfo_.Load(amxPath_);
+	if (!amx_path_.empty() && AMXDebugInfo::IsPresent(this->amx())) {
+		debug_info_.Load(amx_path_);
 	}
 
 	amx_.DisableSysreqD();
-	prevCallback_ = amx_.GetCallback();
+	prev_callback_ = amx_.GetCallback();
 
 	return AMX_ERR_NONE;
 }
@@ -131,29 +131,29 @@ int CrashDetect::Unload() {
 
 int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
 	NPCall call = NPCall::Native(amx(), index);
-	npCalls_.push(&call);
-	int retcode = prevCallback_(amx(), index, result, params);
-	npCalls_.pop();
-	return retcode;
+	np_calls_.push(&call);
+	int error = prev_callback_(amx(), index, result, params);
+	np_calls_.pop();
+	return error;
 }
 
 int CrashDetect::DoAmxExec(cell *retval, int index) {	
 	NPCall call = NPCall::Public(amx(), index);
-	npCalls_.push(&call);
+	np_calls_.push(&call);
 
-	int retcode = ::amx_Exec(amx(), retval, index);
-	if (retcode != AMX_ERR_NONE && !errorCaught_) {
-		HandleExecError(index, retcode);
+	int error = ::amx_Exec(amx(), retval, index);
+	if (error != AMX_ERR_NONE && !error_detected_) {
+		HandleExecError(index, error);
 	} else {
-		errorCaught_ = false;
+		error_detected_ = false;
 	}
 
-	npCalls_.pop();
-	return retcode;
+	np_calls_.pop();
+	return error;
 }
 
 void CrashDetect::HandleExecError(int index, const AMXError &error) {
-	CrashDetect::errorCaught_ = true;
+	CrashDetect::error_detected_ = true;
 
 	if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		return;
@@ -206,7 +206,7 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 		PrintAmxBacktrace();
 	}
 
-	std::string command = serverCfg.GetOption("run_on_error", std::string());
+	std::string command = server_cfg_.GetOption("run_on_error", std::string());
 	if (!command.empty()) {
 		std::system(command.c_str());
 	}
@@ -215,22 +215,22 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 }
 
 void CrashDetect::HandleException() {
-	logprintf("Server crashed while executing %s", amxName_.c_str());
+	logprintf("Server crashed while executing %s", amx_name_.c_str());
 	PrintAmxBacktrace();
 }
 
 void CrashDetect::HandleInterrupt() {
-	logprintf("Server received interrupt signal while executing %s", amxName_.c_str());
+	logprintf("Server received interrupt signal while executing %s", amx_name_.c_str());
 	PrintAmxBacktrace();
 }
 
 // static
 void CrashDetect::PrintAmxBacktrace() {
-	if (npCalls_.empty()) {
+	if (np_calls_.empty()) {
 		return;
 	}
 
-	AMXScript topAmx = npCalls_.top()->amx();
+	AMXScript topAmx = np_calls_.top()->amx();
 
 	cell frm = topAmx.GetFrm();
 	cell cip = topAmx.GetCip();
@@ -242,10 +242,10 @@ void CrashDetect::PrintAmxBacktrace() {
 
 	logprintf("AMX backtrace:");
 
-	std::stack<NPCall*> npCalls = npCalls_;
+	std::stack<NPCall*> np_calls = np_calls_;
 
-	while (!npCalls.empty() && cip != 0) {
-		const NPCall *call = npCalls.top();
+	while (!np_calls.empty() && cip != 0) {
+		const NPCall *call = np_calls.top();
 		AMXScript amx = call->amx();
 
 		// We don't trace calls across AMX bounds i.e. outside of top-level
@@ -269,14 +269,14 @@ void CrashDetect::PrintAmxBacktrace() {
 				}
 			}
 		} else if (call->IsPublic()) {
-			AMXDebugInfo &debugInfo = CrashDetect::Get(amx)->debugInfo_;
+			AMXDebugInfo &debug_info = CrashDetect::Get(amx)->debug_info_;
 
 			amx.PushStack(cip); // push return address
 			amx.PushStack(frm); // push frame pointer
 
 			std::list<AMXStackFrame> frames;
 			{
-				AMXStackTrace trace(amx, amx.GetStk(), &debugInfo);
+				AMXStackTrace trace(amx, amx.GetStk(), &debug_info);
 				do {
 					AMXStackFrame frame = trace.GetFrame();
 					if (frame) {
@@ -291,25 +291,25 @@ void CrashDetect::PrintAmxBacktrace() {
 			cip = amx.PopStack(); // pop return address
 
 			if (frames.empty()) {
-				ucell epAddr = amx.GetPublicAddr(call->index());
-				frames.push_front(AMXStackFrame(amx, frm, 0, epAddr, &debugInfo));
+				ucell ep_addr = amx.GetPublicAddr(call->index());
+				frames.push_front(AMXStackFrame(amx, frm, 0, ep_addr, &debug_info));
 			} else {
-				if (!debugInfo.IsLoaded()) {
+				if (!debug_info.IsLoaded()) {
 					AMXStackFrame &bottom = frames.back();
 					bottom = AMXStackFrame(amx,
 						bottom.GetFrameAddr(),
 						bottom.GetRetAddr(),
 						amx.GetPublicAddr(call->index()),
-						&debugInfo);
+						&debug_info);
 				}
 			}
 
-			std::string &amxName = CrashDetect::Get(amx)->amxName_;
+			std::string &amx_name = CrashDetect::Get(amx)->amx_name_;
 			for (std::list<AMXStackFrame>::const_iterator iterator = frames.begin();
 					iterator != frames.end(); ++iterator)
 			{
-				std::string from = " from " + amxName;
-				if (amxName.empty() || debugInfo.IsLoaded()) {
+				std::string from = " from " + amx_name;
+				if (amx_name.empty() || debug_info.IsLoaded()) {
 					from.clear();
 				}
 				logprintf("#%d %s%s", level++, iterator->AsString().c_str(), from.c_str());
@@ -319,7 +319,7 @@ void CrashDetect::PrintAmxBacktrace() {
 			cip = call->cip();
 		}
 
-		npCalls.pop();
+		np_calls.pop();
 	}
 }
 
@@ -351,10 +351,10 @@ void CrashDetect::logprintf(const char *format, ...) {
 	std::va_list va;
 	va_start(va, format);
 
-	std::string newFormat;
-	newFormat.append("[debug] ");
-	newFormat.append(format);
+	std::string new_format_;
+	new_format_.append("[debug] ");
+	new_format_.append(format);
 
-	vlogprintf(newFormat.c_str(), va);
+	vlogprintf(new_format_.c_str(), va);
 	va_end(va);
 }

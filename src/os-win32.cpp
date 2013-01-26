@@ -30,51 +30,51 @@
 
 #include "os.h"
 
-std::string os::GetModulePathFromAddr(void *address, std::size_t maxLength) {
-	std::vector<char> name(maxLength + 1);
+std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
+	std::vector<char> name(max_length + 1);
 	if (address != 0) {
 		MEMORY_BASIC_INFORMATION mbi;
 		VirtualQuery(address, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], maxLength);
+		GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], max_length);
 	}
 	return std::string(&name[0]);
 }
 
-static os::ExceptionHandler exceptionHandler = 0;
-static LPTOP_LEVEL_EXCEPTION_FILTER previousExceptionFilter;
+static os::ExceptionHandler except_handler = 0;
+static LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
 
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
-	if (::exceptionHandler != 0) {
-		::exceptionHandler(exceptionInfo->ContextRecord);
+	if (::except_handler != 0) {
+		::except_handler(exceptionInfo->ContextRecord);
 	}
-	if (::previousExceptionFilter != 0) {
-		return ::previousExceptionFilter(exceptionInfo);
+	if (::prev_except_handler != 0) {
+		return ::prev_except_handler(exceptionInfo);
 	}
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
-	::exceptionHandler = handler;
+	::except_handler = handler;
 	if (handler != 0) {
-		::previousExceptionFilter = SetUnhandledExceptionFilter(ExceptionFilter);
+		::prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
 	} else {
-		SetUnhandledExceptionFilter(::previousExceptionFilter);
+		SetUnhandledExceptionFilter(::prev_except_handler);
 	}
 }
 
-static os::InterruptHandler interruptHandler;
+static os::InterruptHandler interrupt_handler;
 
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 	switch (dwCtrlType) {
 	case CTRL_C_EVENT:
-		if (::interruptHandler != 0) {
-			::interruptHandler(0);
+		if (::interrupt_handler != 0) {
+			::interrupt_handler(0);
 		}
 	}
 	return FALSE;
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
-	::interruptHandler = handler;
+	::interrupt_handler = handler;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }

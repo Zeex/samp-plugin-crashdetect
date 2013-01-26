@@ -50,51 +50,51 @@ private:
 };
 
 AMXStackFrame::AMXStackFrame(AMXScript amx)
-	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0)
+	: amx_(amx), frame_addr_(0), ret_addr_(0), func_addr_(0)
 {
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frameAddr, const AMXDebugInfo *debugInfo)
-	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0), debugInfo_(debugInfo)
+AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frame_addr, const AMXDebugInfo *debug_info)
+	: amx_(amx), frame_addr_(0), ret_addr_(0), func_addr_(0), debug_info_(debug_info)
 {
 	ucell data = reinterpret_cast<ucell>(amx_.GetData());
 	ucell code = reinterpret_cast<ucell>(amx_.GetCode());
 
-	if (IsStackAddr(frameAddr)) {
-		ucell retAddr = *(reinterpret_cast<ucell*>(data + frameAddr) + 1);
-		Init(frameAddr, retAddr);
+	if (IsStackAddr(frame_addr)) {
+		ucell ret_addr = *(reinterpret_cast<ucell*>(data + frame_addr) + 1);
+		Init(frame_addr, ret_addr);
 	} else {
-		Init(frameAddr);
+		Init(frame_addr);
 	}
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frameAddr, ucell retAddr, const AMXDebugInfo *debugInfo)
-	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0), debugInfo_(debugInfo)
+AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, const AMXDebugInfo *debug_info)
+	: amx_(amx), frame_addr_(0), ret_addr_(0), func_addr_(0), debug_info_(debug_info)
 {
-	Init(frameAddr, retAddr);
+	Init(frame_addr, ret_addr);
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frameAddr, ucell retAddr, ucell funcAddr, const AMXDebugInfo *debugInfo)
-	: amx_(amx), frameAddr_(0), retAddr_(0), funcAddr_(0), debugInfo_(debugInfo)
+AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, ucell func_addr, const AMXDebugInfo *debug_info)
+	: amx_(amx), frame_addr_(0), ret_addr_(0), func_addr_(0), debug_info_(debug_info)
 {
-	Init(frameAddr, retAddr, funcAddr);
+	Init(frame_addr, ret_addr, func_addr);
 }
 
-void AMXStackFrame::Init(ucell frameAddr, ucell retAddr, ucell funcAddr) {
-	if (IsStackAddr(frameAddr)) {
-		frameAddr_ = frameAddr;
+void AMXStackFrame::Init(ucell frame_addr, ucell ret_addr, ucell func_addr) {
+	if (IsStackAddr(frame_addr)) {
+		frame_addr_ = frame_addr;
 	}
-	if (IsCodeAddr(retAddr)) {
-		retAddr_ = retAddr;
+	if (IsCodeAddr(ret_addr)) {
+		ret_addr_ = ret_addr;
 	}
-	if (IsCodeAddr(funcAddr)) {
-		funcAddr_ = funcAddr;
+	if (IsCodeAddr(func_addr)) {
+		func_addr_ = func_addr;
 	}
 
-	if (funcAddr_ == 0) {
+	if (func_addr_ == 0) {
 		AMXDebugSymbol func = GetFuncSymbol();
 		if (func) {
-			funcAddr_ = func.GetCodeStartAddr();
+			func_addr_ = func.GetCodeStartAddr();
 		}
 	}
 }
@@ -104,21 +104,21 @@ AMXStackFrame::~AMXStackFrame() {
 
 cell AMXStackFrame::GetArgValue(int index) const {
 	const unsigned char *data = amx_.GetData();
-	return *reinterpret_cast<const cell*>(data + frameAddr_ + (3 + index) * sizeof(cell));
+	return *reinterpret_cast<const cell*>(data + frame_addr_ + (3 + index) * sizeof(cell));
 }
 
 int AMXStackFrame::GetNumArgs() const {
-	if (frameAddr_ > 0) {
+	if (frame_addr_ > 0) {
 		const unsigned char *data = amx_.GetData();
-		return *reinterpret_cast<const cell*>(data + frameAddr_ + 2*sizeof(cell)) / sizeof(cell);
+		return *reinterpret_cast<const cell*>(data + frame_addr_ + 2*sizeof(cell)) / sizeof(cell);
 	}
 	return -1;
 }
 
 AMXStackFrame AMXStackFrame::GetNextFrame() const {
-	if (frameAddr_ != 0 && retAddr_ != 0) {
+	if (frame_addr_ != 0 && ret_addr_ != 0) {
 		const unsigned char *data = amx_.GetData();
-		return AMXStackFrame(amx_, *reinterpret_cast<const cell*>(data + frameAddr_), debugInfo_);
+		return AMXStackFrame(amx_, *reinterpret_cast<const cell*>(data + frame_addr_), debug_info_);
 	} else {
 		return AMXStackFrame(amx_);
 	}
@@ -126,8 +126,8 @@ AMXStackFrame AMXStackFrame::GetNextFrame() const {
 
 AMXDebugSymbol AMXStackFrame::GetFuncSymbol() const {
 	AMXDebugSymbol func;
-	if (HasDebugInfo() && retAddr_ != 0) {
-		func = debugInfo_->GetFunc(retAddr_);
+	if (HasDebugInfo() && ret_addr_ != 0) {
+		func = debug_info_->GetFunc(ret_addr_);
 	}
 	return func;
 }
@@ -135,8 +135,8 @@ AMXDebugSymbol AMXStackFrame::GetFuncSymbol() const {
 void AMXStackFrame::GetArgSymbols(std::vector<AMXDebugSymbol> &args) const {
 	if (AMXDebugSymbol func = GetFuncSymbol()) {
 		std::remove_copy_if(
-			debugInfo_->GetSymbols().begin(),
-			debugInfo_->GetSymbols().end(),
+			debug_info_->GetSymbols().begin(),
+			debug_info_->GetSymbols().end(),
 			std::back_inserter(args),
 			std::not1(IsArgumentOf(func.GetCodeStartAddr()))
 		);
@@ -149,26 +149,26 @@ std::string AMXStackFrame::AsString() const {
 
 	AMXDebugSymbol func = GetFuncSymbol();
 
-	if (retAddr_ == 0) {
+	if (ret_addr_ == 0) {
 		stream << "???????? in ";
 	} else {
 		stream << std::hex << std::setw(8) << std::setfill('0') 
-			<< retAddr_ << std::dec << " in ";
+			<< ret_addr_ << std::dec << " in ";
 	}
 
 	if (func) {
-		if (IsPublicFuncAddr(funcAddr_) && !IsMainAddr(funcAddr_)) {
+		if (IsPublicFuncAddr(func_addr_) && !IsMainAddr(func_addr_)) {
 			stream << "public ";
 		}
-		std::string funTag = debugInfo_->GetTagName((func).GetTag());
-		if (!funTag.empty() && funTag != "_") {
-			stream << funTag << ":";
+		std::string func_tag = debug_info_->GetTagName((func).GetTag());
+		if (!func_tag.empty() && func_tag != "_") {
+			stream << func_tag << ":";
 		}		
-		stream << debugInfo_->GetFuncName(funcAddr_);
+		stream << debug_info_->GetFuncName(func_addr_);
 	} else {		
-		const char *name = amx_.FindPublic(funcAddr_);
+		const char *name = amx_.FindPublic(func_addr_);
 		if (name != 0) {
-			if (!IsMainAddr(funcAddr_)) {
+			if (!IsMainAddr(func_addr_)) {
 				stream << "public ";
 			}
 			stream << name;
@@ -179,8 +179,8 @@ std::string AMXStackFrame::AsString() const {
 
 	stream << " (";
 
-	if (func && frameAddr_ != 0) {
-		AMXStackFrame nextFrame = GetNextFrame();
+	if (func && frame_addr_ != 0) {
+		AMXStackFrame next_frame = GetNextFrame();
 
 		std::vector<AMXDebugSymbol> args;
 		GetArgSymbols(args);
@@ -197,14 +197,14 @@ std::string AMXStackFrame::AsString() const {
 				stream << "&";
 			}
 
-			std::string tag = debugInfo_->GetTag(arg.GetTag()).GetName() + ":";
+			std::string tag = debug_info_->GetTag(arg.GetTag()).GetName() + ":";
 			if (tag == "_:") {
 				stream << arg.GetName();
 			} else {
 				stream << tag << arg.GetName();
 			}
 
-			cell value = nextFrame.GetArgValue(i);
+			cell value = next_frame.GetArgValue(i);
 			if (arg.IsVariable()) {
 				if (tag == "bool:") {
 					stream << "=" << (value ? "true" : "false");
@@ -220,7 +220,7 @@ std::string AMXStackFrame::AsString() const {
 						if (dims[i].GetSize() == 0) {
 							stream << "[]";
 						} else {
-							std::string tag = debugInfo_->GetTagName(dims[i].GetTag()) + ":";
+							std::string tag = debug_info_->GetTagName(dims[i].GetTag()) + ":";
 							if (tag == "_:") tag.clear();
 							stream << "[" << tag << dims[i].GetSize() << "]";
 						}
@@ -233,7 +233,7 @@ std::string AMXStackFrame::AsString() const {
 				if ((arg.IsArray() || arg.IsArrayRef())
 						&& dims.size() == 1
 						&& tag == "_:"
-						&& debugInfo_->GetTagName(dims[0].GetTag()) == "_")
+						&& debug_info_->GetTagName(dims[0].GetTag()) == "_")
 				{
 					std::pair<std::string, bool> s = GetAMXString(value, dims[0].GetSize());
 					stream << " ";
@@ -249,20 +249,20 @@ std::string AMXStackFrame::AsString() const {
 			}
 		}	
 
-		int numArgs = static_cast<int>(args.size());
-		int numVarArgs = nextFrame.GetNumArgs() - numArgs;
+		int num_args = static_cast<int>(args.size());
+		int num_var_args = next_frame.GetNumArgs() - num_args;
 
 		// If number of arguments passed to the function exceeds that obtained
 		// through debug info it's likely that the function takes a variable
 		// number of arguments. In this case we don't evaluate them but rather
 		// just say that they are present (because we can't say anything about
 		// their names and types).
-		if (numVarArgs > 0) {
-			if (numArgs != 0) {
+		if (num_var_args > 0) {
+			if (num_args != 0) {
 				stream << ", ";
 			}
-			stream << "... <" << numVarArgs << " variable ";
-			if (numVarArgs == 1) {
+			stream << "... <" << num_var_args << " variable ";
+			if (num_var_args == 1) {
 				stream << "argument";
 			} else {
 				stream << "arguments";
@@ -273,12 +273,12 @@ std::string AMXStackFrame::AsString() const {
 
 	stream << ")";
 
-	if (HasDebugInfo() && retAddr_ != 0) {
-		std::string fileName = debugInfo_->GetFileName(retAddr_);
+	if (HasDebugInfo() && ret_addr_ != 0) {
+		std::string fileName = debug_info_->GetFileName(ret_addr_);
 		if (!fileName.empty()) {
 			stream << " at " << fileName;
 		}
-		long line = debugInfo_->GetLineNo(retAddr_);
+		long line = debug_info_->GetLineNo(ret_addr_);
 		if (line != 0) {
 			stream << ":" << line;
 		}
@@ -371,13 +371,13 @@ std::pair<std::string, bool> AMXStackFrame::GetAMXString(cell address, std::size
 	return result;
 }
 
-AMXStackTrace::AMXStackTrace(AMX *amx, const AMXDebugInfo *debugInfo)
-	: frame_(amx, amx->frm, debugInfo)
+AMXStackTrace::AMXStackTrace(AMX *amx, const AMXDebugInfo *debug_info)
+	: frame_(amx, amx->frm, debug_info)
 {
 }
 
-AMXStackTrace::AMXStackTrace(AMX *amx, ucell frameAddr, const AMXDebugInfo *debugInfo)
-	: frame_(amx, frameAddr, debugInfo)
+AMXStackTrace::AMXStackTrace(AMX *amx, ucell frame_addr, const AMXDebugInfo *debug_info)
+	: frame_(amx, frame_addr, debug_info)
 {
 }
 

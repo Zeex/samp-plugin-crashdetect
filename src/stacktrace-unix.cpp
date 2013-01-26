@@ -49,13 +49,13 @@ static std::string GetSymbolName(const std::string &symbol) {
 StackTrace::StackTrace(void *context) {
 	#ifdef HAVE_BACKTRACE
 		void *trace[kMaxFrames];
-		int traceLength = backtrace(trace, kMaxFrames);
+		int trace_length = backtrace(trace, kMaxFrames);
 
 		#ifdef HAVE_BACKTRACE_SYMBOLS
-			char **symbols = backtrace_symbols(trace, traceLength);
+			char **symbols = backtrace_symbols(trace, trace_length);
 		#endif
 
-		for (int i = 0; i < traceLength; i++) {
+		for (int i = 0; i < trace_length; i++) {
 			#ifdef HAVE_BACKTRACE_SYMBOLS
 				if (symbols[i] != 0) {
 					std::string name = GetSymbolName(symbols[i]);

@@ -56,64 +56,64 @@ AMXPathFinder::AMXFile::~AMXFile() {
 }
 
 AMXPathFinder::~AMXPathFinder() {
-	for (StringToAMXFileMap::const_iterator mapIter = stringToAMXFile_.begin(); 
-			mapIter != stringToAMXFile_.end(); ++mapIter) 
+	for (StringToAMXFileMap::const_iterator mapIter = string_to_amx_file_.begin(); 
+			mapIter != string_to_amx_file_.end(); ++mapIter) 
 	{
 		delete mapIter->second;
 	}
 }
 
 void AMXPathFinder::AddSearchPath(const std::string &path) {
-	searchPaths_.push_back(path);
+	search_paths_.push_back(path);
 }
 
 std::string AMXPathFinder::FindAMX(AMXScript amx) {
-	// Look up in cache first 
-	AMXToStringMap::const_iterator it = amxToString_.find(amx);
-	if (it != amxToString_.end()) {
-		return it->second;
+	// Look up in cache first.
+	AMXToStringMap::const_iterator cache_iterator = amx_to_string_.find(amx);
+	if (cache_iterator != amx_to_string_.end()) {
+		return cache_iterator->second;
 	} 
 
 	std::string result;
 
-	// Load all .amx files in each of the current search paths (non-recursively)
-	for (std::list<std::string>::const_iterator dirIter = searchPaths_.begin(); 
-			dirIter != searchPaths_.end(); ++dirIter) 
+	// Load all .amx files in each of the current search paths (non-recursive).
+	for (std::list<std::string>::const_iterator dir_iterator = search_paths_.begin(); 
+			dir_iterator != search_paths_.end(); ++dir_iterator) 
 	{
 		std::vector<std::string> files;
-		fileutils::GetDirectoryFiles(*dirIter, "*.amx", files);
+		fileutils::GetDirectoryFiles(*dir_iterator, "*.amx", files);
 
-		for (std::vector<std::string>::iterator fileIter = files.begin(); 
-				fileIter != files.end(); ++fileIter) 
+		for (std::vector<std::string>::iterator file_iterator = files.begin(); 
+				file_iterator != files.end(); ++file_iterator) 
 		{
 			std::string filename;
-			filename.append(*dirIter);
+			filename.append(*dir_iterator);
 			filename.append(fileutils::kNativePathSepString);
-			filename.append(*fileIter);
+			filename.append(*file_iterator);
 
 			std::time_t last_write = fileutils::GetModificationTime(filename);
 
-			StringToAMXFileMap::iterator script_it = stringToAMXFile_.find(filename);
-			if (script_it == stringToAMXFile_.end() || 
+			StringToAMXFileMap::iterator script_it = string_to_amx_file_.find(filename);
+			if (script_it == string_to_amx_file_.end() || 
 					script_it->second->GetModificationTime() < last_write) {
-				if (script_it != stringToAMXFile_.end()) {
-					stringToAMXFile_.erase(script_it);
+				if (script_it != string_to_amx_file_.end()) {
+					string_to_amx_file_.erase(script_it);
 				}
 				AMXFile *script = new AMXFile(filename);
 				if (script != 0 && script->IsLoaded()) {
-					stringToAMXFile_.insert(std::make_pair(filename, script));
+					string_to_amx_file_.insert(std::make_pair(filename, script));
 				}
 			}
 		}
 	}	
 
-	for (StringToAMXFileMap::const_iterator mapIter = stringToAMXFile_.begin(); 
-			mapIter != stringToAMXFile_.end(); ++mapIter) 
+	for (StringToAMXFileMap::const_iterator mapIter = string_to_amx_file_.begin(); 
+			mapIter != string_to_amx_file_.end(); ++mapIter) 
 	{
 		const AMX *otherAmx = mapIter->second->GetAmx();
 		if (std::memcmp(amx.GetHeader(), otherAmx->base, sizeof(AMX_HEADER)) == 0) {
 			result = mapIter->first;
-			amxToString_.insert(std::make_pair(amx, result));
+			amx_to_string_.insert(std::make_pair(amx, result));
 			break;
 		}
 	}

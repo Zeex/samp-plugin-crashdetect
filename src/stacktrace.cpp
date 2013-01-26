@@ -32,8 +32,8 @@
 StackTrace::StackTrace(HappyCompiler *happyCompiler) {
 }
 
-StackFrame::StackFrame(void *retAddr, const std::string &name)
-		: retAddr_(retAddr), name_(name)
+StackFrame::StackFrame(void *ret_addr, const std::string &name)
+		: ret_addr_(ret_addr), name_(name)
 {
 }
 
@@ -44,7 +44,7 @@ std::string StackFrame::AsString() const {
 	std::stringstream stream;
 
 	stream << std::hex << std::setw(8) << std::setfill('0') 
-		<< reinterpret_cast<long>(retAddr_) << std::dec;
+		<< reinterpret_cast<long>(ret_addr_) << std::dec;
 	if (!name_.empty()) {
 		stream << " in " << name_ << " ()";
 	} else {

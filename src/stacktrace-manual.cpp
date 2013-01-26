@@ -32,18 +32,18 @@
 #include "compiler.h"
 #include "stacktrace-manual.h"
 
-static inline void *GetReturnAddress(void *frmAddr) {
-	return *reinterpret_cast<void**>(reinterpret_cast<char*>(frmAddr) + 4);
+static inline void *GetReturnAddress(void *frame) {
+	return *reinterpret_cast<void**>(reinterpret_cast<char*>(frame) + 4);
 }
 
-static inline void *GetNextFrame(void *frmAddr) {
-	return *reinterpret_cast<void**>(frmAddr);
+static inline void *GetNextFrame(void *frame) {
+	return *reinterpret_cast<void**>(frame);
 }
 
 StackTraceManual::StackTraceManual(void *frame, void *pc)
 	: StackTrace(static_cast<HappyCompiler*>(0))
 {
-	void *curFrame = frame == 0
+	void *cur_frame = frame == 0
 		? compiler::GetStackFrame()
 		: frame;
 
@@ -51,18 +51,18 @@ StackTraceManual::StackTraceManual(void *frame, void *pc)
 	void *bot = compiler::GetStackBottom();
 
 	for (int i = 0; ; i++) {
-		if (curFrame == 0
-			|| (curFrame >= top && top != 0)
-			|| (curFrame < bot && bot != 0)) {
+		if (cur_frame == 0
+			|| (cur_frame >= top && top != 0)
+			|| (cur_frame < bot && bot != 0)) {
 			break;
 		}
 
-		void *ret = GetReturnAddress(curFrame);
+		void *ret = GetReturnAddress(cur_frame);
 		if (ret == 0) {
 			break;
 		}
 
-		curFrame = GetNextFrame(curFrame);
+		cur_frame = GetNextFrame(cur_frame);
 		frames_.push_back(StackFrame(ret));
 	}
 }

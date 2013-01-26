@@ -34,59 +34,59 @@
 
 #include "os.h"
 
-std::string os::GetModulePathFromAddr(void *address, std::size_t maxLength) {
-	std::vector<char> name(maxLength + 1);
+std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
+	std::vector<char> name(max_length + 1);
 	if (address != 0) {
 		Dl_info info;
 		dladdr(address, &info);
-		strncpy(&name[0], info.dli_fname, maxLength);
+		strncpy(&name[0], info.dli_fname, max_length);
 	}
 	return std::string(&name[0]);
 }
 
-static os::ExceptionHandler exceptionHandler = 0;
-static struct sigaction previousSIGSEGVAction;
+static os::ExceptionHandler except_handler = 0;
+static struct sigaction prev_sigsegv_action;
 
 static void HandleSIGSEGV(int sig, siginfo_t *info, void *context)
 {
-	if (::exceptionHandler != 0) {
-		::exceptionHandler(context);
+	if (::except_handler != 0) {
+		::except_handler(context);
 	}
 
-	sigaction(sig, &::previousSIGSEGVAction, 0);
+	sigaction(sig, &::prev_sigsegv_action, 0);
 	raise(sig);
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
-	::exceptionHandler = handler;
+	::except_handler = handler;
 
 	struct sigaction action = {0};
 	sigemptyset(&action.sa_mask);
 	action.sa_sigaction = HandleSIGSEGV;
 	action.sa_flags = SA_SIGINFO;
 
-	sigaction(SIGSEGV, &action, &::previousSIGSEGVAction);
+	sigaction(SIGSEGV, &action, &::prev_sigsegv_action);
 }
 
-static os::InterruptHandler interruptHandler;
-static struct sigaction previousSIGINTAction;
+static os::InterruptHandler interrupt_handler;
+static struct sigaction prev_sigint_action;
 
 static void HandleSIGINT(int sig, siginfo_t *info, void *context) {
-	if (::interruptHandler != 0) {
-		::interruptHandler(context);
+	if (::interrupt_handler != 0) {
+		::interrupt_handler(context);
 	}
 
-	sigaction(sig, &::previousSIGINTAction, 0);
+	sigaction(sig, &::prev_sigint_action, 0);
 	raise(sig);
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
-	::interruptHandler = handler;
+	::interrupt_handler = handler;
 
 	struct sigaction action = {0};
 	sigemptyset(&action.sa_mask);
 	action.sa_sigaction = HandleSIGINT;
 	action.sa_flags = SA_SIGINFO;
 
-	sigaction(SIGINT, &action, &::previousSIGINTAction);
+	sigaction(SIGINT, &action, &::prev_sigint_action);
 }

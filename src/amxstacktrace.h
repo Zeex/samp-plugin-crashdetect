@@ -25,6 +25,7 @@
 #ifndef AMXSTACKTRACE_H
 #define AMXSTACKTRACE_H
 
+#include <cstddef>
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -44,26 +45,26 @@ public:
 	}
 
 	operator bool() const {
-		return frameAddr_ != 0;
+		return frame_addr_ != 0;
 	}
 
 	AMXStackFrame(AMXScript amx);
-	AMXStackFrame(AMXScript amx, ucell frmAddr, const AMXDebugInfo *debugInfo = 0);
-	AMXStackFrame(AMXScript amx, ucell frmAddr, ucell retAddr, const AMXDebugInfo *debugInfo = 0);
-	AMXStackFrame(AMXScript amx, ucell frmAddr, ucell retAddr, ucell funAddr, const AMXDebugInfo *debugInfo = 0);
+	AMXStackFrame(AMXScript amx, ucell frame_addr, const AMXDebugInfo *debug_info = 0);
+	AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, const AMXDebugInfo *debug_info = 0);
+	AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, ucell func_addr, const AMXDebugInfo *debug_info = 0);
 
 	virtual ~AMXStackFrame();
 
 	AMXScript amx() { return amx_; }
-	const AMXDebugInfo *GetDebugInfo() const { return debugInfo_; }
+	const AMXDebugInfo *GetDebugInfo() const { return debug_info_; }
 
 	bool HasDebugInfo() const {
-		return debugInfo_ != 0 && debugInfo_->IsLoaded();
+		return debug_info_ != 0 && debug_info_->IsLoaded();
 	}
 
-	ucell GetFrameAddr() const { return frameAddr_; }
-	ucell GetRetAddr() const { return retAddr_; }
-	ucell GetFuncAddr() const { return funcAddr_; }
+	ucell GetFrameAddr() const { return frame_addr_; }
+	ucell GetRetAddr() const { return ret_addr_; }
+	ucell GetFuncAddr() const { return func_addr_; }
 
 	cell GetArgValue(int index) const;
 	int GetNumArgs() const;
@@ -100,20 +101,20 @@ protected:
 	void GetArgSymbols(std::vector<AMXDebugSymbol> &args) const;
 
 private:
-	void Init(ucell frameAddr, ucell retAddr = 0, ucell funcAddr = 0);
+	void Init(ucell frame_addr, ucell ret_addr = 0, ucell func_addr = 0);
 
 private:
 	AMXScript amx_;
-	ucell frameAddr_;
-	ucell retAddr_;
-	ucell funcAddr_;
-	const AMXDebugInfo *debugInfo_;
+	ucell frame_addr_;
+	ucell ret_addr_;
+	ucell func_addr_;
+	const AMXDebugInfo *debug_info_;
 };
 
 class AMXStackTrace {
 public:
-	AMXStackTrace(AMX *amx, const AMXDebugInfo *debugInfo = 0);
-	AMXStackTrace(AMX *amx, ucell frameAddr = 0, const AMXDebugInfo *debugInfo = 0);
+	AMXStackTrace(AMX *amx, const AMXDebugInfo *debug_info = 0);
+	AMXStackTrace(AMX *amx, ucell frame_addr = 0, const AMXDebugInfo *debug_info = 0);
 
 	// Move onto next frame or die.
 	bool Next();

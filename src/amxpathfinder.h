@@ -46,7 +46,7 @@ public:
 	std::string FindAMX(AMXScript amx);
 
 private:
-	std::list<std::string> searchPaths_;
+	std::list<std::string> search_paths_;
 
 	class AMXFile {
 	public:
@@ -70,10 +70,10 @@ private:
 	};
 
 	typedef std::map<std::string, AMXFile*> StringToAMXFileMap;
-	StringToAMXFileMap stringToAMXFile_;
+	StringToAMXFileMap string_to_amx_file_;
 
 	typedef std::map<AMX*, std::string> AMXToStringMap;
-	AMXToStringMap amxToString_;
+	AMXToStringMap amx_to_string_;
 };
 
 #endif // AMXPATHFINDER_H
