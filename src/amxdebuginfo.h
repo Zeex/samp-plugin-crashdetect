@@ -22,8 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXdebug_info_H
-#define AMXdebug_info_H
+#ifndef AMXDEBUGINFO_H
+#define AMXDEBUGINFO_H
 
 #include <cassert>
 #include <iterator>
@@ -284,4 +284,4 @@ static inline bool operator<(const AMXDebugSymbol &left, const AMXDebugSymbol &r
 	return left.GetAddr() < right.GetAddr();
 }
 
-#endif // !AMXdebug_info_H
+#endif // !AMXDEBUGINFO_H
