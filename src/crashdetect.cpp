@@ -163,12 +163,17 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 
 	switch (error.code()) {
 		case AMX_ERR_BOUNDS: {
-			cell bound = *(reinterpret_cast<cell*>(amx_.GetCode() + amx_.GetCip() + sizeof(cell)));
-			cell index = amx_.GetPri();
-			if (index < 0) {
-				logprintf(" Accessing element at negative index %d", index);
-			} else {
-				logprintf(" Accessing element at index %d past array upper bound %d", index, bound);
+			static const int bounds = 121;
+			cell *ip = reinterpret_cast<cell*>(amx_.GetCode() + amx_.GetCip());
+			cell opcode = *ip;
+			if (opcode == bounds) {
+				cell bound = *(ip + 1);
+				cell index = amx_.GetPri();
+				if (index < 0) {
+					logprintf(" Accessing element at negative index %d", index);
+				} else {
+					logprintf(" Accessing element at index %d past array upper bound %d", index, bound);
+				}
 			}
 			break;
 		}
@@ -197,10 +202,10 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 			break;
 		}
 		case AMX_ERR_NATIVE: {
-			static const int sysreq_c = 123;
+			static const int op_sysreq_c = 123;
 			cell *ip = reinterpret_cast<cell*>(amx_.GetCode() + amx_.GetCip());
 			cell opcode = *(ip - 2);
-			if (opcode == sysreq_c) {
+			if (opcode == op_sysreq_c) {
 				cell index = *(ip - 1);
 				logprintf(" %s", amx_.GetNativeName(index));
 			}
