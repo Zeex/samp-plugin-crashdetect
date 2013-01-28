@@ -196,6 +196,16 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 			logprintf(" Unknown opcode 0x%x at address 0x%08X", opcode , amx_.GetCip());
 			break;
 		}
+		case AMX_ERR_NATIVE: {
+			static const int sysreq_c = 123;
+			cell *ip = reinterpret_cast<cell*>(amx_.GetCode() + amx_.GetCip());
+			cell opcode = *(ip - 2);
+			if (opcode == sysreq_c) {
+				cell index = *(ip - 1);
+				logprintf(" %s", amx_.GetNativeName(index));
+			}
+			break;
+		}
 	}
 
 	if (error.code() != AMX_ERR_NOTFOUND &&
