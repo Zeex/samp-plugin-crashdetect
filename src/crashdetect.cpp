@@ -52,8 +52,8 @@
 static const int kOpBounds  = 121;
 static const int kOpSysreqC = 123;
 
+std::stack<NPCall*> CrashDetect::np_calls_;
 bool CrashDetect::error_detected_ = false;
-std::stack<NPCall*> CrashDetect::np_calls_;;
 
 // static
 void CrashDetect::OnException(void *context) {
