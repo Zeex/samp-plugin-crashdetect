@@ -33,6 +33,7 @@ public:
 	void set_code(int code) { code_ = code; }
 
 	const char *GetString() const;
+	static const char *GetStringFromCode(int error_code);
 
 private:
 	int code_;
