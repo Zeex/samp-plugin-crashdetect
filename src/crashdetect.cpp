@@ -162,7 +162,7 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 		return;
 	}
 
-	logprintf("Run time error %d: \"%s\"", error, error.string());
+	logprintf("Run time error %d: \"%s\"", error, error.GetString());
 
 	switch (error.code()) {
 		case AMX_ERR_BOUNDS: {

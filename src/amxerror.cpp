@@ -31,6 +31,6 @@ AMXError::AMXError(int error_code)
 {
 }
 
-const char *AMXError::string() const {
+const char *AMXError::GetString() const {
 	return aux_StrError(code_);
 }

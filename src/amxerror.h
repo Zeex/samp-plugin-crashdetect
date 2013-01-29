@@ -32,7 +32,7 @@ public:
 	int code() const { return code_; }
 	void set_code(int code) { code_ = code; }
 
-	const char *string() const;
+	const char *GetString() const;
 
 private:
 	int code_;
