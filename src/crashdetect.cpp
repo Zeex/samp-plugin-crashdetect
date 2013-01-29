@@ -308,7 +308,7 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 	}
 
 	if (die_on_error_) {
-		Printf("Aborting...");
+		Printf("Exiting");
 		std::exit(EXIT_FAILURE);
 	}
 }
