@@ -51,21 +51,18 @@ public:
 public:
 	int DoAmxCallback(cell index, cell *result, cell *params);
 	int DoAmxExec(cell *retval, int index);
-
 	void HandleException();
 	void HandleInterrupt();
 	void HandleExecError(int index, const AMXError &error);
-
+	void PrintError(const AMXError &error) const;
 	void DieOrContinue();
 
 public:
 	static void OnException(void *context);
 	static void OnInterrupt(void *context);
-
+	static void Printf(const char *format, ...);
 	static void PrintAmxBacktrace();
 	static void PrintSystemBacktrace(void *context = 0);
-
-	static void Printf(const char *format, ...);
 
 private:
 	AMXScript amx_;
