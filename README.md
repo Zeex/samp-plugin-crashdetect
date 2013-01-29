@@ -14,7 +14,7 @@ Download
 --------
 
 Get latest binaries for Windows and Linux from the [**`downloads`**][downloads]
-branch.
+branch (hit *View Raw* to download).
 
 
 FAQ
