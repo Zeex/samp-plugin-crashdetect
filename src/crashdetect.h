@@ -54,7 +54,6 @@ public:
 	void HandleInterrupt();
 	void HandleExecError(int index, const AMXError &error);
 	void PrintError(const AMXError &error) const;
-	void DieOrContinue();
 
 public:
 	static void OnException(void *context);

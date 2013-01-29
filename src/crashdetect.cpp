@@ -307,7 +307,10 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 		std::system(run_on_error_.c_str());
 	}
 
-	DieOrContinue();
+	if (die_on_error_) {
+		Printf("Aborting...");
+		std::exit(EXIT_FAILURE);
+	}
 }
 
 void CrashDetect::HandleException() {
@@ -371,12 +374,5 @@ void CrashDetect::PrintError(const AMXError &error) const {
 			}
 			break;
 		}
-	}
-}
-
-void CrashDetect::DieOrContinue() {
-	if (die_on_error_) {
-		Printf("Aborting...");
-		std::exit(EXIT_FAILURE);
 	}
 }
