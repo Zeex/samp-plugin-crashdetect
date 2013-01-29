@@ -304,6 +304,7 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 	}
 
 	if (!run_on_error_.empty()) {
+		Printf("Running command: %s", run_on_error_.c_str());
 		std::system(run_on_error_.c_str());
 	}
 
