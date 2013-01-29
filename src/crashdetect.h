@@ -65,7 +65,7 @@ public:
 	static void PrintAmxBacktrace();
 	static void PrintSystemBacktrace(void *context = 0);
 
-	static void logprintf(const char *format, ...);
+	static void Printf(const char *format, ...);
 
 private:
 	AMXScript amx_;
