@@ -17,8 +17,8 @@ Get latest binaries for Windows and Linux from the [**`downloads`**][downloads]
 branch.
 
 
-Things you might want to know
------------------------------
+FAQ
+---
 
 **How do I get function names, line numbers, etc in stack trace?**
 
@@ -49,19 +49,19 @@ semicolon-separated (or colon-separated on Linux) list of paths, similar to
 the `PATH` variable. The path can be absolute or relative to the server root.
 
 
-**Execute custom command on runtime error**
+Settings
+--------
 
-It is possible to execute a custom shell command when a runtime error occurs
-by setting the `run_on_error` option in `server.cfg`, e.g.
+The settings can be changed via `server.cfg`. CrashDetect reads the following
+options
 
-    run_on_error echo ERROR!!
+* `run_on_error <command>`
 
+  Execute a shell command on every runtime error. For example, `run_on_error echo FAIL!!`.
 
-**Shut down after first error**
-
-You might want to make the server automatically exit on first runtime error:
-
-    die_on_error 1
+* `die_on_error <0/1>`
+    
+  Shut down the server immediately after first runtime error.
 
 Donate
 ------
