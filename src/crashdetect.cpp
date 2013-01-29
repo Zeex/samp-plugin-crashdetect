@@ -318,7 +318,7 @@ void CrashDetect::HandleInterrupt() {
 }
 
 void CrashDetect::PrintError(const AMXError &error) const {
-	Printf("Run time error %d: \"%s\"", error, error.GetString());
+	Printf("Run time error %d: \"%s\"", error.code(), error.GetString());
 
 	switch (error.code()) {
 		case AMX_ERR_BOUNDS: {
