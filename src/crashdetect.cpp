@@ -214,8 +214,12 @@ CrashDetect::CrashDetect(AMX *amx)
 	: AMXService<CrashDetect>(amx)
 	, amx_(amx)
 	, prev_callback_(0)
-	, server_cfg_("server.cfg")
+	, die_on_error_(false)
+	, run_on_error_("")
 {
+	ConfigReader server_cfg("server.cfg");
+	die_on_error_ = server_cfg.GetOption("die_on_error", false);
+	run_on_error_ = server_cfg.GetOption("run_on_error", std::string());
 }
 
 int CrashDetect::Load() {
@@ -299,9 +303,8 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 		PrintAmxBacktrace();
 	}
 
-	std::string command = server_cfg_.GetOption("run_on_error", std::string());
-	if (!command.empty()) {
-		std::system(command.c_str());
+	if (!run_on_error_.empty()) {
+		std::system(run_on_error_.c_str());
 	}
 
 	DieOrContinue();
@@ -372,7 +375,7 @@ void CrashDetect::PrintError(const AMXError &error) const {
 }
 
 void CrashDetect::DieOrContinue() {
-	if (server_cfg_.GetOption("die_on_error", false)) {
+	if (die_on_error_) {
 		Printf("Aborting...");
 		std::exit(EXIT_FAILURE);
 	}

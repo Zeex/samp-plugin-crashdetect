@@ -34,7 +34,6 @@
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 #include "amxservice.h"
-#include "configreader.h"
 
 class AMXError;
 class NPCall;
@@ -70,7 +69,8 @@ private:
 	std::string amx_path_;
 	std::string amx_name_;
 	AMX_CALLBACK prev_callback_;
-	ConfigReader server_cfg_;
+	bool die_on_error_;
+	std::string run_on_error_;
 
 private:
 	static std::stack<NPCall*> np_calls_;
