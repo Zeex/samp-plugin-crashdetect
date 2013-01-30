@@ -298,6 +298,13 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 	{
 		PrintAmxBacktrace();
 	}
+
+	// public OnRuntimeError(error_code);
+	cell callback_index = amx_.GetPublicIndex("OnRuntimeError");
+	if (callback_index >= 0) {
+		amx_Push(amx_, error.code());
+		amx_Exec(amx_, NULL, callback_index);
+	}
 }
 
 void CrashDetect::HandleException() {

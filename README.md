@@ -47,6 +47,12 @@ path manually via the `AMX_PATH` environment variable which is a
 semicolon-separated (or colon-separated on Linux) list of paths, similar to
 the `PATH` variable. The path can be absolute or relative to the server root.
 
+**Is it possible to perform some action whenever a runtime error occurs?**
+
+Yes, use the `OnRuntimeError(error_code)` callback. But remember that if
+something goes wrong inside of it (i.e. another error) you can end up with
+infinite recursion!
+
 Donate
 ------
 
