@@ -52,7 +52,6 @@ static const int kOpBounds  = 121;
 static const int kOpSysreqC = 123;
 
 std::stack<NPCall*> CrashDetect::np_calls_;
-bool CrashDetect::error_detected_ = false;
 
 // static
 void CrashDetect::OnException(void *context) {
@@ -270,10 +269,15 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
 	np_calls_.push(&call);
 
 	int error = ::amx_Exec(amx(), retval, index);
-	if (error != AMX_ERR_NONE && !error_detected_) {
+	if (error == AMX_ERR_CALLBACK ||
+	    error == AMX_ERR_NOTFOUND ||
+		error == AMX_ERR_INIT     ||
+		error == AMX_ERR_INDEX    ||
+		error == AMX_ERR_SLEEP)
+	{
+		// For these types of errors amx_Error() is not called because of
+		// early return from amx_Exec().
 		HandleExecError(index, error);
-	} else {
-		error_detected_ = false;
 	}
 
 	np_calls_.pop();
@@ -281,8 +285,6 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
 }
 
 void CrashDetect::HandleExecError(int index, const AMXError &error) {
-	CrashDetect::error_detected_ = true;
-
 	if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		return;
 	}
@@ -290,7 +292,7 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 	PrintError(error);
 
 	if (error.code() != AMX_ERR_NOTFOUND &&
-		error.code() != AMX_ERR_INDEX &&
+		error.code() != AMX_ERR_INDEX    &&
 		error.code() != AMX_ERR_CALLBACK &&
 		error.code() != AMX_ERR_INIT)
 	{

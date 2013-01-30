@@ -71,7 +71,6 @@ private:
 
 private:
 	static std::stack<NPCall*> np_calls_;
-	static bool error_detected_;
 };
 
 #endif // !CRASHDETECT_H
