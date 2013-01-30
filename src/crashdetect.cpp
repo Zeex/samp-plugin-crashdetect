@@ -239,10 +239,10 @@ int CrashDetect::Load() {
 		}
 	}
 
-	amx_path_ = pathFinder.FindAMX(this->amx());
+	amx_path_ = pathFinder.FindAMX(amx_);
 	amx_name_ = fileutils::GetFileName(amx_path_);
 
-	if (!amx_path_.empty() && AMXDebugInfo::IsPresent(this->amx())) {
+	if (!amx_path_.empty() && AMXDebugInfo::IsPresent(amx_)) {
 		debug_info_.Load(amx_path_);
 	}
 
@@ -257,18 +257,18 @@ int CrashDetect::Unload() {
 }
 
 int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
-	NPCall call = NPCall::Native(amx(), index);
+	NPCall call = NPCall::Native(amx_, index);
 	np_calls_.push(&call);
-	int error = prev_callback_(amx(), index, result, params);
+	int error = prev_callback_(amx_, index, result, params);
 	np_calls_.pop();
 	return error;
 }
 
 int CrashDetect::DoAmxExec(cell *retval, int index) {	
-	NPCall call = NPCall::Public(amx(), index);
+	NPCall call = NPCall::Public(amx_, index);
 	np_calls_.push(&call);
 
-	int error = ::amx_Exec(amx(), retval, index);
+	int error = ::amx_Exec(amx_, retval, index);
 	if (error == AMX_ERR_CALLBACK ||
 	    error == AMX_ERR_NOTFOUND ||
 		error == AMX_ERR_INIT     ||
