@@ -7,3 +7,6 @@ CMakeLists.txt.user*
 
 # Vim temp files
 *.swp
+
+# Python
+*.pyc
