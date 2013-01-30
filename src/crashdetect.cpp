@@ -39,7 +39,6 @@
 #include "amxscript.h"
 #include "amxstacktrace.h"
 #include "compiler.h"
-#include "configreader.h"
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"
@@ -214,12 +213,7 @@ CrashDetect::CrashDetect(AMX *amx)
 	: AMXService<CrashDetect>(amx)
 	, amx_(amx)
 	, prev_callback_(0)
-	, die_on_error_(false)
-	, run_on_error_("")
 {
-	ConfigReader server_cfg("server.cfg");
-	die_on_error_ = server_cfg.GetOption("die_on_error", false);
-	run_on_error_ = server_cfg.GetOption("run_on_error", std::string());
 }
 
 int CrashDetect::Load() {
@@ -301,16 +295,6 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 		error.code() != AMX_ERR_INIT)
 	{
 		PrintAmxBacktrace();
-	}
-
-	if (!run_on_error_.empty()) {
-		Printf("Running command: %s", run_on_error_.c_str());
-		std::system(run_on_error_.c_str());
-	}
-
-	if (die_on_error_) {
-		Printf("Exiting");
-		std::exit(EXIT_FAILURE);
 	}
 }
 

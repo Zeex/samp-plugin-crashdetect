@@ -16,7 +16,6 @@ Download
 Get latest binaries for Windows and Linux from the [**`downloads`**][downloads]
 branch (hit *View Raw* to download).
 
-
 FAQ
 ---
 
@@ -47,21 +46,6 @@ find it when loading debug info. In order to fix this you have to specify the
 path manually via the `AMX_PATH` environment variable which is a
 semicolon-separated (or colon-separated on Linux) list of paths, similar to
 the `PATH` variable. The path can be absolute or relative to the server root.
-
-
-Settings
---------
-
-The settings can be changed via `server.cfg`. CrashDetect reads the following
-options
-
-* `run_on_error <command>`
-
-  Execute a shell command on every runtime error. For example, `run_on_error echo FAIL!!`.
-
-* `die_on_error <0/1>`
-    
-  Shut down the server immediately after first runtime error.
 
 Donate
 ------
