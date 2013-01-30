@@ -22,6 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstring>
+
 #include <amx/amx.h>
 
 #include "amxscript.h"
@@ -91,6 +93,28 @@ int AMXScript::GetNumNatives() const {
 int AMXScript::GetNumPublics() const {
 	const AMX_HEADER *hdr = GetHeader();
 	return (hdr->natives - hdr->publics) / hdr->defsize;
+}
+
+cell AMXScript::GetNativeIndex(const char *name) const {
+	int n = GetNumNatives();
+	const AMX_FUNCSTUBNT *natives = GetNatives();
+	for (int i = 0; i < n; i++) {
+		if (std::strcmp(GetName(natives[i].nameofs), name) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+cell AMXScript::GetPublicIndex(const char *name) const {
+	int n = GetNumPublics();
+	const AMX_FUNCSTUBNT *publics = GetPublics();
+	for (int i = 0; i < n; i++) {
+		if (std::strcmp(GetName(publics[i].nameofs), name) == 0) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 ucell AMXScript::GetNativeAddr(int index) const {

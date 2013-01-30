@@ -25,6 +25,8 @@
 #ifndef AMXSCRIPT_H
 #define AMXSCRIPT_H
 
+#include <limits>
+
 #include <amx/amx.h>
 
 #include "amxerror.h"
@@ -79,6 +81,9 @@ public:
 
 	int GetNumNatives() const;
 	int GetNumPublics() const;
+
+	cell GetNativeIndex(const char *name) const;
+	cell GetPublicIndex(const char *name) const;
 
 	ucell GetNativeAddr(int index) const;
 	ucell GetPublicAddr(int index) const;
