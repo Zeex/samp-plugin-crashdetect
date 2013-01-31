@@ -22,7 +22,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cctype>
 #include <string>
 
 #ifdef _WIN32
@@ -39,13 +38,12 @@
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
-#include "tcpsocket.h"
 #include "thread.h"
 #include "version.h"
+#include "versioncheck.h"
 
-static Version version(PROJECT_VERSION_STRING);
 static Version latest_version;
-static bool compare_versions = false;
+static bool notify_update = false;
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
@@ -65,42 +63,9 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 	return CrashDetect::Get(amx)->DoAmxExec(retval, index);
 }
 
-static void CheckVersion() {
-	TCPSocket socket;
-	socket.SetReceiveTimeout(3000);
-
-	if (socket.Connect("zeex.github.com", "80")) {
-		char send_buffer[] = 
-			"GET /samp-plugin-crashdetect/version HTTP/1.1\r\n"
-			"Host: zeex.github.com\r\n"
-			"\r\n";
-		socket.Send(send_buffer);
-
-		std::string response;
-		char receive_buffer[1024];
-		int nbytes;
-
-		while ((nbytes = socket.Receive(receive_buffer)) > 0) {
-			response.append(receive_buffer, nbytes);
-		}
-
-		std::string version_string;
-		std::string::size_type pos = response.find("<html>") - 1;
-		while (pos >= 0 && std::isspace(response[pos])) {
-			pos--;
-		}
-		while (pos >= 0 && !std::isspace(response[pos])) {
-			version_string.insert(0, &response[pos], 1);
-			pos--;
-		}
-	
-		::latest_version.FromString(version_string);
-		::compare_versions = true;
-	}
-}
-
 static void CheckVersionThread(void *args) {
-	CheckVersion();
+	::latest_version = QueryLatestVersion();
+	::notify_update = true;
 }
 
 static Thread version_check_thread(CheckVersionThread);
@@ -121,7 +86,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	} else {
 		std::string module = fileutils::GetFileName(os::GetModulePathFromAddr(amx_Exec_sub));
 		if (!module.empty()) {
-			logprintf("  In order for runtime error detection to work CrashDetect must be loaded before %s.",module.c_str());
+			logprintf("  In order for runtime error detection to work CrashDetect must "
+			          "be loaded before %s.",module.c_str());
 		}
 	}
 
@@ -149,11 +115,12 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL ProcessTick() {
-	if (::compare_versions) {
-		if (::version < ::latest_version) {
+	if (::notify_update) {
+		Version current_version(PROJECT_VERSION_STRING);
+		if (current_version < ::latest_version) {
 			logprintf("A new version of CrashDetect is available (%s)",
 			          ::latest_version.AsString().c_str());
 		}
-		::compare_versions = false;
+		::notify_update = false;
 	}
 }
