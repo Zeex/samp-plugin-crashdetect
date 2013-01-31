@@ -27,7 +27,7 @@ typedef void (*ThreadRoutine)(void *args);
 class ThreadSystemInfo;
 
 // Thread encapsulates operating system's threading APIs and provides very
-// basic threading capabilities. Each thread gets is associated with function
+// basic threading capabilities. Each thread is associated with a function
 // that is executed when you Run() the thread. It is also possible to be
 // somewhat more OOP-ish and inherit from Thread overriding its Start() method
 // which by default simply calls the associated function. 
