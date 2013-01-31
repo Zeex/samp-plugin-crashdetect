@@ -213,6 +213,7 @@ CrashDetect::CrashDetect(AMX *amx)
 	, amx_(amx)
 	, prev_callback_(0)
 {
+
 }
 
 int CrashDetect::Load() {
@@ -317,14 +318,14 @@ void CrashDetect::HandleInterrupt() {
 	PrintAmxBacktrace();
 }
 
-void CrashDetect::PrintError(const AMXError &error) const {
+void CrashDetect::PrintError(const AMXError &error) {
 	Printf("Run time error %d: \"%s\"", error.code(), error.GetString());
 
 	switch (error.code()) {
 		case AMX_ERR_BOUNDS: {
 			const cell *ip = reinterpret_cast<const cell*>(amx_.GetCode() + amx_.GetCip());
 			cell opcode = *ip;
-			if (opcode == kOpBounds) {
+			if (opcode == GetAmxOpcode(kOpBounds)) {
 				cell bound = *(ip + 1);
 				cell index = amx_.GetPri();
 				if (index < 0) {
@@ -362,11 +363,26 @@ void CrashDetect::PrintError(const AMXError &error) const {
 		case AMX_ERR_NATIVE: {
 			const cell *ip = reinterpret_cast<const cell*>(amx_.GetCode() + amx_.GetCip());
 			cell opcode = *(ip - 2);
-			if (opcode == kOpSysreqC) {
+			if (opcode == GetAmxOpcode(kOpSysreqC)) {
 				cell index = *(ip - 1);
 				Printf(" %s", amx_.GetNativeName(index));
 			}
 			break;
 		}
 	}
+}
+
+cell CrashDetect::GetAmxOpcode(cell index) {
+	#ifdef LINUX
+		static cell *opcode_map_ = 0;
+		if (opcode_map_ == 0) {
+			uint16_t flags = amx_.GetFlags();
+			amx_.SetFlags(flags | AMX_FLAG_BROWSE);
+			amx_Exec(amx_, reinterpret_cast<cell*>(&opcode_map_), 0);
+			amx_.SetFlags(flags);
+		}
+		return opcode_map_[index];
+	#else
+		return index;
+	#endif
 }

@@ -46,6 +46,9 @@ public:
 
 	AMXError GetError() const { return AMXError(amx_->error); }
 
+	uint16_t GetFlags() const { return amx_->flags; }
+	void SetFlags(uint16_t flags) { amx_->flags = flags; }
+
 	AMX_DEBUG GetDebugHook() { return amx_->debug; }
 	AMX_CALLBACK GetCallback() { return amx_->callback; }
 
