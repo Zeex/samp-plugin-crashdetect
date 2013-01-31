@@ -45,7 +45,7 @@ TCPSocket::TCPSocket()
 	info_->fd = -1;
 
 	std::memset(&info_->hints, 0, sizeof(info_->hints));
-	info_->hints.ai_family = AF_UNSPEC;
+	info_->hints.ai_family = AF_INET;
 	info_->hints.ai_socktype = SOCK_STREAM;
 	info_->hints.ai_protocol = IPPROTO_TCP;
 
