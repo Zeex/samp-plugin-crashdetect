@@ -77,9 +77,12 @@ public:
 		}
 	}
 
-	std::string AsString() const {
+	std::string AsString(bool include_trailing_zero = false) const {
 		std::stringstream stream;
-		stream << major_ << '.' << minor_ << '.' << patch_;
+		stream << major_ << '.' << minor_;
+		if (patch_ != 0 || (patch_ == 0 && include_trailing_zero)) {
+			stream << '.' << patch_;
+		}
 		return stream.str();
 	}
 
