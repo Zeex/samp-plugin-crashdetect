@@ -22,6 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cctype>
+#include <string>
+
 #ifdef _WIN32
 	#include <malloc.h>
 #endif
@@ -36,7 +39,13 @@
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
+#include "tcpsocket.h"
+#include "thread.h"
 #include "version.h"
+
+static Version version(PROJECT_VERSION_STRING);
+static Version latest_version;
+static bool compare_versions = false;
 
 extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
 	if (error != AMX_ERR_NONE) {
@@ -56,8 +65,48 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 	return CrashDetect::Get(amx)->DoAmxExec(retval, index);
 }
 
+static void CheckVersion() {
+	TCPSocket socket;
+	socket.SetReceiveTimeout(3000);
+
+	if (socket.Connect("zeex.github.com", "80")) {
+		char send_buffer[] = 
+			"GET /samp-plugin-crashdetect/version HTTP/1.1\r\n"
+			"Host: zeex.github.com\r\n"
+			"\r\n";
+		socket.Send(send_buffer);
+
+		std::string response;
+		char receive_buffer[1024];
+		int nbytes;
+
+		while ((nbytes = socket.Receive(receive_buffer)) > 0) {
+			response.append(receive_buffer, nbytes);
+		}
+
+		std::string version_string;
+		std::string::size_type pos = response.find("<html>") - 1;
+		while (pos >= 0 && std::isspace(response[pos])) {
+			pos--;
+		}
+		while (pos >= 0 && !std::isspace(response[pos])) {
+			version_string.insert(0, &response[pos], 1);
+			pos--;
+		}
+	
+		::latest_version.FromString(version_string);
+		::compare_versions = true;
+	}
+}
+
+static void CheckVersionThread(void *args) {
+	CheckVersion();
+}
+
+static Thread version_check_thread(CheckVersionThread);
+
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
-	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
+	return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES | SUPPORTS_PROCESS_TICK;
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
@@ -79,6 +128,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 	os::SetExceptionHandler(CrashDetect::OnException);
 	os::SetInterruptHandler(CrashDetect::OnInterrupt);
 
+	::version_check_thread.Run();
+
 	logprintf("  CrashDetect v"PROJECT_VERSION_STRING" is OK.");
 	return true;
 }
@@ -95,4 +146,14 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
 	int error = CrashDetect::Get(amx)->Unload();
 	CrashDetect::Destroy(amx);
 	return error;
+}
+
+PLUGIN_EXPORT void PLUGIN_CALL ProcessTick() {
+	if (::compare_versions) {
+		if (::version < ::latest_version) {
+			logprintf("A new version of CrashDetect is available (%s)",
+			          ::latest_version.AsString().c_str());
+		}
+		::compare_versions = false;
+	}
 }

@@ -25,6 +25,97 @@
 #ifndef VERSION_H
 #define VERSION_H
 
+#include <cstdlib>
+#include <sstream>
+#include <string>
+
 #define PROJECT_VERSION_STRING "@PROJECT_VERSION@"
+
+class Version {
+public:
+	Version()
+		: major_(0)
+		, minor_(0)
+		, patch_(0)
+	{
+	}
+
+	Version(const std::string &string)
+		: major_(0)
+		, minor_(0)
+		, patch_(0)
+	{
+		FromString(string);
+	}
+
+	Version(int major, int minor, int patch)
+		: major_(major)
+		, minor_(minor)
+		, patch_(patch)
+	{
+	}
+
+	void FromString(const std::string &string) {
+		std::stringstream stream;
+		stream << string;
+
+		std::string component;
+		if (stream) {
+			std::getline(stream, component, '.');
+			major_ = std::atoi(component.c_str());
+			component.clear();
+		}
+		if (stream) {
+			std::getline(stream, component, '.');
+			minor_ = std::atoi(component.c_str());
+			component.clear();
+		}
+		if (stream) {
+			std::getline(stream, component, '.');
+			patch_ = std::atoi(component.c_str());
+			component.clear();
+		}
+	}
+
+	std::string AsString() const {
+		std::stringstream stream;
+		stream << major_ << '.' << minor_ << '.' << patch_;
+		return stream.str();
+	}
+
+	bool operator<(const Version &rhs) const {
+		if (major_ < rhs.major_) {
+			return true;
+		} else if (major_ == rhs.major_) {
+			if (minor_ < rhs.minor_) {
+				return true;
+			} else if (minor_ == rhs.minor_) {
+				if (patch_ < rhs.patch_) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool operator==(const Version &rhs) const {
+		return major_ == rhs.major_ &&
+		       minor_ == rhs.minor_ &&
+		       patch_ == rhs.patch_;
+	}
+
+	bool operator!=(const Version &rhs) const {
+		return !(*this == rhs);
+	}
+
+	int major() const { return major_; }
+	int minor() const { return minor_; }
+	int patch() const { return patch_; }
+
+private:
+	int major_;
+	int minor_;
+	int patch_;
+};
 
 #endif

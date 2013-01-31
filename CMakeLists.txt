@@ -50,6 +50,8 @@ set(SOURCES
 	"src/stacktrace.h"
 	"src/stacktrace-manual.cpp"
 	"src/stacktrace-manual.h"
+	"src/tcpsocket.h"
+	"src/thread.h"
 	"${CMAKE_CURRENT_BINARY_DIR}/src/plugin.rc"
 	"${CMAKE_CURRENT_BINARY_DIR}/src/version.h"
 )
@@ -60,6 +62,8 @@ if(WIN32)
 		"src/hook-win32.cpp"
 		"src/os-win32.cpp"
 		"src/stacktrace-win32.cpp"
+		"src/tcpsocket-win32.cpp"
+		"src/thread-win32.cpp"
 	)
 elseif(UNIX)
 	list(APPEND SOURCES
@@ -67,6 +71,8 @@ elseif(UNIX)
 		"src/hook-unix.cpp"
 		"src/os-unix.cpp"
 		"src/stacktrace-unix.cpp"
+		"src/tcpsocket-unix.cpp"
+		"src/thread-unix.cpp"
 	)
 else()
 	message(FATAL_ERROR "Unsupported operating system.")
@@ -86,8 +92,11 @@ if(UNIX OR MINGW)
 	set_property(TARGET ${PROJECT_NAME} PROPERTY PREFIX "")
 endif()
 
-if(WIN32 AND MSVC)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+if(WIN32)
+	if(MSVC)
+		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	endif()
+	target_link_libraries(${PROJECT_NAME} Ws2_32)
 endif()	
 
 if(UNIX)
@@ -105,6 +114,8 @@ endif()
 if(CMAKE_COMPILER_IS_GNUCXX)
 	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
 		COMPILE_FLAGS " -Wno-attributes -Wno-ignored-attributes")
+	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
+		LINK_FLAGS " -pthread")
 endif()
 
 target_link_Libraries(${PROJECT_NAME} amx)
