@@ -32,7 +32,7 @@ Version QueryLatestVersion() {
 	Version version;
 
 	TCPSocket socket;
-	socket.SetReceiveTimeout(3000);
+	socket.SetReceiveTimeout(60000);
 
 	if (socket.Connect("zeex.github.com", "80")) {
 		char send_buffer[] =
