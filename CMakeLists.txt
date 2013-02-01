@@ -52,10 +52,12 @@ set(SOURCES
 	"src/stacktrace-manual.h"
 	"src/tcpsocket.h"
 	"src/thread.h"
+	"src/version.cpp"
+	"src/version.h"
 	"src/versioncheck.cpp"
 	"src/versioncheck.h"
 	"${CMAKE_CURRENT_BINARY_DIR}/src/plugin.rc"
-	"${CMAKE_CURRENT_BINARY_DIR}/src/version.h"
+	"${CMAKE_CURRENT_BINARY_DIR}/src/plugin_version.h"
 )
 
 if(WIN32)

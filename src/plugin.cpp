@@ -38,6 +38,7 @@
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
+#include "plugin_version.h"
 #include "thread.h"
 #include "version.h"
 #include "versioncheck.h"
