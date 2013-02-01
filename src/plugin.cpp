@@ -119,7 +119,7 @@ PLUGIN_EXPORT void PLUGIN_CALL ProcessTick() {
 	if (::notify_update) {
 		Version current_version(PROJECT_VERSION_STRING);
 		if (current_version < ::latest_version) {
-			logprintf("A new version of CrashDetect is available (%s)",
+			logprintf("New version of CrashDetect is available for download (%s)",
 			          ::latest_version.AsString().c_str());
 		}
 		::notify_update = false;
