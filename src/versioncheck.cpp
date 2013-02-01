@@ -28,41 +28,51 @@
 #include "tcpsocket.h"
 #include "version.h"
 
+static const std::string kCrLf = "\r\n";
+static const std::string kHttpHeaderDelim = kCrLf + kCrLf;
+
+static const std::string kHostString = "zeex.github.com";
+static const std::string kPortString = "80";
+static const std::string kRequestUriString = "/samp-plugin-crashdetect/version";
+
+static const std::string kRequestString =
+	"GET " + kRequestUriString + " HTTP/1.1" + kCrLf +
+	"Host: " + kHostString + kHttpHeaderDelim; 
+
+static const int kReceiveTimeoutMs = 60000;
+static const int kReceiveBufferSize = 1024;
+
 Version QueryLatestVersion() {
 	Version version;
 
 	TCPSocket socket;
-	socket.SetReceiveTimeout(60000);
+	socket.SetReceiveTimeout(kReceiveTimeoutMs);
 
-	if (socket.Connect("zeex.github.com", "80")) {
-		char send_buffer[] =
-			"GET /samp-plugin-crashdetect/version HTTP/1.1\r\n"
-			"Host: zeex.github.com\r\n"
-			"\r\n";
-		socket.Send(send_buffer);
+	if (socket.Connect(kHostString.c_str(), kPortString.c_str())) {
+		socket.Send(kRequestString.c_str(), kRequestString.length() + 1);
 
 		std::string response;
-		char receive_buffer[1024];
-		int nbytes;
+		char receive_buffer[kReceiveBufferSize];
+		int bytes_received;
 
-		while ((nbytes = socket.Receive(receive_buffer)) > 0) {
-			response.append(receive_buffer, nbytes);
+		while ((bytes_received = socket.Receive(receive_buffer)) > 0) {
+			response.append(receive_buffer, bytes_received);
 		}
 
 		if (!response.empty()) {
-			std::string version_string;
-			std::string::size_type pos = response.find("<html>") - 1;
-
-			while (pos >= 0 && std::isspace(response[pos])) {
-				pos--;
+			// Strip the HTTP header of reponse. It ends with a double CRLF followed
+			// by the message body (which is a version string).
+			std::string::size_type pos = response.find(kHttpHeaderDelim);
+			if (pos != std::string::npos) {
+				response.erase(response.begin(),
+							   response.begin() + pos + kHttpHeaderDelim.length());
 			}
 
-			while (pos >= 0 && !std::isspace(response[pos])) {
-				version_string.insert(0, &response[pos], 1);
-				pos--;
-			}
+			// The version is a single line, so remove anything after the newline.
+			std::string::size_type newline = response.find_first_of(kCrLf);
+			response.erase(response.begin() + newline, response.end());
 
-			version.FromString(version_string);
+			version.FromString(response);
 		}
 	}
 
