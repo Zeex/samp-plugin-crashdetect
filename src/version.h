@@ -31,7 +31,8 @@ class Version {
 public:
 	Version();
 	Version(const std::string &string);
-	Version(int major, int minor, int patch, std::string suffix = std::string());
+	Version(int major, int minor = 0, int patch = 0,
+	        std::string suffix = std::string());
 
 	void FromString(const std::string &s);
 	std::string AsString(bool include_trailing_zero = false) const;
