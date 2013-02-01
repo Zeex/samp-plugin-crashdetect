@@ -49,7 +49,7 @@ Version QueryLatestVersion() {
 	socket.SetReceiveTimeout(kReceiveTimeoutMs);
 
 	if (socket.Connect(kHostString.c_str(), kPortString.c_str())) {
-		socket.Send(kRequestString.c_str(), kRequestString.length() + 1);
+		socket.Send(kRequestString);
 
 		std::string response;
 		char receive_buffer[kReceiveBufferSize];

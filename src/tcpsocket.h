@@ -26,6 +26,7 @@
 #define TCPSOCKET_H
 
 #include <cstddef>
+#include <string>
 
 struct TCPSocketSystemInfo;
 
@@ -49,12 +50,20 @@ public:
 	bool is_connected() const { return is_connected_; }
 
 	int Send(const char *buffer, int length) const;
-	int Receive(char *buffer, int length) const;
 
-	template<std::size_t N> int Send(const char (&buffer)[N]) const {
+	int Send(const std::string &string) const {
+		return Send(string.c_str(), string.length() + 1); 
+	}
+
+	template<std::size_t N>
+	int Send(const char (&buffer)[N]) const {
 		return Send(buffer, N);
 	}
-	template<std::size_t N> int Receive(char (&buffer)[N]) const {
+
+	int Receive(char *buffer, int length) const;
+
+	template<std::size_t N>
+	int Receive(char (&buffer)[N]) const {
 		return Receive(buffer, N);
 	}
 
