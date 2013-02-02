@@ -59,7 +59,7 @@ TCPSocket::~TCPSocket() {
 
 bool TCPSocket::Open() {
 	info_->fd = socket(info_->hints.ai_family, info_->hints.ai_socktype,
-						   info_->hints.ai_protocol);
+	                   info_->hints.ai_protocol);
 	is_open_ = info_->fd != -1;
 	return is_open_;
 }
@@ -125,5 +125,5 @@ bool TCPSocket::SetReceiveTimeout(int timeout) {
 	timeout_tv.tv_sec = timeout / 1000;
 	timeout_tv.tv_usec = (timeout - timeout_tv.tv_sec) * 1000;
 	return setsockopt(info_->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout_tv,
-					  sizeof(timeout)) == 0;
+	                  sizeof(timeout)) == 0;
 }

@@ -65,7 +65,7 @@ Version QueryLatestVersion() {
 			std::string::size_type pos = response.find(kHttpHeaderDelim);
 			if (pos != std::string::npos) {
 				response.erase(response.begin(),
-							   response.begin() + pos + kHttpHeaderDelim.length());
+				               response.begin() + pos + kHttpHeaderDelim.length());
 			}
 
 			// The version is a single line, so remove anything after the newline.

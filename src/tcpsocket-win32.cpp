@@ -123,5 +123,5 @@ bool TCPSocket::Close() {
 
 bool TCPSocket::SetReceiveTimeout(int timeout) {
 	return setsockopt(info_->socket, SOL_SOCKET, SO_RCVTIMEO,
-		                reinterpret_cast<char*>(&timeout), sizeof(timeout)) == 0;
+	                  reinterpret_cast<char*>(&timeout), sizeof(timeout)) == 0;
 }

@@ -32,7 +32,7 @@
 #include <vector>
 
 static void SplitString(const std::string &s, char delim,
-				        std::vector<std::string> &elems)
+                        std::vector<std::string> &elems)
 {
     std::stringstream stream(s);
     std::string elem;
