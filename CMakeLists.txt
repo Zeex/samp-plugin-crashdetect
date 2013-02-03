@@ -117,8 +117,6 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
-		COMPILE_FLAGS " -Wno-attributes -Wno-ignored-attributes")
-	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
 		LINK_FLAGS " -pthread")
 endif()
 
