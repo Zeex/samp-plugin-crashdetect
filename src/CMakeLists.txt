@@ -1,2 +1,2 @@
 configure_file("plugin.rc.in" "plugin.rc" @ONLY)
-configure_file("plugin_version.h.in" "plugin_version.h" @ONLY)
+configure_file("pluginversion.h.in" "pluginversion.h" @ONLY)

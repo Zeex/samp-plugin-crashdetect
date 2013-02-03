@@ -57,7 +57,7 @@ set(SOURCES
 	"src/versioncheck.cpp"
 	"src/versioncheck.h"
 	"${CMAKE_CURRENT_BINARY_DIR}/src/plugin.rc"
-	"${CMAKE_CURRENT_BINARY_DIR}/src/plugin_version.h"
+	"${CMAKE_CURRENT_BINARY_DIR}/src/pluginversion.h"
 )
 
 if(WIN32)
