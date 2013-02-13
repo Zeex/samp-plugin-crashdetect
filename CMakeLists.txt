@@ -17,6 +17,10 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/amx")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/src")
 
+if(UNIX)
+	add_definitions(-DLINUX)
+endif()
+
 set(SOURCES
 	"src/amxdebuginfo.cpp"
 	"src/amxdebuginfo.h"
@@ -112,7 +116,6 @@ if(UNIX)
 	if(HAVE_BACKTRACE_SYMBOLS)
 		add_definitions(-DHAVE_BACKTRACE_SYMBOLS)
 	endif()
-	add_definitions(-DLINUX)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
