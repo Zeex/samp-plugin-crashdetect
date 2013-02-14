@@ -174,13 +174,16 @@ void CrashDetect::PrintAmxBacktrace() {
 
 // static
 void CrashDetect::PrintSystemBacktrace(void *context) {
-	Printf("System backtrace:");
-
-	int level = 0;
-
 	StackTrace trace(context);
 	std::deque<StackFrame> frames = trace.GetFrames();
 
+	if (frames.empty()) {
+		return;
+	}
+
+	Printf("System backtrace:");
+
+	int level = 0;
 	for (std::deque<StackFrame>::const_iterator iterator = frames.begin();
 			iterator != frames.end(); ++iterator) {
 		const StackFrame &frame = *iterator;
