@@ -97,6 +97,9 @@ public:
 	}
 
 private:
+	DbgHelp(const DbgHelp &);
+	void operator=(const DbgHelp &);
+
 	typedef BOOL (WINAPI *SymInitializeType)(HANDLE, PCSTR, BOOL);
 	SymInitializeType SymInitialize_;
 
