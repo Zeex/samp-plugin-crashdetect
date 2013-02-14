@@ -79,7 +79,7 @@ __asm__ (
 	#ifdef _WIN32
 	"	movl %fs:(0x04), %eax\n"
 	#else
-	"	xorl %eax, %eax\n"
+	"	movl $0xffffffff, %eax\n"
 	#endif
 	"	ret\n"
 );

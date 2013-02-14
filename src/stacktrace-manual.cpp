@@ -50,10 +50,8 @@ StackTraceManual::StackTraceManual(void *frame, void *pc)
 	void *top = compiler::GetStackTop();
 	void *bot = compiler::GetStackBottom();
 
-	for (int i = 0; ; i++) {
-		if (cur_frame == 0
-			|| (cur_frame >= top && top != 0)
-			|| (cur_frame < bot && bot != 0)) {
+	while (true) {
+		if (cur_frame == 0 || cur_frame < bot || cur_frame > top) {
 			break;
 		}
 
