@@ -80,10 +80,7 @@ AMXDebugInfo::AMXDebugInfo(const std::string &filename)
 }
 
 AMXDebugInfo::~AMXDebugInfo() {
-	if (amxdbg_ != 0) {
-		dbg_FreeInfo(amxdbg_);
-		delete amxdbg_;
-	}
+	Free();
 }
 
 bool AMXDebugInfo::HasDebugInfo(AMX *amx) {
@@ -108,7 +105,10 @@ void AMXDebugInfo::Load(const std::string &filename) {
 }
 
 void AMXDebugInfo::Free() {
-	delete amxdbg_;
+	if (amxdbg_ != 0) {
+		dbg_FreeInfo(amxdbg_);
+		delete amxdbg_;
+	}
 }
 
 AMXDebugLine AMXDebugInfo::GetLine(ucell address) const {

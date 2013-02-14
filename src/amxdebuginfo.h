@@ -35,7 +35,6 @@
 
 class AMXDebugInfo {
 public:
-
 	template<typename EntryT, typename EntryClassT> class Table {
 	public:
 		Table() 
