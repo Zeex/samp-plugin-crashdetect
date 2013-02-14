@@ -28,7 +28,7 @@
 #include <DbgHelp.h>
 
 #include "stacktrace.h"
-#include "stacktrace-manual.h"
+#include "stacktrace-generic.h"
 
 // MSDN says that CaptureStackBackTrace() can't handle more than 62 frames on
 // Windows Server 2003 and Windows XP.
@@ -246,9 +246,7 @@ StackTrace::StackTrace(void *their_context) {
 	return;
 
 fail:
-	StackTraceManual manual_trace(
+	frames_ = StackTraceGeneric(
 		reinterpret_cast<void*>(context->Ebp),
-		reinterpret_cast<void*>(context->Eip));
-
-	frames_ = manual_trace.GetFrames();
+		reinterpret_cast<void*>(context->Eip)).GetFrames();
 }

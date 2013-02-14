@@ -30,7 +30,7 @@
 #include <string>
 
 #include "compiler.h"
-#include "stacktrace-manual.h"
+#include "stacktrace-generic.h"
 
 static inline void *GetReturnAddress(void *frame) {
 	return *reinterpret_cast<void**>(reinterpret_cast<char*>(frame) + 4);
@@ -40,7 +40,7 @@ static inline void *GetNextFrame(void *frame) {
 	return *reinterpret_cast<void**>(frame);
 }
 
-StackTraceManual::StackTraceManual(void *frame, void *pc)
+StackTraceGeneric::StackTraceGeneric(void *frame, void *pc)
 	: StackTrace(static_cast<HappyCompiler*>(0))
 {
 	void *cur_frame = frame == 0

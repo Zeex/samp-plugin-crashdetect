@@ -27,9 +27,9 @@
 
 #include "stacktrace.h"
 
-class StackTraceManual : public StackTrace {
+class StackTraceGeneric : public StackTrace {
 public:
-	StackTraceManual(void *frame = 0, void *pc = 0);
+	StackTraceGeneric(void *frame = 0, void *pc = 0);
 };
 
 #endif // !STACKTRACE_H

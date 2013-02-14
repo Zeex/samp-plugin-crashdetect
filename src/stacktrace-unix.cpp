@@ -27,7 +27,7 @@
 #include <execinfo.h>
 
 #include "stacktrace.h"
-#include "stacktrace-manual.h"
+#include "stacktrace-generic.h"
 
 static const int kMaxFrames = 100;
 
@@ -68,6 +68,6 @@ StackTrace::StackTrace(void *context) {
 			#endif
 		}
 	#else
-		frames_ = StackTraceManual().GetFrames();
+		frames_ = StackTraceGeneric().GetFrames();
 	#endif
 }
