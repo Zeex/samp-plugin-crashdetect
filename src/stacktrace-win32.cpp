@@ -203,6 +203,9 @@ StackTrace::StackTrace(void *their_context) {
 		}
 	}
 
+	void *eip = reinterpret_cast<void*>(context->Eip);
+	frames_.push_back(StackFrame(eip));
+
 	for (int i = 0; ; i++) {
 		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stack_frame,
 		                                  (PVOID)context, NULL, NULL, NULL, NULL);

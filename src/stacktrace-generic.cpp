@@ -50,6 +50,10 @@ StackTraceGeneric::StackTraceGeneric(void *frame, void *pc)
 	void *top = compiler::GetStackTop();
 	void *bot = compiler::GetStackBottom();
 
+	if (pc != 0) {
+		frames_.push_back(pc);
+	}
+
 	while (true) {
 		if (cur_frame == 0 || cur_frame < bot || cur_frame > top) {
 			break;
