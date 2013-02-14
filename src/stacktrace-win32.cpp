@@ -89,10 +89,10 @@ public:
 		return StackWalk64_(MachineType, hProcess, hThread, StackFrame, ContextRecord, ReadMemoryRoutine, FunctionTableAccessRoutine, GetModuleBaseRoutine, TranslateAddress);
 	}
 
-	inline bool IsLoaded() const {
+	inline bool is_loaded() const {
 		return module_ != 0;
 	}
-	inline bool IsInitialized() const {
+	inline bool is_initialized() const {
 		return initialized_ != FALSE;
 	}
 
@@ -160,30 +160,30 @@ DbgHelp::~DbgHelp() {
 	}
 }
 
-StackTrace::StackTrace(void *theirContext) {
-	PCONTEXT context = reinterpret_cast<PCONTEXT>(theirContext);
-	CONTEXT currentContext;
-	if (theirContext == NULL) {
-		RtlCaptureContext(&currentContext);
-		context = &currentContext;
+StackTrace::StackTrace(void *their_context) {
+	PCONTEXT context = reinterpret_cast<PCONTEXT>(their_context);
+	CONTEXT current_context;
+	if (their_context == NULL) {
+		RtlCaptureContext(&current_context);
+		context = &current_context;
 	}
 
 	HANDLE process = GetCurrentProcess();
 	DbgHelp dbghelp(process);
-	if (!dbghelp.IsLoaded()) {
+	if (!dbghelp.is_loaded()) {
 		goto fail;
 	}
 
-	STACKFRAME64 stackFrame;
-	ZeroMemory(&stackFrame, sizeof(stackFrame));
+	STACKFRAME64 stack_frame;
+	ZeroMemory(&stack_frame, sizeof(stack_frame));
 
 	// http://stackoverflow.com/a/136942/249230
-	stackFrame.AddrPC.Offset = context->Eip;
-	stackFrame.AddrPC.Mode = AddrModeFlat;
-	stackFrame.AddrFrame.Offset = context->Ebp;
-	stackFrame.AddrFrame.Mode = AddrModeFlat;
-	stackFrame.AddrStack.Offset = context->Esp;
-	stackFrame.AddrStack.Mode = AddrModeFlat;
+	stack_frame.AddrPC.Offset = context->Eip;
+	stack_frame.AddrPC.Mode = AddrModeFlat;
+	stack_frame.AddrFrame.Offset = context->Ebp;
+	stack_frame.AddrFrame.Mode = AddrModeFlat;
+	stack_frame.AddrStack.Offset = context->Esp;
+	stack_frame.AddrStack.Mode = AddrModeFlat;
 
 	if (!dbghelp.HaveStackWalk64()) {
 		goto fail;
@@ -191,7 +191,7 @@ StackTrace::StackTrace(void *theirContext) {
 
 	SYMBOL_INFO *symbol = NULL;
 
-	if (dbghelp.IsInitialized()) {
+	if (dbghelp.is_initialized()) {
 		symbol = reinterpret_cast<SYMBOL_INFO*>(std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
 		symbol->SizeOfStruct = sizeof(*symbol);
 		symbol->MaxNameLen = kMaxSymbolNameLength;
@@ -204,32 +204,32 @@ StackTrace::StackTrace(void *theirContext) {
 	}
 
 	for (int i = 0; ; i++) {
-		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stackFrame,
+		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stack_frame,
 		                                  (PVOID)context, NULL, NULL, NULL, NULL);
 		if (!result) {
 			break;
 		}
 
-		DWORD64 address = stackFrame.AddrReturn.Offset;
-		if (address == 0 || address == stackFrame.AddrPC.Offset) {
+		DWORD64 address = stack_frame.AddrReturn.Offset;
+		if (address == 0 || address == stack_frame.AddrPC.Offset) {
 			break;
 		}
 
-		bool haveSymbols = true;
+		bool have_symbols = true;
 		if (dbghelp.HaveSymGetModuleInfo64()) {
 			IMAGEHLP_MODULE64 module;
 			ZeroMemory(&module, sizeof(IMAGEHLP_MODULE64));
 			module.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
 			if (dbghelp.SymGetModuleInfo64(process, address, &module)) {
 				if (!module.GlobalSymbols) {
-					haveSymbols = false;
+					have_symbols = false;
 				}
 			}
 		}
 
 		const char *name = "";
-		if (haveSymbols) {
-			if (dbghelp.IsInitialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
+		if (have_symbols) {
+			if (dbghelp.is_initialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
 				if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
 					name = symbol->Name;
 				}
@@ -246,9 +246,9 @@ StackTrace::StackTrace(void *theirContext) {
 	return;
 
 fail:
-	StackTraceManual manualTrace(
+	StackTraceManual manual_trace(
 		reinterpret_cast<void*>(context->Ebp),
 		reinterpret_cast<void*>(context->Eip));
 
-	frames_ = manualTrace.GetFrames();
+	frames_ = manual_trace.GetFrames();
 }
