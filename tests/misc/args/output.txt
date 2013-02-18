@@ -11,5 +11,5 @@
 \[debug\] #8 00000118 in f1 \(x=123\) at .*test\.pwn:19
 \[debug\] #9 000000e0 in begin \(\) at .*test\.pwn:14
 \[debug\] #10 000000b0 in public test \(\) at .*test\.pwn:10
-\[debug\] #11 native CallLocalFunction \(\) \[080dc980\] from samp03svr
+\[debug\] #11 native CallLocalFunction \(\) \[[0-9a-f]+\] from (samp03svr|samp-server\.exe)
 \[debug\] #12 00000070 in main \(\) at .*test\.pwn:5
