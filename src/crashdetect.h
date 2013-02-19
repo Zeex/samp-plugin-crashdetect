@@ -61,7 +61,7 @@ public:
 	static void OnInterrupt(void *context);
 	static void Printf(const char *format, ...);
 	static void PrintAmxBacktrace();
-	static void PrintSystemBacktrace(void *context = 0);
+	static void PrintNativeBacktrace(void *context = 0);
 
 private:
 	AMXScript amx_;

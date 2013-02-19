@@ -60,7 +60,7 @@ void CrashDetect::OnException(void *context) {
 	} else {
 		Printf("Server crashed due to an unknown error");
 	}
-	PrintSystemBacktrace(context);
+	PrintNativeBacktrace(context);
 }
 
 // static
@@ -70,7 +70,7 @@ void CrashDetect::OnInterrupt(void *context) {
 	} else {
 		Printf("Server received interrupt signal");
 	}
-	PrintSystemBacktrace(context);
+	PrintNativeBacktrace(context);
 }
 
 // static
@@ -173,7 +173,7 @@ void CrashDetect::PrintAmxBacktrace() {
 }
 
 // static
-void CrashDetect::PrintSystemBacktrace(void *context) {
+void CrashDetect::PrintNativeBacktrace(void *context) {
 	StackTrace trace(context);
 	std::deque<StackFrame> frames = trace.GetFrames();
 
@@ -181,7 +181,7 @@ void CrashDetect::PrintSystemBacktrace(void *context) {
 		return;
 	}
 
-	Printf("System backtrace:");
+	Printf("Native backtrace:");
 
 	int level = 0;
 	for (std::deque<StackFrame>::const_iterator iterator = frames.begin();
