@@ -19,7 +19,7 @@ branch (hit *View Raw* to download).
 FAQ
 ---
 
-**How do I get function names, line numbers, etc in stack trace?**
+### How do I get function names, line numbers, etc in stack trace?
 
 You have to tell the Pawn compiler to include debugging information in the
 resulting AMX file. This can be accomplished by passing either `-d2` or `-d3`
@@ -37,8 +37,7 @@ need to put that file in the same directory as the script you compile lives
 in because most editors don't set current working directory to `pawno`.
 It might be easier to add the exta flags via your editor's options.
 
-
-**Still doesn't work! Why??**
+### Still doesn't work! Why??
 
 If you put the AMX file in some custom directory other than `gamemodes` or
 `filterscripts` or in ia subdirectory of these CrashDetect will not be able to
@@ -47,7 +46,7 @@ path manually via the `AMX_PATH` environment variable which is a
 semicolon-separated (or colon-separated on Linux) list of paths, similar to
 the `PATH` variable. The path can be absolute or relative to the server root.
 
-**Is it possible to perform some action whenever a runtime error occurs?**
+### Is it possible to perform some action whenever a runtime error occurs?
 
 Yes, use the `OnRuntimeError(error_code)` callback. But remember that if
 something goes wrong inside of it (i.e. another error) you can end up with
