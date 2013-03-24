@@ -51,6 +51,7 @@
 static const int kOpBounds  = 121;
 static const int kOpSysreqC = 123;
 
+bool CrashDetect::block_exec_errors_ = false;
 std::stack<NPCall*> CrashDetect::np_calls_;
 
 // static
@@ -289,6 +290,10 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
 }
 
 void CrashDetect::HandleExecError(int index, const AMXError &error) {
+	if (block_exec_errors_) {
+		return;
+	}
+
 	if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		return;
 	}
@@ -303,12 +308,20 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 		PrintAmxBacktrace();
 	}
 
+	// Block errors while calling OnRuntimeError as it may result in yet
+	// another error (and for certain errors it in fact always does, e.g.
+	// stack/heap collision due to insufficient stack space for making
+	// the public call).
+	block_exec_errors_ = true;
+
 	// public OnRuntimeError(error_code);
 	cell callback_index = amx_.GetPublicIndex("OnRuntimeError");
 	if (callback_index >= 0) {
 		amx_Push(amx_, error.code());
 		amx_Exec(amx_, NULL, callback_index);
 	}
+
+	block_exec_errors_ = false;
 }
 
 void CrashDetect::HandleException() {

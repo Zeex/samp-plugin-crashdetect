@@ -50,15 +50,18 @@ public:
 public:
 	int DoAmxCallback(cell index, cell *result, cell *params);
 	int DoAmxExec(cell *retval, int index);
+
 	void HandleException();
 	void HandleInterrupt();
 	void HandleExecError(int index, const AMXError &error);
 	void PrintError(const AMXError &error);
+
 	cell GetAmxOpcode(cell index);
 
 public:
 	static void OnException(void *context);
 	static void OnInterrupt(void *context);
+
 	static void Printf(const char *format, ...);
 	static void PrintAmxBacktrace();
 	static void PrintNativeBacktrace(void *context = 0);
@@ -71,6 +74,7 @@ private:
 	AMX_CALLBACK prev_callback_;
 
 private:
+	static bool block_exec_errors_;
 	static std::stack<NPCall*> np_calls_;
 };
 
