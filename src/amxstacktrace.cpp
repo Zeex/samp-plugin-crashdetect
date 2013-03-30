@@ -173,7 +173,11 @@ std::string AMXStackFrame::AsString() const {
 			}
 			stream << name;
 		} else {
-			stream << "??"; // unknown function
+			if (func_addr_ == amx_.GetHeader()->cip) {
+				stream << "main";
+			} else {
+				stream << "??"; // unknown function
+			}
 		}
 	}
 
