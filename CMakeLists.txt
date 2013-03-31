@@ -142,6 +142,8 @@ string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc}
 set(PROJECT_VERSION    "${version}")
 set(PROJECT_VERSION_RC "${version_rc}")
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 add_subdirectory("amx")
 add_subdirectory("src")
 add_subdirectory("tests")
