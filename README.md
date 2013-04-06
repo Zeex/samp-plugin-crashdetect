@@ -1,4 +1,4 @@
-[CrashDetect]( https://github.com/Zeex/samp-plugin-crashdetect)
+[CrashDetect][github] [![Donate][donate_button]][donate]
 ===============================================================
 
 This plugin will help you debug runtime errors and server crashes. When
@@ -52,11 +52,8 @@ Yes, use the `OnRuntimeError(error_code)` callback. But remember that if
 something goes wrong inside of it (i.e. another error) you can end up with
 infinite recursion!
 
-Donate
-------
-
-If you like CrashDetect and want to support its development, consider making a [donation][donate].
-
+[github]: https://github.com/Zeex/samp-plugin-crashdetect
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [downloads]: https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads
 [donate]: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UWRM2DBX5UZHN
+[donate_button]: https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif
