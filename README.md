@@ -1,11 +1,13 @@
-[CrashDetect][github] [![Donate][donate_button]][donate]
-===============================================================
+[CrashDetect][github] 
+=====================
 
-This plugin will help you debug runtime errors and server crashes. When
-something goes wrong you'll see a more or less detailed error message that
-may contain a description of the error, the stack trace of the offending script
-and additionally the system call stack in case of a server crash. This can
-greatly reduce amount of time spent spotting the erroneous code and fixing it.
+[![Donate][donate_button]][donate]
+
+This plugin helps you debug runtime errors and server crashes. When something
+goes wrong you see a more or less detailed error message that contains description
+of the error, the stack trace of the offending script and additionally the system
+call stack in case of a server crash. This can greatly reduce th amount of time
+spent spotting the erroneous code and fixing it.
 
 See the [original][forum] topic on the SA-MP Forums for more information and
 examples.
@@ -55,5 +57,5 @@ infinite recursion!
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [downloads]: https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads
-[donate]: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=UWRM2DBX5UZHN
-[donate_button]: https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif
+[donate]: http://pledgie.com/campaigns/19750
+[donate_button]: http://www.pledgie.com/campaigns/19750.png
