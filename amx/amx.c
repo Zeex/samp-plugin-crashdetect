@@ -1670,7 +1670,7 @@ int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char
 						  (amx)->stk = stk;\
 						  (amx)->hea = hea;\
 						  (amx)->frm = frm;\
-						  amx_Error(amx, index, v);\
+						  amx_Error(amx, index, retval, v);\
                           (amx)->stk=reset_stk;\
                           (amx)->hea=reset_hea;\
                           return v; }

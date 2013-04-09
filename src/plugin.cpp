@@ -46,9 +46,9 @@
 static Version latest_version;
 static bool notify_update = false;
 
-extern "C" int AMXAPI amx_Error(AMX *amx, cell index, int error) {
+extern "C" int AMXAPI amx_Error(AMX *amx, cell index, cell *retval, int error) {
 	if (error != AMX_ERR_NONE) {
-		CrashDetect::Get(amx)->HandleExecError(index, error);
+		CrashDetect::Get(amx)->HandleExecError(index, retval, error);
 	}
 	return AMX_ERR_NONE;
 }

@@ -282,14 +282,14 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
 	{
 		// For these types of errors amx_Error() is not called because of
 		// early return from amx_Exec().
-		HandleExecError(index, error);
+		HandleExecError(index, retval, error);
 	}
 
 	np_calls_.pop();
 	return error;
 }
 
-void CrashDetect::HandleExecError(int index, const AMXError &error) {
+void CrashDetect::HandleExecError(int index, cell *retval, const AMXError &error) {
 	if (block_exec_errors_) {
 		return;
 	}
@@ -318,7 +318,7 @@ void CrashDetect::HandleExecError(int index, const AMXError &error) {
 	cell callback_index = amx_.GetPublicIndex("OnRuntimeError");
 	if (callback_index >= 0) {
 		amx_Push(amx_, error.code());
-		amx_Exec(amx_, NULL, callback_index);
+		amx_Exec(amx_, retval, callback_index);
 	}
 
 	block_exec_errors_ = false;

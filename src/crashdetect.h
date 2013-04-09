@@ -53,7 +53,7 @@ public:
 
 	void HandleException();
 	void HandleInterrupt();
-	void HandleExecError(int index, const AMXError &error);
+	void HandleExecError(int index, cell *retval, const AMXError &error);
 	void PrintError(const AMXError &error);
 
 	cell GetAmxOpcode(cell index);
