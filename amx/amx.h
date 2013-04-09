@@ -166,6 +166,7 @@ typedef cell (AMX_NATIVE_CALL *AMX_NATIVE)(struct tagAMX *amx, cell *params);
 typedef int (AMXAPI *AMX_CALLBACK)(struct tagAMX *amx, cell index,
                                    cell *result, cell *params);
 typedef int (AMXAPI *AMX_DEBUG)(struct tagAMX *amx);
+typedef void (AMXAPI *AMX_EXEC_ERROR)(struct tagAMX *amx, int index, cell *retval, int error);
 #if !defined _FAR
   #define _FAR
 #endif
@@ -373,7 +374,6 @@ int AMXAPI amx_Allot(AMX *amx, int cells, cell *amx_addr, cell **phys_addr);
 int AMXAPI amx_Callback(AMX *amx, cell index, cell *result, cell *params);
 int AMXAPI amx_Cleanup(AMX *amx);
 int AMXAPI amx_Clone(AMX *amxClone, AMX *amxSource, void *data);
-int AMXAPI amx_Error(AMX *amx, cell index, cell *retval, int error);
 int AMXAPI amx_Exec(AMX *amx, cell *retval, int index);
 int AMXAPI amx_FindNative(AMX *amx, const char *name, int *index);
 int AMXAPI amx_FindPublic(AMX *amx, const char *funcname, int *index);
@@ -381,6 +381,7 @@ int AMXAPI amx_FindPubVar(AMX *amx, const char *varname, cell *amx_addr);
 int AMXAPI amx_FindTagId(AMX *amx, cell tag_id, char *tagname);
 int AMXAPI amx_Flags(AMX *amx,uint16_t *flags);
 int AMXAPI amx_GetAddr(AMX *amx,cell amx_addr,cell **phys_addr);
+int AMXAPI amx_GetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR *handler);
 int AMXAPI amx_GetNative(AMX *amx, int index, char *funcname);
 int AMXAPI amx_GetPublic(AMX *amx, int index, char *funcname);
 int AMXAPI amx_GetPubVar(AMX *amx, int index, char *varname, cell *amx_addr);
@@ -400,10 +401,12 @@ int AMXAPI amx_Push(AMX *amx, cell value);
 int AMXAPI amx_PushArray(AMX *amx, cell *amx_addr, cell **phys_addr, const cell array[], int numcells);
 int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char *string, int pack, int use_wchar);
 int AMXAPI amx_RaiseError(AMX *amx, int error);
+int AMXAPI amx_RaiseExecError(AMX *amx, cell index, cell *retval, int error);
 int AMXAPI amx_Register(AMX *amx, const AMX_NATIVE_INFO *nativelist, int number);
 int AMXAPI amx_Release(AMX *amx, cell amx_addr);
 int AMXAPI amx_SetCallback(AMX *amx, AMX_CALLBACK callback);
 int AMXAPI amx_SetDebugHook(AMX *amx, AMX_DEBUG debug);
+int AMXAPI amx_SetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR handler);
 int AMXAPI amx_SetString(cell *dest, const char *source, int pack, int use_wchar, size_t size);
 int AMXAPI amx_SetUserData(AMX *amx, long tag, void *ptr);
 int AMXAPI amx_StrLen(const cell *cstring, int *length);

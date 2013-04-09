@@ -46,13 +46,6 @@
 static Version latest_version;
 static bool notify_update = false;
 
-extern "C" int AMXAPI amx_Error(AMX *amx, cell index, cell *retval, int error) {
-	if (error != AMX_ERR_NONE) {
-		CrashDetect::Get(amx)->HandleExecError(index, retval, error);
-	}
-	return AMX_ERR_NONE;
-}
-
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
 	return CrashDetect::Get(amx)->DoAmxCallback(index, result, params);
 }
@@ -62,6 +55,12 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 		return amx_Exec(amx, retval, index);
 	}
 	return CrashDetect::Get(amx)->DoAmxExec(retval, index);
+}
+
+static void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
+	if (error != AMX_ERR_NONE) {
+		CrashDetect::Get(amx)->HandleExecError(index, retval, error);
+	}
 }
 
 static void CheckVersionThread(void *args) {
@@ -105,6 +104,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 	int error = CrashDetect::Create(amx)->Load();
 	if (error == AMX_ERR_NONE) {
 		amx_SetCallback(amx, AmxCallback);
+		amx_SetExecErrorHandler(amx, AmxExecError);
 	}
 	return error;
 }

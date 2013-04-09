@@ -1662,15 +1662,42 @@ int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char
   return err;
 }
 
+int AMXAPI amx_RaiseExecError(AMX *amx, cell index, cell *retval, int error) {
+  AMX_EXEC_ERROR handler;
+
+  assert(amx!=NULL);
+
+  if (amx_GetExecErrorHandler(amx, &handler)==AMX_ERR_NONE) {
+    handler(amx, index, retval, error);
+    return AMX_ERR_NONE;
+  }
+  return AMX_ERR_NOTFOUND;
+}
+
+int AMXAPI amx_GetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR *handler) {
+  assert(amx!=NULL);
+  assert(handler!=NULL);
+
+  return amx_GetUserData(amx, AMX_USERTAG('e', 'e', 'h', 'r'), (void **)handler);
+}
+
+int AMXAPI amx_SetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR handler) {
+  assert(amx!=NULL);
+  assert(handler!=NULL);
+
+  return amx_SetUserData(amx, AMX_USERTAG('e', 'e', 'h', 'r'), (void *)handler);
+}
+
+
 #define GETPARAM(v)     ( v=*(cell *)cip++ )
 #define SKIPPARAM(n)    ( cip=(cell *)cip+(n) )
 #define PUSH(v)         ( stk-=sizeof(cell), *(cell *)(data+(int)stk)=v )
 #define POP(v)          ( v=*(cell *)(data+(int)stk), stk+=sizeof(cell) )
 #define ABORT(amx,v)    { (amx)->pri = pri;\
-						  (amx)->stk = stk;\
-						  (amx)->hea = hea;\
-						  (amx)->frm = frm;\
-						  amx_Error(amx, index, retval, v);\
+                          (amx)->stk = stk;\
+                          (amx)->hea = hea;\
+                          (amx)->frm = frm;\
+                          amx_RaiseExecError(amx, index, retval, v);\
                           (amx)->stk=reset_stk;\
                           (amx)->hea=reset_hea;\
                           return v; }
