@@ -63,11 +63,12 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
 }
 
 static os::InterruptHandler interrupt_handler;
+static __declspec(thread) bool this_thread_set_ctrl_handler;
 
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 	switch (dwCtrlType) {
 	case CTRL_C_EVENT:
-		if (::interrupt_handler != 0) {
+		if (::interrupt_handler != 0 && this_thread_set_ctrl_handler) {
 			::interrupt_handler(0);
 		}
 	}
@@ -76,5 +77,6 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 
 void os::SetInterruptHandler(InterruptHandler handler) {
 	::interrupt_handler = handler;
+	this_thread_set_ctrl_handler = true;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }
