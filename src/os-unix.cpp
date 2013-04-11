@@ -46,9 +46,14 @@ std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
 
 static os::ExceptionHandler except_handler = 0;
 static struct sigaction prev_sigsegv_action;
+static __thread bool this_thread_handles_sigsegv;
 
 static void HandleSIGSEGV(int sig, siginfo_t *info, void *context)
 {
+	if (!::this_thread_handles_sigsegv) {
+		return;
+	}
+
 	if (::except_handler != 0) {
 		::except_handler(context);
 	}
@@ -58,6 +63,7 @@ static void HandleSIGSEGV(int sig, siginfo_t *info, void *context)
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
+	::this_thread_handles_sigsegv = true;
 	::except_handler = handler;
 
 	struct sigaction action = {0};
@@ -70,8 +76,13 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
 
 static os::InterruptHandler interrupt_handler;
 static struct sigaction prev_sigint_action;
+static __thread bool this_thread_handles_sigint;
 
 static void HandleSIGINT(int sig, siginfo_t *info, void *context) {
+	if (!::this_thread_handles_sigint) {
+		return;
+	}
+
 	if (::interrupt_handler != 0) {
 		::interrupt_handler(context);
 	}
@@ -81,6 +92,7 @@ static void HandleSIGINT(int sig, siginfo_t *info, void *context) {
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
+	::this_thread_handles_sigint = true;
 	::interrupt_handler = handler;
 
 	struct sigaction action = {0};

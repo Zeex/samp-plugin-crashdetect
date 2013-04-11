@@ -77,6 +77,6 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 
 void os::SetInterruptHandler(InterruptHandler handler) {
 	::interrupt_handler = handler;
-	this_thread_set_ctrl_handler = true;
+	::this_thread_set_ctrl_handler = true;
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }
