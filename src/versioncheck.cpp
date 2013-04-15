@@ -30,7 +30,7 @@
 static const std::string kCrLf = "\r\n";
 static const std::string kHttpHeaderDelim = kCrLf + kCrLf;
 
-static const std::string kHostString = "zeex.github.com";
+static const std::string kHostString = "zeex.github.io";
 static const std::string kPortString = "80";
 static const std::string kRequestUriString = "/samp-plugin-crashdetect/version";
 
