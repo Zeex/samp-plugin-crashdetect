@@ -294,6 +294,18 @@ void CrashDetect::HandleExecError(int index, cell *retval, const AMXError &error
 		return;
 	}
 
+	// The following error codes should not be treated as errors:
+	//
+	// 1. AMX_ERR_NONE is always returned when a public function returns
+	//    normally as it jumps to return address 0 where it performs "halt 0".
+	//
+	// 2. AMX_ERR_SLEEP is returned when the VM is put into sleep mode. The
+	//    execution can be later continued using AMX_EXEC_CONT.
+	if (error.code() == AMX_ERR_NONE || error.code() == AMX_ERR_SLEEP) {
+		return;
+	}
+
+	// For compatibility with sampgdk.
 	if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
 		return;
 	}

@@ -58,9 +58,7 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 }
 
 static void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
-	if (error != AMX_ERR_NONE) {
-		CrashDetect::Get(amx)->HandleExecError(index, retval, error);
-	}
+	CrashDetect::Get(amx)->HandleExecError(index, retval, error);
 }
 
 static void CheckVersionThread(void *args) {
