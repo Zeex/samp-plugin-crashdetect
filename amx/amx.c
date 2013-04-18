@@ -21,15 +21,14 @@
  *  Version: $Id: amx.c 3365 2005-07-23 15:57:48Z thiadmer $
  */
 
-/* This is a slightly modified version of the original file, specially for crashdetect.
- *   - ABORT() synchronizes AMX registers with amx_Exec()'s local variables
- *   - ABORT() calls external error handler amx_Error(AMX *amx, cell index, int error),
- *     where "error" is the error code and "index" is the index of the current public
- *   - CHKSTACK(), CHKMARGIN() and CHKHEAP() now use the ABORT() macro instead of return
- *   - The CIP register (amx->cip) is updated on each iteration of the instruction dispatch loop
- *   - The CALL.pri and JUMP.pri opcodes have been removed
- *   - The LREF.S.pri/alt and SREF.S.pri/alt opcodes synchronize the STK and FRM registers before
- *     before pointer dereferencing because of a possible crash 
+/* Differences from the original file:
+ * - ABORT() calls an external error handler via amx_RaiseExecError()
+ * - ABORT() syncs registers with local variables before return
+ * - CHKSTACK(), CHKMARGIN() and CHKHEAP() now use ABORT() instead of plain return
+ * - amx->cip is updated after each instruction
+ * - CALL.pri and JUMP.pri instructions have been removed
+ * - LREF.S.* and SREF.S.* instructions sync STK and FRM before dereferencing
+ *   the pointer (because of possible crash)
  */
 
 #if BUILD_PLATFORM == WINDOWS && BUILD_TYPE == RELEASE && BUILD_COMPILER == MSVC && PAWN_CELL_SIZE == 64
