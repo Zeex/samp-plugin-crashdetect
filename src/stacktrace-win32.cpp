@@ -179,6 +179,7 @@ StackTrace::StackTrace(void *their_context) {
 
 	// http://stackoverflow.com/a/136942/249230
 	stack_frame.AddrPC.Offset = context->Eip;
+	stack_frame.AddrReturn.Offset = context->Eip;
 	stack_frame.AddrPC.Mode = AddrModeFlat;
 	stack_frame.AddrFrame.Offset = context->Ebp;
 	stack_frame.AddrFrame.Mode = AddrModeFlat;
@@ -203,18 +204,9 @@ StackTrace::StackTrace(void *their_context) {
 		}
 	}
 
-	void *eip = reinterpret_cast<void*>(context->Eip);
-	frames_.push_back(StackFrame(eip));
-
-	for (int i = 0; ; i++) {
-		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stack_frame,
-		                                  (PVOID)context, NULL, NULL, NULL, NULL);
-		if (!result) {
-			break;
-		}
-
+	while (true) {
 		DWORD64 address = stack_frame.AddrReturn.Offset;
-		if (address <= 0 || address == stack_frame.AddrPC.Offset) {
+		if (address <= 0) {
 			break;
 		}
 
@@ -240,6 +232,12 @@ StackTrace::StackTrace(void *their_context) {
 		}
 
 		frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
+
+		BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stack_frame,
+		                                  (PVOID)context, NULL, NULL, NULL, NULL);
+		if (!result) {
+			break;
+		}
 	}
 
 	if (symbol != NULL) {
