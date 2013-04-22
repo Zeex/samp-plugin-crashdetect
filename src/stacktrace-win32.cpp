@@ -214,7 +214,7 @@ StackTrace::StackTrace(void *their_context) {
 		}
 
 		DWORD64 address = stack_frame.AddrReturn.Offset;
-		if (address == 0 || address == stack_frame.AddrPC.Offset) {
+		if (address <= 0 || address == stack_frame.AddrPC.Offset) {
 			break;
 		}
 
