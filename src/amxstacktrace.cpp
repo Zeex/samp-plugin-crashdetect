@@ -278,9 +278,9 @@ std::string AMXStackFrame::AsString() const {
 	stream << ")";
 
 	if (HasDebugInfo() && ret_addr_ != 0) {
-		std::string fileName = debug_info_->GetFileName(ret_addr_);
-		if (!fileName.empty()) {
-			stream << " at " << fileName;
+		std::string filename = debug_info_->GetFileName(ret_addr_);
+		if (!filename.empty()) {
+			stream << " at " << filename;
 		}
 		long line = debug_info_->GetLineNo(ret_addr_);
 		if (line != 0) {
@@ -359,7 +359,7 @@ std::pair<std::string, bool> AMXStackFrame::GetAMXString(cell address, std::size
 	const cell *cstr = reinterpret_cast<const cell*>(amx_.GetData() + address);
 
 	if (size == 0) {
-		// Size is unknown - copy up to the end of data.
+		// String size is unknown - copy until first '\0'.
 		size = hdr->stp - address;
 	}
 

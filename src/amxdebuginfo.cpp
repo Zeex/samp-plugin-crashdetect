@@ -162,11 +162,11 @@ AMXDebugSymbol AMXDebugInfo::GetFunc(cell address) const {
 	return function;
 }
 
-AMXDebugTag AMXDebugInfo::GetTag(int tagID) const {
+AMXDebugTag AMXDebugInfo::GetTag(int tag_id) const {
 	Tag tag;
 	TagTable tags = GetTags();
 	TagTable::const_iterator it = tags.begin();
-	while (it != tags.end() && it->GetID() != tagID) {
+	while (it != tags.end() && it->GetID() != tag_id) {
 		++it;
 		continue;
 	}
@@ -211,15 +211,15 @@ std::string AMXDebugInfo::GetTagName(cell address) const {
 	return name;
 }
 
-cell AMXDebugInfo::GetFuncAddr(const std::string &functionName, const std::string &fileName) const {
+cell AMXDebugInfo::GetFuncAddr(const std::string &func_name, const std::string &filename) const {
 	ucell address;
-	dbg_GetFunctionAddress(amxdbg_, functionName.c_str(), fileName.c_str(), &address);
+	dbg_GetFunctionAddress(amxdbg_, func_name.c_str(), filename.c_str(), &address);
 	return static_cast<cell>(address);
 }
 
-cell AMXDebugInfo::GetLineAddr(long line, const std::string &fileName) const {
+cell AMXDebugInfo::GetLineAddr(long line, const std::string &filename) const {
 	ucell address;
-	dbg_GetLineAddress(amxdbg_, line, fileName.c_str(), &address);
+	dbg_GetLineAddress(amxdbg_, line, filename.c_str(), &address);
 	return static_cast<cell>(address);
 }
 

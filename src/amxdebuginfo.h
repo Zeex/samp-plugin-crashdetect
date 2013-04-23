@@ -228,15 +228,15 @@ public:
 	Line   GetLine(cell address) const;
 	File   GetFile(cell address) const;
 	Symbol GetFunc(cell address) const;
-	Tag    GetTag(int tagID) const;	
+	Tag    GetTag(int tag_id) const;	
 
 	int32_t     GetLineNo(cell addrss) const;
 	std::string GetFileName(cell address) const;
 	std::string GetFuncName(cell address) const;
 	std::string GetTagName(cell address) const;
 
-	cell GetFuncAddr(const std::string &functionName, const std::string &fileName) const;
-	cell GetLineAddr(long line, const std::string &fileName) const;
+	cell GetFuncAddr(const std::string &func_name, const std::string &filename) const;
+	cell GetLineAddr(long line, const std::string &filename) const;
 
 	typedef Table<AMX_DBG_FILE*, File> FileTable;
 
