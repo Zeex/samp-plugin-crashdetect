@@ -141,7 +141,7 @@ void CrashDetect::PrintAmxBacktrace() {
 			cip = amx.PopStack(); // pop return address
 
 			if (frames.empty()) {
-				ucell ep_addr = amx.GetPublicAddr(call->index());
+				cell ep_addr = amx.GetPublicAddr(call->index());
 				frames.push_front(AMXStackFrame(amx, frm, 0, ep_addr, &debug_info));
 			} else {
 				if (!debug_info.IsLoaded()) {

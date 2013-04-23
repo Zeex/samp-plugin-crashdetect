@@ -79,8 +79,8 @@ public:
 	AMX_FUNCSTUBNT *GetPublics() { return const_cast<AMX_FUNCSTUBNT*>(const_this()->GetPublics()); }
 	const AMX_FUNCSTUBNT *GetPublics() const;
 
-	const char *FindPublic(ucell address) const;
-	const char *FindNative(ucell address) const;
+	const char *FindPublic(cell address) const;
+	const char *FindNative(cell address) const;
 
 	int GetNumNatives() const;
 	int GetNumPublics() const;
@@ -88,8 +88,8 @@ public:
 	cell GetNativeIndex(const char *name) const;
 	cell GetPublicIndex(const char *name) const;
 
-	ucell GetNativeAddr(int index) const;
-	ucell GetPublicAddr(int index) const;
+	cell GetNativeAddr(int index) const;
+	cell GetPublicAddr(int index) const;
 
 	const char *GetName(uint32_t offset) const;
 	const char *GetNativeName(int index) const;
