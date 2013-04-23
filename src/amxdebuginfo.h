@@ -108,8 +108,8 @@ public:
 		File() : file_(0) {}
 		File(const AMX_DBG_FILE *file) : file_(file) {}
 
-		std::string GetName() const    { return file_->name; }
-		ucell       GetAddr() const { return file_->address; }
+		std::string GetName() const { return file_->name; }
+		cell        GetAddr() const { return file_->address; }
 
 		operator bool() { return file_ != 0; }
 
@@ -124,7 +124,7 @@ public:
 		Line(AMX_DBG_LINE line) : line_(line) {}
 
 		int32_t GetNo() const  { return line_.line; }
-		ucell   GetAddr() const { return line_.address; }
+		cell    GetAddr() const { return line_.address; }
 
 		operator bool() { return line_.address != 0; }
 
@@ -183,10 +183,10 @@ public:
 		bool IsFunction() const    { return GetKind() == Function; }
 		bool IsFunctionRef() const { return GetKind() == FunctionRef; }
 
-		ucell       GetAddr() const       { return symbol_->address; }
+		cell        GetAddr() const          { return symbol_->address; }
 		int16_t     GetTag() const           { return symbol_->tag; }
-		ucell       GetCodeStartAddr() const { return symbol_->codestart; }
-		ucell       GetCodeEndAddr() const   { return symbol_->codeend; }
+		cell        GetCodeStartAddr() const { return symbol_->codestart; }
+		cell        GetCodeEndAddr() const   { return symbol_->codeend; }
 		Kind        GetKind() const          { return static_cast<Kind>(symbol_->ident); }
 		VClass      GetVClass() const        { return static_cast<VClass>(symbol_->vclass); }
 		int16_t     GetArrayDim() const      { return symbol_->dim; }
@@ -195,7 +195,7 @@ public:
 
 		std::vector<SymbolDim> GetDims() const;
 
-		cell GetValue(AMX *amx, ucell frm = 0) const;
+		cell GetValue(AMX *amx, cell frm = 0) const;
 
 		operator bool() { return symbol_ != 0; }
 
@@ -209,7 +209,7 @@ public:
 		SymbolDim(const AMX_DBG_SYMDIM *symdim) : symdim_(symdim) {}
 
 		int16_t GetTag() const  { return symdim_->tag; }
-		ucell   GetSize() const { return symdim_->size; }
+		cell    GetSize() const { return symdim_->size; }
 
 		operator bool() { return symdim_ != 0; }
 
@@ -225,18 +225,18 @@ public:
 	bool IsLoaded() const;
 	void Free();
 
-	Line   GetLine(ucell address) const;
-	File   GetFile(ucell address) const;
-	Symbol GetFunc(ucell address) const;
+	Line   GetLine(cell address) const;
+	File   GetFile(cell address) const;
+	Symbol GetFunc(cell address) const;
 	Tag    GetTag(int tagID) const;	
 
-	int32_t     GetLineNo(ucell addrss) const;
-	std::string GetFileName(ucell address) const;
-	std::string GetFuncName(ucell address) const;
-	std::string GetTagName(ucell address) const;
+	int32_t     GetLineNo(cell addrss) const;
+	std::string GetFileName(cell address) const;
+	std::string GetFuncName(cell address) const;
+	std::string GetTagName(cell address) const;
 
-	ucell GetFuncAddr(const std::string &functionName, const std::string &fileName) const;
-	ucell GetLineAddr(long line, const std::string &fileName) const;
+	cell GetFuncAddr(const std::string &functionName, const std::string &fileName) const;
+	cell GetLineAddr(long line, const std::string &fileName) const;
 
 	typedef Table<AMX_DBG_FILE*, File> FileTable;
 

@@ -49,9 +49,9 @@ public:
 	}
 
 	AMXStackFrame(AMXScript amx);
-	AMXStackFrame(AMXScript amx, ucell frame_addr, const AMXDebugInfo *debug_info = 0);
-	AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, const AMXDebugInfo *debug_info = 0);
-	AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, ucell func_addr, const AMXDebugInfo *debug_info = 0);
+	AMXStackFrame(AMXScript amx, cell frame_addr, const AMXDebugInfo *debug_info = 0);
+	AMXStackFrame(AMXScript amx, cell frame_addr, cell ret_addr, const AMXDebugInfo *debug_info = 0);
+	AMXStackFrame(AMXScript amx, cell frame_addr, cell ret_addr, cell func_addr, const AMXDebugInfo *debug_info = 0);
 
 	virtual ~AMXStackFrame();
 
@@ -62,9 +62,9 @@ public:
 		return debug_info_ != 0 && debug_info_->IsLoaded();
 	}
 
-	ucell GetFrameAddr() const { return frame_addr_; }
-	ucell GetRetAddr() const { return ret_addr_; }
-	ucell GetFuncAddr() const { return func_addr_; }
+	cell GetFrameAddr() const { return frame_addr_; }
+	cell GetRetAddr() const { return ret_addr_; }
+	cell GetFuncAddr() const { return func_addr_; }
 
 	cell GetArgValue(int index) const;
 	int GetNumArgs() const;
@@ -77,13 +77,13 @@ public:
 protected:
 	// Match function address against items stored in public table or main().
 	// Note: IsPublicFuncAddr() returns true for main().
-	bool IsPublicFuncAddr(ucell address) const;
-	bool IsMainAddr(ucell address) const;
+	bool IsPublicFuncAddr(cell address) const;
+	bool IsMainAddr(cell address) const;
 
 	// Determine whether an address belongs to one of the well known segments.
-	bool IsStackAddr(ucell address) const;
-	bool IsDataAddr(ucell address) const;
-	bool IsCodeAddr(ucell address) const;
+	bool IsStackAddr(cell address) const;
+	bool IsDataAddr(cell address) const;
+	bool IsCodeAddr(cell address) const;
 
 	// Extract string contents from the AMX image. All of these will terminate
 	// when encounter a non-printable character.
@@ -101,20 +101,20 @@ protected:
 	void GetArgSymbols(std::vector<AMXDebugSymbol> &args) const;
 
 private:
-	void Init(ucell frame_addr, ucell ret_addr = 0, ucell func_addr = 0);
+	void Init(cell frame_addr, cell ret_addr = 0, cell func_addr = 0);
 
 private:
 	AMXScript amx_;
-	ucell frame_addr_;
-	ucell ret_addr_;
-	ucell func_addr_;
+	cell frame_addr_;
+	cell ret_addr_;
+	cell func_addr_;
 	const AMXDebugInfo *debug_info_;
 };
 
 class AMXStackTrace {
 public:
 	AMXStackTrace(AMX *amx, const AMXDebugInfo *debug_info = 0);
-	AMXStackTrace(AMX *amx, ucell frame_addr = 0, const AMXDebugInfo *debug_info = 0);
+	AMXStackTrace(AMX *amx, cell frame_addr = 0, const AMXDebugInfo *debug_info = 0);
 
 	// Move onto next frame or die.
 	bool Next();

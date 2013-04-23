@@ -44,21 +44,20 @@ std::vector<AMXDebugSymbolDim> AMXDebugSymbol::GetDims() const {
 	return dims;
 }
 
-cell AMXDebugSymbol::GetValue(AMX *amx, ucell frm) const {
+cell AMXDebugSymbol::GetValue(AMX *amx, cell frm) const {
 	AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
 
 	unsigned char *data = reinterpret_cast<unsigned char*>(amx->base + hdr->dat);
 	unsigned char *code = reinterpret_cast<unsigned char*>(amx->base + hdr->cod);
 
-	ucell address = GetAddr();
+	cell address = GetAddr();
 	// Pawn Implementer's Guide:
 	// The address is relative to either the code segment (cod), the data segment
 	// (dat) or to the frame of the current function whose address is in the frm
 	// pseudo-register.	
-	if (address > static_cast<ucell>(hdr->cod)) {
+	if (address > hdr->cod) {
 		return *reinterpret_cast<cell*>(code + address);
-	} else if (address > static_cast<ucell>(hdr->dat) 
-			&& address < static_cast<ucell>(hdr->cod)) {
+	} else if (address > hdr->dat && address < hdr->cod) {
 		return *reinterpret_cast<cell*>(data + address);
 	} else {
 		if (frm == 0) {
@@ -111,7 +110,7 @@ void AMXDebugInfo::Free() {
 	}
 }
 
-AMXDebugLine AMXDebugInfo::GetLine(ucell address) const {
+AMXDebugLine AMXDebugInfo::GetLine(cell address) const {
 	Line line;
 	LineTable lines = GetLines();
 	LineTable::const_iterator it = lines.begin();
@@ -126,7 +125,7 @@ AMXDebugLine AMXDebugInfo::GetLine(ucell address) const {
 	return line;
 }
 
-AMXDebugFile AMXDebugInfo::GetFile(ucell address) const {
+AMXDebugFile AMXDebugInfo::GetFile(cell address) const {
 	File file;
 	FileTable files = GetFiles();
 	FileTable::const_iterator it = files.begin();
@@ -147,7 +146,7 @@ static bool IsBuggedForward(const AMX_DBG_SYMBOL *symbol) {
 	return (symbol->name[0] == '@');
 }
 
-AMXDebugSymbol AMXDebugInfo::GetFunc(ucell address) const {
+AMXDebugSymbol AMXDebugInfo::GetFunc(cell address) const {
 	Symbol function;
 	SymbolTable symbols = GetSymbols();
 	for (SymbolTable::const_iterator it = symbols.begin(); it != symbols.end(); ++it) {
@@ -177,7 +176,7 @@ AMXDebugTag AMXDebugInfo::GetTag(int tagID) const {
 	return tag;
 }
 
-int32_t AMXDebugInfo::GetLineNo(ucell address) const {
+int32_t AMXDebugInfo::GetLineNo(cell address) const {
 	Line line = GetLine(address);
 	if (line) {
 		return line.GetNo();
@@ -185,7 +184,7 @@ int32_t AMXDebugInfo::GetLineNo(ucell address) const {
 	return 0;
 }
 
-std::string AMXDebugInfo::GetFileName(ucell address) const {
+std::string AMXDebugInfo::GetFileName(cell address) const {
 	std::string name;
 	File file = GetFile(address);
 	if (file) {
@@ -194,7 +193,7 @@ std::string AMXDebugInfo::GetFileName(ucell address) const {
 	return name;
 }
 
-std::string AMXDebugInfo::GetFuncName(ucell address) const {
+std::string AMXDebugInfo::GetFuncName(cell address) const {
 	std::string name;
 	Symbol function = GetFunc(address);
 	if (function) {
@@ -203,7 +202,7 @@ std::string AMXDebugInfo::GetFuncName(ucell address) const {
 	return name;
 }
 
-std::string AMXDebugInfo::GetTagName(ucell address) const {
+std::string AMXDebugInfo::GetTagName(cell address) const {
 	std::string name;
 	Tag tag = GetTag(address);
 	if (tag) {
@@ -212,16 +211,16 @@ std::string AMXDebugInfo::GetTagName(ucell address) const {
 	return name;
 }
 
-ucell AMXDebugInfo::GetFuncAddr(const std::string &functionName, const std::string &fileName) const {
-	ucell functionAddress;
-	dbg_GetFunctionAddress(amxdbg_, functionName.c_str(), fileName.c_str(), &functionAddress);
-	return functionAddress;
+cell AMXDebugInfo::GetFuncAddr(const std::string &functionName, const std::string &fileName) const {
+	ucell address;
+	dbg_GetFunctionAddress(amxdbg_, functionName.c_str(), fileName.c_str(), &address);
+	return static_cast<cell>(address);
 }
 
-ucell AMXDebugInfo::GetLineAddr(long line, const std::string &fileName) const {
-	ucell lineAddress;
-	dbg_GetLineAddress(amxdbg_, line, fileName.c_str(), &lineAddress);
-	return lineAddress;
+cell AMXDebugInfo::GetLineAddr(long line, const std::string &fileName) const {
+	ucell address;
+	dbg_GetLineAddress(amxdbg_, line, fileName.c_str(), &address);
+	return static_cast<cell>(address);
 }
 
 // static

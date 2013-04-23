@@ -40,13 +40,13 @@
 
 class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
 public:
-	IsArgumentOf(ucell function) 
+	IsArgumentOf(cell function) 
 		: function_(function) {}
 	bool operator()(AMXDebugSymbol symbol) const {
 		return symbol.IsLocal() && symbol.GetCodeStartAddr() == function_;
 	}
 private:
-	ucell function_;
+	cell function_;
 };
 
 AMXStackFrame::AMXStackFrame(AMXScript amx)
@@ -54,33 +54,33 @@ AMXStackFrame::AMXStackFrame(AMXScript amx)
 {
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frame_addr, const AMXDebugInfo *debug_info)
+AMXStackFrame::AMXStackFrame(AMXScript amx, cell frame_addr, const AMXDebugInfo *debug_info)
 	: amx_(amx), frame_addr_(0), ret_addr_(0), func_addr_(0), debug_info_(debug_info)
 {
-	ucell data = reinterpret_cast<ucell>(amx_.GetData());
-	ucell code = reinterpret_cast<ucell>(amx_.GetCode());
+	cell data = reinterpret_cast<cell>(amx_.GetData());
+	cell code = reinterpret_cast<cell>(amx_.GetCode());
 
 	if (IsStackAddr(frame_addr)) {
-		ucell ret_addr = *(reinterpret_cast<ucell*>(data + frame_addr) + 1);
+		cell ret_addr = *(reinterpret_cast<cell*>(data + frame_addr) + 1);
 		Init(frame_addr, ret_addr);
 	} else {
 		Init(frame_addr);
 	}
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, const AMXDebugInfo *debug_info)
+AMXStackFrame::AMXStackFrame(AMXScript amx, cell frame_addr, cell ret_addr, const AMXDebugInfo *debug_info)
 	: amx_(amx), frame_addr_(0), ret_addr_(0), func_addr_(0), debug_info_(debug_info)
 {
 	Init(frame_addr, ret_addr);
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, ucell frame_addr, ucell ret_addr, ucell func_addr, const AMXDebugInfo *debug_info)
+AMXStackFrame::AMXStackFrame(AMXScript amx, cell frame_addr, cell ret_addr, cell func_addr, const AMXDebugInfo *debug_info)
 	: amx_(amx), frame_addr_(0), ret_addr_(0), func_addr_(0), debug_info_(debug_info)
 {
 	Init(frame_addr, ret_addr, func_addr);
 }
 
-void AMXStackFrame::Init(ucell frame_addr, ucell ret_addr, ucell func_addr) {
+void AMXStackFrame::Init(cell frame_addr, cell ret_addr, cell func_addr) {
 	if (IsStackAddr(frame_addr)) {
 		frame_addr_ = frame_addr;
 	}
@@ -291,27 +291,26 @@ std::string AMXStackFrame::AsString() const {
 	return stream.str();
 }
 
-bool AMXStackFrame::IsPublicFuncAddr(ucell address) const {
+bool AMXStackFrame::IsPublicFuncAddr(cell address) const {
 	return amx_.FindPublic(address) != 0;
 }
 
-bool AMXStackFrame::IsMainAddr(ucell address) const {
+bool AMXStackFrame::IsMainAddr(cell address) const {
 	const AMX_HEADER *hdr = amx_.GetHeader();
-	return static_cast<cell>(address) == hdr->cip;
+	return address == hdr->cip;
 }
 
-bool AMXStackFrame::IsStackAddr(ucell address) const {
-	return (address >= static_cast<ucell>(amx_.GetHlw())
-		&& address < static_cast<ucell>(amx_.GetStp()));
+bool AMXStackFrame::IsStackAddr(cell address) const {
+	return (address >= amx_.GetHlw() && address < amx_.GetStp());
 }
 
-bool AMXStackFrame::IsDataAddr(ucell address) const {
-	return address < static_cast<ucell>(amx_.GetStp());
+bool AMXStackFrame::IsDataAddr(cell address) const {
+	return address < amx_.GetStp();
 }
 
-bool AMXStackFrame::IsCodeAddr(ucell address) const {
+bool AMXStackFrame::IsCodeAddr(cell address) const {
 	const AMX_HEADER *hdr = amx_.GetHeader();
-	return address < static_cast<ucell>(hdr->dat - hdr->cod);
+	return address < hdr->dat - hdr->cod;
 }
 
 inline bool IsPrintableChar(char c) {
@@ -364,7 +363,7 @@ std::pair<std::string, bool> AMXStackFrame::GetAMXString(cell address, std::size
 		size = hdr->stp - address;
 	}
 
-	if (*reinterpret_cast<const ucell*>(cstr) > UNPACKEDMAX) {
+	if (*reinterpret_cast<const cell*>(cstr) > UNPACKEDMAX) {
 		result.first = GetPackedAMXString(cstr, size);
 		result.second = true;
 	} else {
@@ -380,7 +379,7 @@ AMXStackTrace::AMXStackTrace(AMX *amx, const AMXDebugInfo *debug_info)
 {
 }
 
-AMXStackTrace::AMXStackTrace(AMX *amx, ucell frame_addr, const AMXDebugInfo *debug_info)
+AMXStackTrace::AMXStackTrace(AMX *amx, cell frame_addr, const AMXDebugInfo *debug_info)
 	: frame_(amx, frame_addr, debug_info)
 {
 }
