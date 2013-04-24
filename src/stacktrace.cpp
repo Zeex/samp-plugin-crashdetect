@@ -32,24 +32,27 @@
 StackTrace::StackTrace(HappyCompiler *happyCompiler) {
 }
 
-StackFrame::StackFrame(void *ret_addr, const std::string &name)
-		: ret_addr_(ret_addr), name_(name)
+StackFrame::StackFrame(void *return_address, const std::string &callee_name)
+ : return_address_(return_address),
+   callee_name_(callee_name)
 {
 }
 
 StackFrame::~StackFrame() {
 }
 
-std::string StackFrame::AsString() const {
-	std::stringstream stream;
+void StackFrame::Print(std::ostream &stream) const {
+  char old_fill = stream.fill('0');
 
-	stream << std::hex << std::setw(8) << std::setfill('0') 
-		<< reinterpret_cast<long>(ret_addr_) << std::dec;
-	if (!name_.empty()) {
-		stream << " in " << name_ << " ()";
-	} else {
-		stream << " in ?? ()";
-	}
+  stream << std::hex << std::setw(8)
+         << reinterpret_cast<long>(return_address_)
+         << std::dec;
 
-	return stream.str();
+  stream.fill(old_fill);
+
+  if (!callee_name_.empty()) {
+    stream << " in " << callee_name_ << " ()";
+  } else {
+    stream << " in ?? ()";
+  }
 }

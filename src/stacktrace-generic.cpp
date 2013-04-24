@@ -33,38 +33,38 @@
 #include "stacktrace-generic.h"
 
 static inline void *GetReturnAddress(void *frame) {
-	return *reinterpret_cast<void**>(reinterpret_cast<char*>(frame) + 4);
+  return *reinterpret_cast<void**>(reinterpret_cast<char*>(frame) + 4);
 }
 
 static inline void *GetNextFrame(void *frame) {
-	return *reinterpret_cast<void**>(frame);
+  return *reinterpret_cast<void**>(frame);
 }
 
 StackTraceGeneric::StackTraceGeneric(void *frame, void *pc)
-	: StackTrace(static_cast<HappyCompiler*>(0))
+ : StackTrace(static_cast<HappyCompiler*>(0))
 {
-	void *cur_frame = frame == 0
-		? compiler::GetStackFrame()
-		: frame;
+  void *cur_frame = frame == 0
+    ? compiler::GetStackFrame()
+    : frame;
 
-	void *top = compiler::GetStackTop();
-	void *bot = compiler::GetStackBottom();
+  void *top = compiler::GetStackTop();
+  void *bot = compiler::GetStackBottom();
 
-	if (pc != 0) {
-		frames_.push_back(pc);
-	}
+  if (pc != 0) {
+    frames_.push_back(pc);
+  }
 
-	while (true) {
-		if (cur_frame == 0 || cur_frame < bot || cur_frame > top) {
-			break;
-		}
+  while (true) {
+    if (cur_frame == 0 || cur_frame < bot || cur_frame > top) {
+      break;
+    }
 
-		void *ret = GetReturnAddress(cur_frame);
-		if (ret == 0) {
-			break;
-		}
+    void *ret = GetReturnAddress(cur_frame);
+    if (ret == 0) {
+      break;
+    }
 
-		cur_frame = GetNextFrame(cur_frame);
-		frames_.push_back(StackFrame(ret));
-	}
+    cur_frame = GetNextFrame(cur_frame);
+    frames_.push_back(StackFrame(ret));
+  }
 }

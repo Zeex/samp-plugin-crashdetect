@@ -28,100 +28,100 @@
 #include "tcpsocket.h"
 
 struct TCPSocketSystemInfo {
-	SOCKET   socket;
-	addrinfo hints;
-	WSADATA  wsdata;
+  SOCKET   socket;
+  addrinfo hints;
+  WSADATA  wsdata;
 };
 
 TCPSocket::TCPSocket()
-	: is_open_(false)
-	, is_connected_(false)
-	, info_(new TCPSocketSystemInfo)
+ : is_open_(false),
+   is_connected_(false),
+   info_(new TCPSocketSystemInfo)
 {
-	info_->socket = INVALID_SOCKET;
+  info_->socket = INVALID_SOCKET;
 
-	ZeroMemory(&info_->hints, sizeof(info_->hints));
-	info_->hints.ai_family = AF_INET;
-	info_->hints.ai_socktype = SOCK_STREAM;
-	info_->hints.ai_protocol = IPPROTO_TCP;
+  ZeroMemory(&info_->hints, sizeof(info_->hints));
+  info_->hints.ai_family = AF_INET;
+  info_->hints.ai_socktype = SOCK_STREAM;
+  info_->hints.ai_protocol = IPPROTO_TCP;
 
-	if (WSAStartup(WINSOCK_VERSION, &info_->wsdata) == 0) {
-		Open();
-	}
+  if (WSAStartup(WINSOCK_VERSION, &info_->wsdata) == 0) {
+    Open();
+  }
 }
 
 TCPSocket::~TCPSocket() {
-	Close();
-	WSACleanup();
-	delete info_;
+  Close();
+  WSACleanup();
+  delete info_;
 }
 
 bool TCPSocket::Open() {
-	info_->socket = socket(info_->hints.ai_family, info_->hints.ai_socktype,
-	                       info_->hints.ai_protocol);
-	is_open_ = info_->socket != INVALID_SOCKET;
-	return is_open_;
+  info_->socket = socket(info_->hints.ai_family, info_->hints.ai_socktype,
+                         info_->hints.ai_protocol);
+  is_open_ = info_->socket != INVALID_SOCKET;
+  return is_open_;
 }
 
 bool TCPSocket::Connect(const char *host, const char *port) {
-	addrinfo *result;
-	if (getaddrinfo(host, port, &info_->hints, &result) != 0) {
-		return false;
-	}
+  addrinfo *result;
+  if (getaddrinfo(host, port, &info_->hints, &result) != 0) {
+    return false;
+  }
 
-	addrinfo *cur;
-	for (cur = result; cur != 0; cur = cur->ai_next) {
-		if (connect(info_->socket, cur->ai_addr, cur->ai_addrlen) == 0) {
-			break;
-		}
-	}
+  addrinfo *cur;
+  for (cur = result; cur != 0; cur = cur->ai_next) {
+    if (connect(info_->socket, cur->ai_addr, cur->ai_addrlen) == 0) {
+      break;
+    }
+  }
 
-	freeaddrinfo(result);
+  freeaddrinfo(result);
 
-	is_connected_ = cur != 0;
-	return is_connected_;
+  is_connected_ = cur != 0;
+  return is_connected_;
 }
 
 int TCPSocket::Send(const char *buffer, int length) const {
-	int nbytes = send(info_->socket, buffer, length, 0);
-	return nbytes == SOCKET_ERROR ? -1 : nbytes;
+  int nbytes = send(info_->socket, buffer, length, 0);
+  return nbytes == SOCKET_ERROR ? -1 : nbytes;
 }
 
 int TCPSocket::Receive(char *buffer, int length) const {
-	int nbytes = recv(info_->socket, buffer, length, 0);
-	return nbytes == SOCKET_ERROR ? -1 : nbytes;
+  int nbytes = recv(info_->socket, buffer, length, 0);
+  return nbytes == SOCKET_ERROR ? -1 : nbytes;
 }
 
 bool TCPSocket::Shutdown(ShutdownOperation what) {
-	switch (what) {
-		case SHUTDOWN_SEND:
-			return shutdown(info_->socket, SD_RECEIVE) == 0;
-		case SHUTDOWN_RECEIVE:
-			return shutdown(info_->socket, SD_RECEIVE) == 0;
-		case SHUTDOWN_BOTH:
-			return shutdown(info_->socket, SD_BOTH) == 0;
-	}
-	return false;
+  switch (what) {
+    case SHUTDOWN_SEND:
+      return shutdown(info_->socket, SD_RECEIVE) == 0;
+    case SHUTDOWN_RECEIVE:
+      return shutdown(info_->socket, SD_RECEIVE) == 0;
+    case SHUTDOWN_BOTH:
+      return shutdown(info_->socket, SD_BOTH) == 0;
+  }
+  return false;
 }
 
 bool TCPSocket::Close() {
-	bool result = false;
+  bool result = false;
 
-	if (is_connected_) {
-		Shutdown(SHUTDOWN_BOTH);
-		is_connected_ = false;
-	}
+  if (is_connected_) {
+    Shutdown(SHUTDOWN_BOTH);
+    is_connected_ = false;
+  }
 
-	if (is_open_) {
-		result = closesocket(info_->socket) == 0;
-		info_->socket = INVALID_SOCKET;
-		is_open_ = false;
-	}
+  if (is_open_) {
+    result = closesocket(info_->socket) == 0;
+    info_->socket = INVALID_SOCKET;
+    is_open_ = false;
+  }
 
-	return result;
+  return result;
 }
 
 bool TCPSocket::SetReceiveTimeout(int timeout) {
-	return setsockopt(info_->socket, SOL_SOCKET, SO_RCVTIMEO,
-	                  reinterpret_cast<char*>(&timeout), sizeof(timeout)) == 0;
+  return setsockopt(info_->socket, SOL_SOCKET, SO_RCVTIMEO,
+                    reinterpret_cast<char*>(&timeout), sizeof(timeout)) == 0;
 }

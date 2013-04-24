@@ -33,25 +33,25 @@
 
 template<typename T>
 class AMXService {
-public:
-	AMXService(AMXScript amx) : amx_(amx) {}
+ public:
+  AMXService(AMXScript amx) : amx_(amx) {}
 
-	AMXScript amx() { return amx_; }
+  AMXScript amx() { return amx_; }
 
-	virtual int Load() = 0;
-	virtual int Unload() = 0;
+  virtual int Load() = 0;
+  virtual int Unload() = 0;
 
-public:
-	static T *Create(AMXScript amx);
-	static T *Get(AMXScript amx);
-	static void Destroy(AMXScript amx);
+ public:
+  static T *Create(AMXScript amx);
+  static T *Get(AMXScript amx);
+  static void Destroy(AMXScript amx);
 
-private:
-	AMXScript amx_;
+ private:
+  AMXScript amx_;
 
-private:
-	typedef std::map<AMX*, T*> ServiceMap;
-	static ServiceMap service_map_;
+ private:
+  typedef std::map<AMX*, T*> ServiceMap;
+  static ServiceMap service_map_;
 };
 
 template<typename T>
@@ -60,30 +60,30 @@ typename AMXService<T>::ServiceMap AMXService<T>::service_map_;
 // static
 template<typename T>
 T *AMXService<T>::Create(AMXScript amx) {
-	T *service = new T(amx);
-	service_map_.insert(std::make_pair(amx, service));
-	return service;
+  T *service = new T(amx);
+  service_map_.insert(std::make_pair(amx, service));
+  return service;
 }
 
 // static
 template<typename T>
 T *AMXService<T>::Get(AMXScript amx) {
-	typename ServiceMap::const_iterator iterator = service_map_.find(amx);
-	if (iterator != service_map_.end()) {
-		return iterator->second;
-	}
-	return Create(amx);
+  typename ServiceMap::const_iterator iterator = service_map_.find(amx);
+  if (iterator != service_map_.end()) {
+    return iterator->second;
+  }
+  return Create(amx);
 }
 
 // static
 template<typename T>
 void AMXService<T>::Destroy(AMXScript amx) {
-	typename ServiceMap::iterator iterator = service_map_.find(amx);
-	if (iterator != service_map_.end()) {
-		T *service = iterator->second;
-		service_map_.erase(iterator);
-		delete service;
-	}
+  typename ServiceMap::iterator iterator = service_map_.find(amx);
+  if (iterator != service_map_.end()) {
+    T *service = iterator->second;
+    service_map_.erase(iterator);
+    delete service;
+  }
 }
 
 #endif // !AMXSERVICE_H

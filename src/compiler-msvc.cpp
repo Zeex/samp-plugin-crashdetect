@@ -24,95 +24,95 @@
 
 namespace compiler {
 
-__declspec(naked) void *GetRetAddr(void *frame, int depth) {
-	__asm mov eax, dword ptr [esp + 4]
-	__asm cmp eax, 0
-	__asm jnz init
-	__asm mov eax, ebp
+__declspec(naked) void *GetReturnAddress(void *frame, int depth) {
+  __asm mov eax, dword ptr [esp + 4]
+  __asm cmp eax, 0
+  __asm jnz init
+  __asm mov eax, ebp
 
 init:
-	__asm mov ecx, dword ptr [esp + 8]
-	__asm mov edx, 0
+  __asm mov ecx, dword ptr [esp + 8]
+  __asm mov edx, 0
 
 begin_loop:
-	__asm cmp ecx, 0
-	__asm jl exit
-	__asm mov edx, dword ptr [eax + 4]
-	__asm mov eax, dword ptr [eax]
-	__asm dec ecx
-	__asm jmp begin_loop
+  __asm cmp ecx, 0
+  __asm jl exit
+  __asm mov edx, dword ptr [eax + 4]
+  __asm mov eax, dword ptr [eax]
+  __asm dec ecx
+  __asm jmp begin_loop
 
 exit:
-	__asm mov eax, edx
-	__asm ret
+  __asm mov eax, edx
+  __asm ret
 }
 
 __declspec(naked) void *GetStackFrame(int depth) {
-	__asm mov eax, ebp
-	__asm mov ecx, dword ptr [esp + 4]
+  __asm mov eax, ebp
+  __asm mov ecx, dword ptr [esp + 4]
 
 begin_loop:
-	__asm test ecx, 0
-	__asm jz exit
-	__asm mov eax, dword ptr [eax]
-	__asm dec ecx
-	__asm jmp begin_loop
+  __asm test ecx, 0
+  __asm jz exit
+  __asm mov eax, dword ptr [eax]
+  __asm dec ecx
+  __asm jmp begin_loop
 
 exit:
-	__asm ret
+  __asm ret
 }
 
 __declspec(naked) void *GetStackTop() {
-	__asm mov eax, fs:[0x04]
-	__asm ret
+  __asm mov eax, fs:[0x04]
+  __asm ret
 }
 
 __declspec(naked) void *GetStackBottom() {
-	__asm mov eax, fs:[0x08]
-	__asm ret
+  __asm mov eax, fs:[0x08]
+  __asm ret
 }
 
-__declspec(naked) void *CallCdeclFunc(void *func, const void *const *args, int nargs)
+__declspec(naked) void *CallFunctionCdecl(void *func, const void *const *args, int nargs)
 {
-	__asm mov eax, dword ptr [esp + 4]
-	__asm mov edx, dword ptr [esp + 8]
-	__asm mov ecx, dword ptr [esp + 12]
-	__asm push edi
-	__asm mov edi, ecx
-	__asm sal edi, 2
-	__asm push esi
+  __asm mov eax, dword ptr [esp + 4]
+  __asm mov edx, dword ptr [esp + 8]
+  __asm mov ecx, dword ptr [esp + 12]
+  __asm push edi
+  __asm mov edi, ecx
+  __asm sal edi, 2
+  __asm push esi
 begin_loop:
-	__asm cmp ecx, 0
-	__asm jle end_loop
-	__asm dec ecx
-	__asm mov esi, dword ptr [edx + ecx * 4]
-	__asm push esi
-	__asm jmp begin_loop
+  __asm cmp ecx, 0
+  __asm jle end_loop
+  __asm dec ecx
+  __asm mov esi, dword ptr [edx + ecx * 4]
+  __asm push esi
+  __asm jmp begin_loop
 end_loop:
-	__asm call eax
-	__asm add esp, edi
-	__asm pop esi
-	__asm pop edi
-	__asm ret
+  __asm call eax
+  __asm add esp, edi
+  __asm pop esi
+  __asm pop edi
+  __asm ret
 }
 
-__declspec(naked) void *CallStdcallFunc(void *func, const void *const *args, int nargs)
+__declspec(naked) void *CallFunctionStdcall(void *func, const void *const *args, int nargs)
 {
-	__asm mov eax, dword ptr [esp + 4]
-	__asm mov edx, dword ptr [esp + 8]
-	__asm mov ecx, dword ptr [esp + 12]
-	__asm push esi
+  __asm mov eax, dword ptr [esp + 4]
+  __asm mov edx, dword ptr [esp + 8]
+  __asm mov ecx, dword ptr [esp + 12]
+  __asm push esi
 begin_loop:
-	__asm cmp ecx, 0
-	__asm jle end_loop
-	__asm dec ecx
-	__asm mov esi, dword ptr [edx + ecx * 4]
-	__asm push esi
-	__asm jmp begin_loop
+  __asm cmp ecx, 0
+  __asm jle end_loop
+  __asm dec ecx
+  __asm mov esi, dword ptr [edx + ecx * 4]
+  __asm push esi
+  __asm jmp begin_loop
 end_loop:
-	__asm call eax
-	__asm pop esi
-	__asm ret
+  __asm call eax
+  __asm pop esi
+  __asm ret
 }
 
 } // namespace compiler

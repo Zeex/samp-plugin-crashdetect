@@ -27,15 +27,15 @@
 #include "amxerror.h"
 
 AMXError::AMXError(int error_code)
-	: code_(error_code)
+ : code_(error_code)
 {
 }
 
 const char *AMXError::GetString() const {
-	return GetStringFromCode(code_);
+  return GetStringFromCode(code_);
 }
 
 // static
 const char *AMXError::GetStringFromCode(int error_code) {
-	return aux_StrError(error_code);
+  return aux_StrError(error_code);
 }

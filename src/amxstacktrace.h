@@ -25,106 +25,72 @@
 #ifndef AMXSTACKTRACE_H
 #define AMXSTACKTRACE_H
 
-#include <cstddef>
 #include <iosfwd>
-#include <string>
-#include <vector>
-#include <utility>
-
-#include <amx/amx.h>
 
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 
 class AMXStackFrame {
-public:
-	static const int kMaxString = 30;
+ public:
+  static const int kMaxPrintString = 30;
 
-	std::ostream &operator<<(std::ostream &os) const {
-		return os << AsString();
-	}
+  AMXStackFrame(AMXScript amx, cell address);
 
-	operator bool() const {
-		return frame_addr_ != 0;
-	}
+  AMXStackFrame(AMXScript amx, cell address,
+                               cell return_address,
+                               cell callee_address,
+                               cell caller_address);
 
-	AMXStackFrame(AMXScript amx);
-	AMXStackFrame(AMXScript amx, cell frame_addr, const AMXDebugInfo *debug_info = 0);
-	AMXStackFrame(AMXScript amx, cell frame_addr, cell ret_addr, const AMXDebugInfo *debug_info = 0);
-	AMXStackFrame(AMXScript amx, cell frame_addr, cell ret_addr, cell func_addr, const AMXDebugInfo *debug_info = 0);
+  cell address() const { return address_; }
 
-	virtual ~AMXStackFrame();
+  void set_address(cell address) {
+    address_ = address; 
+  }
 
-	AMXScript amx() { return amx_; }
-	const AMXDebugInfo *GetDebugInfo() const { return debug_info_; }
+  cell return_address() const {return return_address_; }
 
-	bool HasDebugInfo() const {
-		return debug_info_ != 0 && debug_info_->IsLoaded();
-	}
+  void set_return_address(cell return_address) {
+    return_address_ = return_address;
+  }
 
-	cell GetFrameAddr() const { return frame_addr_; }
-	cell GetRetAddr() const { return ret_addr_; }
-	cell GetFuncAddr() const { return func_addr_; }
+  cell callee_address() const { return callee_address_; }
 
-	cell GetArgValue(int index) const;
-	int GetNumArgs() const;
+  void set_callee_address(cell callee_address) {
+    callee_address_ = callee_address;
+  }
 
-	AMXStackFrame GetNextFrame() const;
+  cell caller_address() const { return caller_address_; }
 
-	// Converts to a single-line human-friendly string (good for stack traces).
-	virtual std::string AsString() const;
+  void set_caller_address(cell caller_address) {
+    caller_address_ = caller_address;
+  }
 
-protected:
-	// Match function address against items stored in public table or main().
-	// Note: IsPublicFuncAddr() returns true for main().
-	bool IsPublicFuncAddr(cell address) const;
-	bool IsMainAddr(cell address) const;
+  AMXStackFrame GetPrevious() const;
 
-	// Determine whether an address belongs to one of the well known segments.
-	bool IsStackAddr(cell address) const;
-	bool IsDataAddr(cell address) const;
-	bool IsCodeAddr(cell address) const;
+  void Print(std::ostream &stream,
+             const AMXDebugInfo *debug_info = 0) const;
 
-	// Extract string contents from the AMX image. All of these will terminate
-	// when encounter a non-printable character.
-	std::string GetPackedAMXString(const cell *string, std::size_t size) const;
-	std::string GetUnpackedAMXString(const cell *string, std::size_t size) const;
-	std::pair<std::string, bool> GetAMXString(cell address, std::size_t size) const;
+  operator bool() const { return address_ != 0; }
 
-	// Returns debug symbol corresponding to the called function. If debug info
-	// is not present an empty symbol will be returned.
-	AMXDebugSymbol GetFuncSymbol() const;
-
-	// Returns an array of debug symbols that correspond to function arguments.
-	// The arguments are ordered according to the function definition. If debug
-	// info is not present an empty vector will be returned.
-	void GetArgSymbols(std::vector<AMXDebugSymbol> &args) const;
-
-private:
-	void Init(cell frame_addr, cell ret_addr = 0, cell func_addr = 0);
-
-private:
-	AMXScript amx_;
-	cell frame_addr_;
-	cell ret_addr_;
-	cell func_addr_;
-	const AMXDebugInfo *debug_info_;
+ private:
+  AMXScript amx_;
+  cell address_;
+  cell return_address_;
+  cell callee_address_;
+  cell caller_address_;
 };
 
 class AMXStackTrace {
-public:
-	AMXStackTrace(AMX *amx, const AMXDebugInfo *debug_info = 0);
-	AMXStackTrace(AMX *amx, cell frame_addr = 0, const AMXDebugInfo *debug_info = 0);
+ public:
+  AMXStackTrace(AMXScript amx);
+  AMXStackTrace(AMXScript amx, cell frame);
 
-	// Move onto next frame or die.
-	bool Next();
+  bool Next();
 
-	AMXStackFrame GetFrame() const {
-		return frame_;
-	}
+  AMXStackFrame current_frame() const { return current_frame_; }
 
-private:
-	AMXStackFrame frame_;
+ private:
+  AMXStackFrame current_frame_;
 };
 
 #endif // !AMXSTACKTRACE_H

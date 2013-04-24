@@ -28,8 +28,8 @@
 #include "stacktrace.h"
 
 class StackTraceGeneric : public StackTrace {
-public:
-	StackTraceGeneric(void *frame = 0, void *pc = 0);
+ public:
+  StackTraceGeneric(void *frame = 0, void *pc = 0);
 };
 
 #endif // !STACKTRACE_H

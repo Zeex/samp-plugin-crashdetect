@@ -40,25 +40,25 @@ const char *kNativePathListSepString = ";";
 void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
                        std::vector<std::string> &files) 
 {
-	std::string fileName;
-	fileName.append(directory);
-	fileName.append(kNativePathSepString);
-	fileName.append(pattern);
+  std::string fileName;
+  fileName.append(directory);
+  fileName.append(kNativePathSepString);
+  fileName.append(pattern);
 
-	WIN32_FIND_DATA findFileData;
+  WIN32_FIND_DATA findFileData;
 
-	HANDLE hFindFile = FindFirstFile(fileName.c_str(), &findFileData);
-	if (hFindFile == INVALID_HANDLE_VALUE) {
-		return;
-	}
+  HANDLE hFindFile = FindFirstFile(fileName.c_str(), &findFileData);
+  if (hFindFile == INVALID_HANDLE_VALUE) {
+    return;
+  }
 
-	do {
-		if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-				files.push_back(findFileData.cFileName);
-		}
-	} while (FindNextFile(hFindFile, &findFileData) != 0);
+  do {
+    if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+        files.push_back(findFileData.cFileName);
+    }
+  } while (FindNextFile(hFindFile, &findFileData) != 0);
 
-	FindClose(hFindFile);
+  FindClose(hFindFile);
 }
 
 } // namespace fileutils

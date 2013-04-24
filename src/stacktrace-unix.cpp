@@ -32,42 +32,42 @@
 static const int kMaxFrames = 100;
 
 static std::string GetSymbolName(const std::string &symbol) {
-	std::string name;
+  std::string name;
 
-	if (!symbol.empty()) {
-		std::string::size_type lp = symbol.find('(');
-		std::string::size_type rp = symbol.find_first_of(")+-", lp);
+  if (!symbol.empty()) {
+    std::string::size_type lp = symbol.find('(');
+    std::string::size_type rp = symbol.find_first_of(")+-", lp);
 
-		if (lp != std::string::npos && rp != std::string::npos) {
-			name = symbol.substr(lp + 1, rp - lp - 1);
-		}
-	}
+    if (lp != std::string::npos && rp != std::string::npos) {
+      name = symbol.substr(lp + 1, rp - lp - 1);
+    }
+  }
 
-	return name;
+  return name;
 }
 
 StackTrace::StackTrace(void *context) {
-	#ifdef HAVE_BACKTRACE
-		void *trace[kMaxFrames];
-		int trace_length = backtrace(trace, kMaxFrames);
+  #ifdef HAVE_BACKTRACE
+    void *trace[kMaxFrames];
+    int trace_length = backtrace(trace, kMaxFrames);
 
-		#ifdef HAVE_BACKTRACE_SYMBOLS
-			char **symbols = backtrace_symbols(trace, trace_length);
-		#endif
+    #ifdef HAVE_BACKTRACE_SYMBOLS
+      char **symbols = backtrace_symbols(trace, trace_length);
+    #endif
 
-		for (int i = 0; i < trace_length; i++) {
-			#ifdef HAVE_BACKTRACE_SYMBOLS
-				if (symbols[i] != 0) {
-					std::string name = GetSymbolName(symbols[i]);
-					frames_.push_back(StackFrame(trace[i], name));
-				} else {
-					frames_.push_back(StackFrame(trace[i]));
-				}
-			#else
-				frames_.push_back(StackFrame(trace[i]));
-			#endif
-		}
-	#else
-		frames_ = StackTraceGeneric().GetFrames();
-	#endif
+    for (int i = 0; i < trace_length; i++) {
+      #ifdef HAVE_BACKTRACE_SYMBOLS
+        if (symbols[i] != 0) {
+          std::string name = GetSymbolName(symbols[i]);
+          frames_.push_back(StackFrame(trace[i], name));
+        } else {
+          frames_.push_back(StackFrame(trace[i]));
+        }
+      #else
+        frames_.push_back(StackFrame(trace[i]));
+      #endif
+    }
+  #else
+    frames_ = StackTraceGeneric().GetFrames();
+  #endif
 }

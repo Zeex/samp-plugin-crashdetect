@@ -28,31 +28,31 @@
 #include <string>
 
 class Version {
-public:
-	Version();
-	Version(const std::string &string);
-	Version(int major, int minor = 0, int patch = 0,
-	        std::string suffix = std::string());
+ public:
+  Version();
+  Version(const std::string &string);
+  Version(int major, int minor = 0, int patch = 0,
+          std::string suffix = std::string());
 
-	void FromString(const std::string &s);
-	std::string AsString(bool include_trailing_zero = false) const;
+  void FromString(const std::string &s);
+  std::string AsString(bool include_trailing_zero = false) const;
 
-	int Compare(const Version &rhs, bool with_suffix = true) const;
+  int Compare(const Version &rhs, bool with_suffix = true) const;
 
-	bool operator<(const Version &rhs) const;
-	bool operator==(const Version &rhs) const;
-	bool operator!=(const Version &rhs) const;
+  bool operator<(const Version &rhs) const;
+  bool operator==(const Version &rhs) const;
+  bool operator!=(const Version &rhs) const;
 
-	int major() const { return major_; }
-	int minor() const { return minor_; }
-	int patch() const { return patch_; }
-	std::string suffix() const { return suffix_; }
+  int major() const { return major_; }
+  int minor() const { return minor_; }
+  int patch() const { return patch_; }
+  std::string suffix() const { return suffix_; }
 
-private:
-	int major_;
-	int minor_;
-	int patch_;
-	std::string suffix_;
+ private:
+  int major_;
+  int minor_;
+  int patch_;
+  std::string suffix_;
 };
 
 #endif // !VERSION_H

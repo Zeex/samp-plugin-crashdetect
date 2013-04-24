@@ -26,17 +26,17 @@
 #define AMXERROR_H
 
 class AMXError {
-public:
-	AMXError(int error_code);
+ public:
+  AMXError(int error_code);
 
-	int code() const { return code_; }
-	void set_code(int code) { code_ = code; }
+  int code() const { return code_; }
+  void set_code(int code) { code_ = code; }
 
-	const char *GetString() const;
-	static const char *GetStringFromCode(int error_code);
+  const char *GetString() const;
+  static const char *GetStringFromCode(int error_code);
 
-private:
-	int code_;
+ private:
+  int code_;
 };
 
 #endif // !AMXERROR_H

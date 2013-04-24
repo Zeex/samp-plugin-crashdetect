@@ -31,57 +31,57 @@
 struct TCPSocketSystemInfo;
 
 class TCPSocket {
-public:
-	enum ShutdownOperation {
-		SHUTDOWN_SEND,
-		SHUTDOWN_RECEIVE,
-		SHUTDOWN_BOTH
-	};
+ public:
+  enum ShutdownOperation {
+    SHUTDOWN_SEND,
+    SHUTDOWN_RECEIVE,
+    SHUTDOWN_BOTH
+  };
 
-public:
-	TCPSocket();
-	~TCPSocket();
+ public:
+  TCPSocket();
+  ~TCPSocket();
 
-public:
-	bool Connect(const char *host, const char *port);
-	bool Shutdown(ShutdownOperation what = SHUTDOWN_BOTH);
+ public:
+  bool Connect(const char *host, const char *port);
+  bool Shutdown(ShutdownOperation what = SHUTDOWN_BOTH);
 
-	bool is_open() const { return is_open_; }
-	bool is_connected() const { return is_connected_; }
+  bool is_open() const { return is_open_; }
+  bool is_connected() const { return is_connected_; }
 
-	int Send(const char *buffer, int length) const;
+  int Send(const char *buffer, int length) const;
 
-	int Send(const std::string &string) const {
-		return Send(string.c_str(), string.length() + 1); 
-	}
+  int Send(const std::string &string) const {
+    return Send(string.c_str(), string.length() + 1); 
+  }
 
-	template<std::size_t N>
-	int Send(const char (&buffer)[N]) const {
-		return Send(buffer, N);
-	}
+  template<std::size_t N>
+  int Send(const char (&buffer)[N]) const {
+    return Send(buffer, N);
+  }
 
-	int Receive(char *buffer, int length) const;
+  int Receive(char *buffer, int length) const;
 
-	template<std::size_t N>
-	int Receive(char (&buffer)[N]) const {
-		return Receive(buffer, N);
-	}
+  template<std::size_t N>
+  int Receive(char (&buffer)[N]) const {
+    return Receive(buffer, N);
+  }
 
-	// Sets timeout for Receive() calls in milliseconds.
-	bool SetReceiveTimeout(int timeout);
-	
-protected:
-	bool Open();
-	bool Close();
+  // Sets timeout for Receive() calls in milliseconds.
+  bool SetReceiveTimeout(int timeout);
+  
+ protected:
+  bool Open();
+  bool Close();
 
-private:
-	TCPSocket(const TCPSocket &);
-	void operator=(const TCPSocket &);
+ private:
+  TCPSocket(const TCPSocket &);
+  void operator=(const TCPSocket &);
 
-private:
-	bool is_open_;
-	bool is_connected_;
-	TCPSocketSystemInfo *info_;
+ private:
+  bool is_open_;
+  bool is_connected_;
+  TCPSocketSystemInfo *info_;
 };
 
 #endif // !TCPSOCKET_H

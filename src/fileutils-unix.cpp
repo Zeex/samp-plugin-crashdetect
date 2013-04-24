@@ -41,16 +41,16 @@ const char *kNativePathListSepString = ":";
 void GetDirectoryFiles(const std::string &directory, const std::string &pattern, 
                        std::vector<std::string> &files) 
 {
-	DIR *dp;
-	if ((dp = opendir(directory.c_str())) != 0) {
-		struct dirent *dirp;
-		while ((dirp = readdir(dp)) != 0) {
-			if (!fnmatch(pattern.c_str(), dirp->d_name, FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
-				files.push_back(dirp->d_name);
-			}
-		}
-		closedir(dp);
-	}
+  DIR *dp;
+  if ((dp = opendir(directory.c_str())) != 0) {
+    struct dirent *dirp;
+    while ((dirp = readdir(dp)) != 0) {
+      if (!fnmatch(pattern.c_str(), dirp->d_name, FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
+        files.push_back(dirp->d_name);
+      }
+    }
+    closedir(dp);
+  }
 }
 
 } // namespace fileutils

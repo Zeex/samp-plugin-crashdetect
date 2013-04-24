@@ -26,86 +26,80 @@
 #define HOOK_H
 
 #if !defined _M_IX86 && !defined __i386__
-	#error Unsupported architecture
+  #error Unsupported architecture
 #endif
 
 class Hook {
-public:
-	static const int kJmpInstrSize = 5;
+ public:
+  static const int kJmpInstrSize = 5;
 
-	Hook();
-	Hook(void *src, void *dst);
-	~Hook();
+  Hook();
+  Hook(void *src, void *dst);
+  ~Hook();
 
-	bool Install();
-	bool Install(void *src, void *dst);
-	bool IsInstalled() const;
-	bool Remove();
+  bool Install();
+  bool Install(void *src, void *dst);
+  bool IsInstalled() const;
+  bool Remove();
 
-	static void *GetTargetAddress(void *jmp);
+  static void *GetTargetAddress(void *jmp);
 
-	// Temporary Remove()
-	class ScopedRemove {
-	public:
-		ScopedRemove(Hook *jmp) 
-			: jmp_(jmp)
-			, removed_(jmp->Remove())
-		{
-			// nothing
-		}
+  // Temporary Remove()
+  class ScopedRemove {
+   public:
+    ScopedRemove(Hook *jmp) 
+     : jmp_(jmp),
+       removed_(jmp->Remove())
+    {
+      // nothing
+    }
+    ~ScopedRemove() {
+      if (removed_) {
+        jmp_->Install();
+      }
+    }
+   private:
+    ScopedRemove(const ScopedRemove &);
+    void operator=(const ScopedRemove &);
+   private:    
+    Hook *jmp_;
+    bool removed_;
+  };
 
-		~ScopedRemove() {
-			if (removed_) {
-				jmp_->Install();
-			}
-		}
+  // Temporary Install() 
+  class ScopedInstall {
+   public:
+    ScopedInstall(Hook *jmp) 
+     : jmp_(jmp),
+       installed_(jmp->Install())
+    {
+      // nothing
+    }
+    ~ScopedInstall() {
+      if (installed_) {
+        jmp_->Remove();
+      }
+    }
+   private:
+    ScopedInstall(const ScopedInstall &);
+    void operator=(const ScopedInstall &);
+   private:
+    Hook *jmp_;
+    bool installed_;
+  };
 
-	private:
-		ScopedRemove(const ScopedRemove &);
-		void operator=(const ScopedRemove &);
+ private:
+  static void Unprotect(void *address, int size);
 
-	private:		
-		Hook *jmp_;
-		bool removed_;
-	};
+ private:
+  Hook(const Hook &);
+  void operator=(const Hook &);
 
-	// Temporary Install() 
-	class ScopedInstall {
-	public:
-		ScopedInstall(Hook *jmp) 
-			: jmp_(jmp)
-			, installed_(jmp->Install())
-		{
-			// nothing
-		}
-
-		~ScopedInstall() {
-			if (installed_) {
-				jmp_->Remove();
-			}
-		}
-
-	private:
-		ScopedInstall(const ScopedInstall &);
-		void operator=(const ScopedInstall &);
-
-	private:
-		Hook *jmp_;
-		bool installed_;
-	};
-
-private:
-	static void Unprotect(void *address, int size);
-
-private:
-	Hook(const Hook &);
-	void operator=(const Hook &);
-
-private:
-	void *src_;
-	void *dst_;
-	unsigned char code_[5];
-	bool installed_;
+ private:
+  void *src_;
+  void *dst_;
+  unsigned char code_[5];
+  bool installed_;
 };
 
 #endif

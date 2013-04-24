@@ -36,24 +36,24 @@ class ThreadSystemInfo;
 // is running! You can use Join() to wait for the thread to exit or allocate
 // the Thread on the heap, but never EVER let it die too early!
 class Thread {
-public:
-	Thread(ThreadRoutine func);
-	virtual ~Thread();
+ public:
+  Thread(ThreadRoutine func);
+  virtual ~Thread();
 
-	void Run(void *args = 0);
-	void Finish(); // user code shouldn't call this
-	void Join();
+  void Run(void *args = 0);
+  void Finish(); // user code shouldn't call this
+  void Join();
 
-	virtual void Start(void *args);
+  virtual void Start(void *args);
 
-protected:
-	Thread();
+ protected:
+  Thread();
 
-private:
-	Thread(const Thread &);
-	void operator=(const Thread &);
+ private:
+  Thread(const Thread &);
+  void operator=(const Thread &);
 
-private:
-	ThreadRoutine    func_;
-	ThreadSystemInfo *info_;
+ private:
+  ThreadRoutine    func_;
+  ThreadSystemInfo *info_;
 };

@@ -31,18 +31,18 @@
 logprintf_t logprintf;
 
 void vlogprintf(const char *format, std::va_list va) {
-	std::vector<const void*> args;
+  std::vector<const void*> args;
 
-	args.push_back(reinterpret_cast<const void*>(format));
+  args.push_back(reinterpret_cast<const void*>(format));
 
-	// For each format speficier there has to be one dword argument. This will
-	// not work for long values that are longer than 4 bytes e.g. long double
-	// or long long.
-	for (int i = 0; format[i] != '\0'; i++) {
-		if (format[i] == '%' && format[i + 1] != '%') {
-			args.push_back(va_arg(va, const void *));
-		}
-	}
+  // For each format speficier there has to be one dword argument. This will
+  // not work for long values that are longer than 4 bytes e.g. long double
+  // or long long.
+  for (int i = 0; format[i] != '\0'; i++) {
+    if (format[i] == '%' && format[i + 1] != '%') {
+      args.push_back(va_arg(va, const void *));
+    }
+  }
 
-	compiler::CallCdeclFunc((void*)::logprintf, &args[0], args.size());
+  compiler::CallFunctionCdecl((void*)::logprintf, &args[0], args.size());
 }

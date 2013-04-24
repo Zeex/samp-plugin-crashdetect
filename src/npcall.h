@@ -30,30 +30,33 @@
 #include "amxscript.h"
 
 class NPCall {
-public:
-	enum Type { NATIVE, PUBLIC };
+ public:
+  enum Type {
+    NATIVE,
+    PUBLIC
+  };
 
-	NPCall(Type type, AMXScript amx, cell index);
-	NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip);
+  NPCall(Type type, AMXScript amx, cell index);
+  NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip);
 
-	static NPCall Public(AMXScript amx, cell index);
-	static NPCall Native(AMXScript amx, cell index);
+  static NPCall Public(AMXScript amx, cell index);
+  static NPCall Native(AMXScript amx, cell index);
 
-	inline Type type() const { return type_; }
-	inline AMXScript amx() const { return amx_; }
-	inline cell index() const { return index_; }
-	inline cell frm() const { return frm_; }
-	inline cell cip() const { return cip_; }
+  Type type() const { return type_; }
+  AMXScript amx() const { return amx_; }
+  cell index() const { return index_; }
+  cell frm() const { return frm_; }
+  cell cip() const { return cip_; }
 
-	inline bool IsPublic() const { return type_ == PUBLIC; }
-	inline bool IsNative() const { return type_ == NATIVE; }
+  bool IsPublic() const { return type_ == PUBLIC; }
+  bool IsNative() const { return type_ == NATIVE; }
 
-private:
-	Type type_;
-	AMXScript amx_;
-	cell frm_;
-	cell cip_;
-	cell index_;
+ private:
+  Type type_;
+  AMXScript amx_;
+  cell frm_;
+  cell cip_;
+  cell index_;
 };
 
 #endif // !NPCALL_H

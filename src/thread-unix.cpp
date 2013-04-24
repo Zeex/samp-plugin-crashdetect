@@ -27,72 +27,72 @@
 #include "thread.h"
 
 class ThreadSystemInfo {
-public:
-	ThreadSystemInfo(pthread_t handle)
-		: handle_(handle)
-	{
-	}
+ public:
+  ThreadSystemInfo(pthread_t handle)
+   : handle_(handle)
+  {
+  }
 
-	pthread_t handle() const { return handle_; }
-	void set_handle(pthread_t handle) { handle_ = handle; }
+  pthread_t handle() const { return handle_; }
+  void set_handle(pthread_t handle) { handle_ = handle; }
 
-private:
-	pthread_t handle_;
+ private:
+  pthread_t handle_;
 };
 
 class ThreadRunInfo {
-public:
-	ThreadRunInfo(Thread *thread, void *args)
-		: thread_(thread), args_(args)
-	{
-	}
+ public:
+  ThreadRunInfo(Thread *thread, void *args)
+   : thread_(thread), args_(args)
+  {
+  }
 
-	Thread *thread() { return thread_; }
-	void *args() { return args_; }
+  Thread *thread() { return thread_; }
+  void *args() { return args_; }
 
-private:
-	Thread *thread_;
-	void *args_;
+ private:
+  Thread *thread_;
+  void *args_;
 };
 
 void *RunThread(void *args) {
-	ThreadRunInfo *run_info = (ThreadRunInfo *)args;
-	Thread *thread = run_info->thread();
-	thread->Start(run_info->args());
-	delete run_info;
+  ThreadRunInfo *run_info = (ThreadRunInfo *)args;
+  Thread *thread = run_info->thread();
+  thread->Start(run_info->args());
+  delete run_info;
 }
 
 Thread::Thread()
-	: func_(0)
-	, info_(new ThreadSystemInfo(0))
+ : func_(0),
+   info_(new ThreadSystemInfo(0))
 {
 }
 
 Thread::Thread(ThreadRoutine func)
-	: func_(func)
-	, info_(new ThreadSystemInfo(0))
+ : func_(func),
+   info_(new ThreadSystemInfo(0))
 {
 }
 
 Thread::~Thread() {
-	delete info_;
+  delete info_;
 }
 
 void Thread::Run(void *args) {
-	ThreadRunInfo *run_info = new ThreadRunInfo(this, args);
-	pthread_t handle;
-	pthread_create(&handle, 0, RunThread, (void *)run_info);
-	info_->set_handle(handle);
+  ThreadRunInfo *run_info = new ThreadRunInfo(this, args);
+  pthread_t handle;
+  pthread_create(&handle, 0, RunThread, (void *)run_info);
+  info_->set_handle(handle);
 }
 
 void Thread::Start(void *args) {
-	func_(args);
+  func_(args);
 }
 
 void Thread::Join() {
-	pthread_join(info_->handle(), 0);
+  pthread_join(info_->handle(), 0);
 }
 
 void Thread::Finish() {
-	// do nothing
+  // do nothing
 }

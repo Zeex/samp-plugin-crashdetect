@@ -30,10 +30,10 @@ namespace compiler {
 void *GetStackFrame(int depth = 0);
 void *GetStackTop();
 void *GetStackBottom();
-void *GetRetAddr(void *frame = 0, int depth = 0);
+void *GetReturnAddress(void *frame = 0, int depth = 0);
 
-void *CallCdeclFunc(void *func, const void *const *args, int nargs);
-void *CallStdcallFunc(void *func, const void *const *args, int nargs);
+void *CallFunctionCdecl(void *func, const void *const *args, int nargs);
+void *CallFunctionStdcall(void *func, const void *const *args, int nargs);
 
 } // namespace compiler
 

@@ -23,123 +23,123 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef _WIN32
-	#define SYMBOL(x) "_"x
+  #define SYMBOL(x) "_"x
 #else
-	#define SYMBOL(x) x
+  #define SYMBOL(x) x
 #endif
 
 #define GLOBAL(x) ".globl "SYMBOL(x)"\n"
 
 #define BEGIN_GLOBAL(x) \
-	GLOBAL(x) \
-	x":\n"
+  GLOBAL(x) \
+  x":\n"
 
-#define FUNC "GetReturnAddr"
+#define FUNC "GetReturnAddress"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler10GetRetAddrEPvi")
-	"	movl 4(%esp), %eax\n"
-	"	cmpl $0, %eax\n"
-	"	jnz "FUNC"_init\n"
-	"	movl %ebp, %eax\n"
-	FUNC"_init:"
-	"	movl 8(%esp), %ecx\n"
-	"	movl $0, %edx\n"
-	FUNC"_begin_loop:"
-	"	cmpl $0, %ecx\n"
-	"	jl "FUNC"_exit\n"
-	"	movl 4(%eax), %edx\n"
-	"	movl (%eax), %eax\n"
-	"	decl %ecx\n"
-	"	jmp "FUNC"_begin_loop\n"
-	FUNC"_exit:"
-	"	movl %edx, %eax\n"
-	"	ret\n"
+  BEGIN_GLOBAL("_ZN8compiler16GetReturnAddressEPvi")
+  "  movl 4(%esp), %eax\n"
+  "  cmpl $0, %eax\n"
+  "  jnz "FUNC"_init\n"
+  "  movl %ebp, %eax\n"
+  FUNC"_init:"
+  "  movl 8(%esp), %ecx\n"
+  "  movl $0, %edx\n"
+  FUNC"_begin_loop:"
+  "  cmpl $0, %ecx\n"
+  "  jl "FUNC"_exit\n"
+  "  movl 4(%eax), %edx\n"
+  "  movl (%eax), %eax\n"
+  "  decl %ecx\n"
+  "  jmp "FUNC"_begin_loop\n"
+  FUNC"_exit:"
+  "  movl %edx, %eax\n"
+  "  ret\n"
 );
 #undef FUNC
 
 #define FUNC "GetStackFrame"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler13GetStackFrameEi")
-	"	movl %ebp, %eax\n"
-	"	movl 4(%esp), %ecx\n"
-	FUNC"_begin_loop:"
-	"	testl $0, %ecx\n"
-	"	jz "FUNC"_exit\n"
-	"	movl (%eax), %eax\n"
-	"	decl %ecx\n"
-	"	jmp "FUNC"_begin_loop\n"
-	FUNC"_exit:"
-	"	ret\n"
+  BEGIN_GLOBAL("_ZN8compiler13GetStackFrameEi")
+  "  movl %ebp, %eax\n"
+  "  movl 4(%esp), %ecx\n"
+  FUNC"_begin_loop:"
+  "  testl $0, %ecx\n"
+  "  jz "FUNC"_exit\n"
+  "  movl (%eax), %eax\n"
+  "  decl %ecx\n"
+  "  jmp "FUNC"_begin_loop\n"
+  FUNC"_exit:"
+  "  ret\n"
 );
 #undef FUNC
 
 #define FUNC "GetStackTop"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler11GetStackTopEv")
-	#ifdef _WIN32
-	"	movl %fs:(0x04), %eax\n"
-	#else
-	"	movl $0xffffffff, %eax\n"
-	#endif
-	"	ret\n"
+  BEGIN_GLOBAL("_ZN8compiler11GetStackTopEv")
+  #ifdef _WIN32
+  "  movl %fs:(0x04), %eax\n"
+  #else
+  "  movl $0xffffffff, %eax\n"
+  #endif
+  "  ret\n"
 );
 #undef FUNC
 
 #define FUNC "GetStackBottom"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler14GetStackBottomEv")
-	#ifdef _WIN32
-	"	movl %fs:(0x08), %eax\n"
-	#else
-	"	xorl %eax, %eax\n"
-	#endif
-	"	ret\n"
+  BEGIN_GLOBAL("_ZN8compiler14GetStackBottomEv")
+  #ifdef _WIN32
+  "  movl %fs:(0x08), %eax\n"
+  #else
+  "  xorl %eax, %eax\n"
+  #endif
+  "  ret\n"
 );
 #undef FUNC
 
-#define FUNC "CallCdeclFunc"
+#define FUNC "CallFunctionCdecl"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler13CallCdeclFuncEPvPKPKvi")
-	"	movl 4(%esp), %eax\n"
-	"	movl 8(%esp), %edx\n"
-	"	movl 12(%esp), %ecx\n"
-	"	pushl %edi\n"
-	"	movl %ecx, %edi\n"
-	"	sal $2, %edi\n"
-	"	pushl %esi\n"
-	FUNC"_begin_loop:"
-	"	cmpl $0, %ecx\n"
-	"	jle "FUNC"_end_loop\n"
-	"	dec %ecx\n"
-	"	movl (%edx, %ecx, 4), %esi\n"
-	"	pushl %esi\n"
-	"	jmp "FUNC"_begin_loop\n"
-	FUNC"_end_loop:"
-	"	call *%eax\n"
-	"	addl %edi, %esp\n"
-	"	popl %esi\n"
-	"	popl %edi\n"
-	"	ret\n"
+  BEGIN_GLOBAL("_ZN8compiler17CallFunctionCdeclEPvPKPKvi")
+  "  movl 4(%esp), %eax\n"
+  "  movl 8(%esp), %edx\n"
+  "  movl 12(%esp), %ecx\n"
+  "  pushl %edi\n"
+  "  movl %ecx, %edi\n"
+  "  sal $2, %edi\n"
+  "  pushl %esi\n"
+  FUNC"_begin_loop:"
+  "  cmpl $0, %ecx\n"
+  "  jle "FUNC"_end_loop\n"
+  "  dec %ecx\n"
+  "  movl (%edx, %ecx, 4), %esi\n"
+  "  pushl %esi\n"
+  "  jmp "FUNC"_begin_loop\n"
+  FUNC"_end_loop:"
+  "  call *%eax\n"
+  "  addl %edi, %esp\n"
+  "  popl %esi\n"
+  "  popl %edi\n"
+  "  ret\n"
 );
 #undef FUNC
 
-#define FUNC "CallStdcallFunc"
+#define FUNC "CallFunctionStdcall"
 __asm__ (
-	BEGIN_GLOBAL("_ZN8compiler15CallStdcallFuncEPvPKPKvi")
-	"	movl 4(%esp), %eax\n"
-	"	movl 8(%esp), %edx\n"
-	"	movl 12(%esp), %ecx\n"
-	"	pushl %esi\n"
-	FUNC"_begin_loop:"
-	"	cmpl $0, %ecx\n"
-	"	jle "FUNC"_end_loop\n"
-	"	dec %ecx\n"
-	"	movl (%edx, %ecx, 4), %esi\n"
-	"	pushl %esi\n"
-	"	jmp "FUNC"_begin_loop\n"
-	FUNC"_end_loop:"
-	"	call *%eax\n"
-	"	popl %esi\n"
-	"	ret\n"
+  BEGIN_GLOBAL("_ZN8compiler19CallFunctionStdcallEPvPKPKvi")
+  "  movl 4(%esp), %eax\n"
+  "  movl 8(%esp), %edx\n"
+  "  movl 12(%esp), %ecx\n"
+  "  pushl %esi\n"
+  FUNC"_begin_loop:"
+  "  cmpl $0, %ecx\n"
+  "  jle "FUNC"_end_loop\n"
+  "  dec %ecx\n"
+  "  movl (%edx, %ecx, 4), %esi\n"
+  "  pushl %esi\n"
+  "  jmp "FUNC"_begin_loop\n"
+  FUNC"_end_loop:"
+  "  call *%eax\n"
+  "  popl %esi\n"
+  "  ret\n"
 );
 #undef FUNC

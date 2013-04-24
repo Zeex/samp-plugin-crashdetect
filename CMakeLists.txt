@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.6)
 project(crashdetect)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-	include("cmake/GlobalBuildConfig.cmake")
+  include("cmake/GlobalBuildConfig.cmake")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
@@ -18,121 +18,121 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/amx")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/src")
 
 if(UNIX)
-	add_definitions(-DLINUX)
+  add_definitions(-DLINUX)
 endif()
 
 set(SOURCES
-	"src/amxdebuginfo.cpp"
-	"src/amxdebuginfo.h"
-	"src/amxerror.cpp"
-	"src/amxerror.h"
-	"src/amxpathfinder.cpp"
-	"src/amxpathfinder.h"
-	"src/amxscript.cpp"
-	"src/amxscript.h"
-	"src/amxservice.h"
-	"src/amxstacktrace.cpp"
-	"src/amxstacktrace.h"
-	"src/configreader.cpp"
-	"src/configreader.h"
-	"src/compiler.h"
-	"src/crashdetect.cpp"
-	"src/crashdetect.h"
-	"src/fileutils.cpp"
-	"src/fileutils.h"
-	"src/hook.cpp"
-	"src/hook.h"
-	"src/logprintf.cpp"
-	"src/logprintf.h"
-	"src/npcall.cpp"
-	"src/npcall.h"
-	"src/os.h"
-	"src/plugin.cpp"
-	"src/plugin.def"
-	"src/plugincommon.h"
-	"src/stacktrace.cpp"
-	"src/stacktrace.h"
-	"src/stacktrace-generic.cpp"
-	"src/stacktrace-generic.h"
-	"src/tcpsocket.h"
-	"src/thread.h"
-	"src/version.cpp"
-	"src/version.h"
-	"src/versioncheck.cpp"
-	"src/versioncheck.h"
-	"${CMAKE_CURRENT_BINARY_DIR}/src/plugin.rc"
-	"${CMAKE_CURRENT_BINARY_DIR}/src/pluginversion.h"
+  "src/amxdebuginfo.cpp"
+  "src/amxdebuginfo.h"
+  "src/amxerror.cpp"
+  "src/amxerror.h"
+  "src/amxpathfinder.cpp"
+  "src/amxpathfinder.h"
+  "src/amxscript.cpp"
+  "src/amxscript.h"
+  "src/amxservice.h"
+  "src/amxstacktrace.cpp"
+  "src/amxstacktrace.h"
+  "src/configreader.cpp"
+  "src/configreader.h"
+  "src/compiler.h"
+  "src/crashdetect.cpp"
+  "src/crashdetect.h"
+  "src/fileutils.cpp"
+  "src/fileutils.h"
+  "src/hook.cpp"
+  "src/hook.h"
+  "src/logprintf.cpp"
+  "src/logprintf.h"
+  "src/npcall.cpp"
+  "src/npcall.h"
+  "src/os.h"
+  "src/plugin.cpp"
+  "src/plugin.def"
+  "src/plugincommon.h"
+  "src/stacktrace.cpp"
+  "src/stacktrace.h"
+  "src/stacktrace-generic.cpp"
+  "src/stacktrace-generic.h"
+  "src/tcpsocket.h"
+  "src/thread.h"
+  "src/version.cpp"
+  "src/version.h"
+  "src/versioncheck.cpp"
+  "src/versioncheck.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/src/plugin.rc"
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pluginversion.h"
 )
 
 if(WIN32)
-	list(APPEND SOURCES
-		"src/fileutils-win32.cpp"
-		"src/hook-win32.cpp"
-		"src/os-win32.cpp"
-		"src/stacktrace-win32.cpp"
-		"src/tcpsocket-win32.cpp"
-		"src/thread-win32.cpp"
-	)
+  list(APPEND SOURCES
+    "src/fileutils-win32.cpp"
+    "src/hook-win32.cpp"
+    "src/os-win32.cpp"
+    "src/stacktrace-win32.cpp"
+    "src/tcpsocket-win32.cpp"
+    "src/thread-win32.cpp"
+  )
 elseif(UNIX)
-	list(APPEND SOURCES
-		"src/fileutils-unix.cpp"
-		"src/hook-unix.cpp"
-		"src/os-unix.cpp"
-		"src/stacktrace-unix.cpp"
-		"src/tcpsocket-unix.cpp"
-		"src/thread-unix.cpp"
-	)
+  list(APPEND SOURCES
+    "src/fileutils-unix.cpp"
+    "src/hook-unix.cpp"
+    "src/os-unix.cpp"
+    "src/stacktrace-unix.cpp"
+    "src/tcpsocket-unix.cpp"
+    "src/thread-unix.cpp"
+  )
 else()
-	message(FATAL_ERROR "Unsupported operating system.")
+  message(FATAL_ERROR "Unsupported operating system.")
 endif()
 
 if(MSVC)
-	list(APPEND SOURCES "src/compiler-msvc.cpp")
+  list(APPEND SOURCES "src/compiler-msvc.cpp")
 elseif(CMAKE_COMPILER_IS_GNUCXX)
-	list(APPEND SOURCES "src/compiler-gcc.cpp")
+  list(APPEND SOURCES "src/compiler-gcc.cpp")
 else()
-	message(FATAL_ERROR "Unsupported compiler.")
+  message(FATAL_ERROR "Unsupported compiler.")
 endif()
 
 add_samp_plugin(${PROJECT_NAME} ${SOURCES})
 
 if(UNIX OR MINGW)
-	set_property(TARGET ${PROJECT_NAME} PROPERTY PREFIX "")
+  set_property(TARGET ${PROJECT_NAME} PROPERTY PREFIX "")
 endif()
 
 if(WIN32)
-	if(MSVC)
-		add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-	endif()
-	target_link_libraries(${PROJECT_NAME} Ws2_32)
-endif()	
+  if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  endif()
+  target_link_libraries(${PROJECT_NAME} Ws2_32)
+endif()  
 
 if(UNIX)
-	check_function_exists(backtrace HAVE_BACKTRACE)
-	if(HAVE_BACKTRACE)
-		add_definitions(-DHAVE_BACKTRACE)
-	endif()
-	check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
-	if(HAVE_BACKTRACE_SYMBOLS)
-		add_definitions(-DHAVE_BACKTRACE_SYMBOLS)
-	endif()
+  check_function_exists(backtrace HAVE_BACKTRACE)
+  if(HAVE_BACKTRACE)
+    add_definitions(-DHAVE_BACKTRACE)
+  endif()
+  check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
+  if(HAVE_BACKTRACE_SYMBOLS)
+    add_definitions(-DHAVE_BACKTRACE_SYMBOLS)
+  endif()
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-	set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
-		LINK_FLAGS " -pthread")
+  set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY
+    LINK_FLAGS " -pthread")
 endif()
 
 target_link_Libraries(${PROJECT_NAME} amx)
 
 git_describe(description --match v[0-9]*.[0-9]**)
 if(description)
-	string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
-	string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
+  string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
+  string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
 else()
-	message(STATUS "Failed geting version from Git, will read VERSION.txt.")
-	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
-	string(STRIP "${version}" version)
+  message(STATUS "Failed geting version from Git, will read VERSION.txt.")
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" version)
+  string(STRIP "${version}" version)
 endif()
 
 string(REGEX REPLACE "[.-]" "," version_rc ${version})
@@ -151,18 +151,18 @@ add_subdirectory("tests")
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ".")
 
 if(MSVC)
-	set(PDB_NAME "${PROJECT_NAME}.pdb")
-	set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
-	install(FILES ${PDB_PATH} DESTINATION ".")
+  set(PDB_NAME "${PROJECT_NAME}.pdb")
+  set(PDB_PATH "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/${PDB_NAME}")
+  install(FILES ${PDB_PATH} DESTINATION ".")
 endif()
 
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 if(WIN32)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-win32")
-	set(CPACK_GENERATOR ZIP)
+  set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-win32")
+  set(CPACK_GENERATOR ZIP)
 elseif(UNIX)
-	set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-linux")
-	set(CPACK_GENERATOR TGZ)
+  set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${version}-linux")
+  set(CPACK_GENERATOR TGZ)
 endif()
 include(CPack)
 

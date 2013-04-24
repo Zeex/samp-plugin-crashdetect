@@ -30,7 +30,7 @@
 #include "hook.h"
 
 void Hook::Unprotect(void *address, int size) {
-	std::ptrdiff_t aligned_address = reinterpret_cast<std::ptrdiff_t>(address);
-	aligned_address &= ~(getpagesize() - 1);
-	mprotect(reinterpret_cast<void*>(aligned_address), size, PROT_READ | PROT_WRITE | PROT_EXEC);
+  std::ptrdiff_t aligned_address = reinterpret_cast<std::ptrdiff_t>(address);
+  aligned_address &= ~(getpagesize() - 1);
+  mprotect(reinterpret_cast<void*>(aligned_address), size, PROT_READ | PROT_WRITE | PROT_EXEC);
 }

@@ -32,82 +32,88 @@
 #include "amxerror.h"
 
 class AMXScript {
-public:
-	AMXScript(AMX *amx);
+ public:
+  AMXScript(AMX *amx);
 
-	operator AMX*()       { return amx_; }
-	operator AMX*() const { return amx_; }
+  operator AMX*()       { return amx_; }
+  operator AMX*() const { return amx_; }
 
-	bool operator==(const AMX *rhs) const { return amx_ == rhs; }
-	bool operator==(AMXScript rhs) const { return amx_ == rhs.amx_; }
+  bool operator==(const AMX *rhs) const { return amx_ == rhs; }
+  bool operator==(AMXScript rhs) const { return amx_ == rhs.amx_; }
 
-	bool operator!=(const AMX *rhs) const { return amx_ != rhs; }
-	bool operator!=(AMXScript rhs) const { return amx_ != rhs.amx_; }
+  bool operator!=(const AMX *rhs) const { return amx_ != rhs; }
+  bool operator!=(AMXScript rhs) const { return amx_ != rhs.amx_; }
 
-	AMXError GetError() const { return AMXError(amx_->error); }
+  AMXError GetError() const { return AMXError(amx_->error); }
 
-	uint16_t GetFlags() const { return amx_->flags; }
-	void SetFlags(uint16_t flags) { amx_->flags = flags; }
+  uint16_t GetFlags() const { return amx_->flags; }
+  void SetFlags(uint16_t flags) { amx_->flags = flags; }
 
-	AMX_DEBUG GetDebugHook() { return amx_->debug; }
-	AMX_CALLBACK GetCallback() { return amx_->callback; }
+  AMX_DEBUG GetDebugHook() { return amx_->debug; }
+  AMX_CALLBACK GetCallback() { return amx_->callback; }
 
-	cell GetCip() const { return amx_->cip; }
-	cell GetFrm() const { return amx_->frm; }
-	cell GetHea() const { return amx_->hea; }
-	cell GetHlw() const { return amx_->hlw; }
-	cell GetStk() const { return amx_->stk; }
-	cell GetStp() const { return amx_->stp; }
-	cell GetPri() const { return amx_->pri; }
-	cell GetAlt() const { return amx_->alt; }
+  cell GetCip() const { return amx_->cip; }
+  cell GetFrm() const { return amx_->frm; }
+  cell GetHea() const { return amx_->hea; }
+  cell GetHlw() const { return amx_->hlw; }
+  cell GetStk() const { return amx_->stk; }
+  cell GetStp() const { return amx_->stp; }
+  cell GetPri() const { return amx_->pri; }
+  cell GetAlt() const { return amx_->alt; }
 
-	AMX *amx()       { return amx_; }
-	AMX *amx() const { return amx_; }
+  void SetFrm(cell frm) { amx_->frm = frm; }
+  void SetHea(cell hea) { amx_->hea = hea; }
+  void SetStk(cell stk) { amx_->stk = stk; }
+  void SetPri(cell pri) { amx_->pri = pri; }
+  void SetAlt(cell alt) { amx_->alt = alt; }
 
-	AMX_HEADER *GetHeader() { return const_cast<AMX_HEADER*>(const_this()->GetHeader()); }
-	const AMX_HEADER *GetHeader() const;
+  AMX *amx()       { return amx_; }
+  AMX *amx() const { return amx_; }
 
-	unsigned char *GetData() { return const_cast<unsigned char*>(const_this()->GetData()); }
-	const unsigned char *GetData() const;
+  AMX_HEADER *GetHeader() { return const_cast<AMX_HEADER*>(const_this()->GetHeader()); }
+  const AMX_HEADER *GetHeader() const;
 
-	unsigned char *GetCode() { return const_cast<unsigned char*>(const_this()->GetCode()); }
-	const unsigned char *GetCode() const;
+  unsigned char *GetData() { return const_cast<unsigned char*>(const_this()->GetData()); }
+  const unsigned char *GetData() const;
 
-	AMX_FUNCSTUBNT *GetNatives() { return const_cast<AMX_FUNCSTUBNT*>(const_this()->GetNatives()); }
-	const AMX_FUNCSTUBNT *GetNatives() const;
+  unsigned char *GetCode() { return const_cast<unsigned char*>(const_this()->GetCode()); }
+  const unsigned char *GetCode() const;
 
-	AMX_FUNCSTUBNT *GetPublics() { return const_cast<AMX_FUNCSTUBNT*>(const_this()->GetPublics()); }
-	const AMX_FUNCSTUBNT *GetPublics() const;
+  AMX_FUNCSTUBNT *GetNatives() { return const_cast<AMX_FUNCSTUBNT*>(const_this()->GetNatives()); }
+  const AMX_FUNCSTUBNT *GetNatives() const;
 
-	const char *FindPublic(cell address) const;
-	const char *FindNative(cell address) const;
+  AMX_FUNCSTUBNT *GetPublics() { return const_cast<AMX_FUNCSTUBNT*>(const_this()->GetPublics()); }
+  const AMX_FUNCSTUBNT *GetPublics() const;
 
-	int GetNumNatives() const;
-	int GetNumPublics() const;
+  const char *FindPublic(cell address) const;
+  const char *FindNative(cell address) const;
 
-	cell GetNativeIndex(const char *name) const;
-	cell GetPublicIndex(const char *name) const;
+  int GetNumNatives() const;
+  int GetNumPublics() const;
 
-	cell GetNativeAddr(int index) const;
-	cell GetPublicAddr(int index) const;
+  cell GetNativeIndex(const char *name) const;
+  cell GetPublicIndex(const char *name) const;
 
-	const char *GetName(uint32_t offset) const;
-	const char *GetNativeName(int index) const;
-	const char *GetPublicName(int index) const;
+  cell GetNativeAddress(int index) const;
+  cell GetPublicAddress(int index) const;
 
-	void PushStack(cell value);
-	cell PopStack();
-	void PopStack(int ncells);
+  const char *GetName(uint32_t offset) const;
+  const char *GetNativeName(int index) const;
+  const char *GetPublicName(int index) const;
 
-	void DisableSysreqD();
+  void PushStack(cell value);
+  cell PopStack();
+  void PopStack(int ncells);
 
-private:
-	const AMXScript *const_this() {
-		return static_cast<const AMXScript*>(this);
-	}
+  void DisableSysreqD();
 
-private:
-	AMX *amx_;
+ private:
+  const AMXScript *const_this() {
+    return static_cast<const AMXScript*>(this);
+  }
+
+ private:
+  AMX *amx_;
 };
 
 #endif // !AMXSCRIPT_H

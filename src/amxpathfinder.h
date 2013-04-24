@@ -36,44 +36,45 @@ class AMXScript;
 
 // AMXPathFinder can search for an .amx file corresponding to a given AMX instance.
 class AMXPathFinder {
-public:
-	~AMXPathFinder();
+ public:
+  ~AMXPathFinder();
 
-	// Adds directory to a set of search paths
-	void AddSearchPath(const std::string &path);
+  // Adds directory to a set of search paths
+  void AddSearchPath(const std::string &path);
 
-	// Same as above but returns the path as a string (which can be empty)
-	std::string FindAMX(AMXScript amx);
+  // Same as above but returns the path as a string (which can be empty)
+  std::string FindAMX(AMXScript amx);
 
-private:
-	std::list<std::string> search_paths_;
+ private:
+  std::list<std::string> search_paths_;
 
-	class AMXFile {
-	public:
-		explicit AMXFile(const std::string &name);
-		~AMXFile();
+  class AMXFile {
+   public:
+    explicit AMXFile(const std::string &name);
+    ~AMXFile();
 
-		bool IsLoaded() const { return amx_ != 0; }
+    bool IsLoaded() const { return amx_ != 0; }
 
-		const AMX *GetAmx() const { return amx_; }
-		const std::string &GetName() const { return name_; }
-		std::time_t GetModificationTime() const { return mtime_; }
+    const AMX *GetAmx() const { return amx_; }
+    const std::string &GetName() const { return name_; }
+    std::time_t GetModificationTime() const { return mtime_; }
 
-	private:
-		// Disallow copying
-		AMXFile(const AMXFile &other);
-		AMXFile &operator=(const AMXFile &other);
+   private:
+    // Disallow copying
+    AMXFile(const AMXFile &other);
+    AMXFile &operator=(const AMXFile &other);
 
-		AMX *amx_;
-		std::string name_;
-		std::time_t mtime_;
-	};
+    AMX *amx_;
+    std::string name_;
+    std::time_t mtime_;
+  };
 
-	typedef std::map<std::string, AMXFile*> StringToAMXFileMap;
-	StringToAMXFileMap string_to_amx_file_;
+ private:
+  typedef std::map<std::string, AMXFile*> StringToAMXFileMap;
+  StringToAMXFileMap string_to_amx_file_;
 
-	typedef std::map<AMX*, std::string> AMXToStringMap;
-	AMXToStringMap amx_to_string_;
+  typedef std::map<AMX*, std::string> AMXToStringMap;
+  AMXToStringMap amx_to_string_;
 };
 
 #endif // AMXPATHFINDER_H

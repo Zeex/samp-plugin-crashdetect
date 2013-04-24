@@ -28,78 +28,80 @@
 #include "thread.h"
 
 class ThreadSystemInfo {
-public:
-	ThreadSystemInfo(uintptr_t handle)
-		: handle_(handle), finished_(false)
-	{
-	}
+ public:
+  ThreadSystemInfo(uintptr_t handle)
+   : handle_(handle),
+     finished_(false)
+  {
+  }
 
-	uintptr_t handle() const { return handle_; }
-	void set_handle(uintptr_t handle) { handle_ = handle; }
+  uintptr_t handle() const { return handle_; }
+  void set_handle(uintptr_t handle) { handle_ = handle; }
 
-	bool is_finished() const { return finished_; }
-	void set_finished(bool finished) { finished_ = finished; }
+  bool is_finished() const { return finished_; }
+  void set_finished(bool finished) { finished_ = finished; }
 
-private:
-	uintptr_t handle_;
-	bool finished_;
+ private:
+  uintptr_t handle_;
+  bool finished_;
 };
 
 class ThreadRunInfo {
-public:
-	ThreadRunInfo(Thread *thread, void *args)
-		: thread_(thread), args_(args)
-	{
-	}
+ public:
+  ThreadRunInfo(Thread *thread, void *args)
+   : thread_(thread),
+     args_(args)
+  {
+  }
 
-	Thread *thread() { return thread_; }
-	void *args() { return args_; }
+  Thread *thread() { return thread_; }
+  void *args() { return args_; }
 
-private:
-	Thread *thread_;
-	void *args_;
+ private:
+  Thread *thread_;
+  void *args_;
 };
 
 void __cdecl RunThread(void *args) {
-	ThreadRunInfo *run_info = (ThreadRunInfo *)args;
-	Thread *thread = run_info->thread();
-	thread->Start(run_info->args());
-	thread->Finish();
-	delete run_info;
+  ThreadRunInfo *run_info = (ThreadRunInfo *)args;
+  Thread *thread = run_info->thread();
+  thread->Start(run_info->args());
+  thread->Finish();
+  delete run_info;
 }
 
 Thread::Thread()
-	: func_(0)
-	, info_(new ThreadSystemInfo(0))
+ : func_(0),
+   info_(new ThreadSystemInfo(0))
 {
 }
 
 Thread::Thread(ThreadRoutine func)
-	: func_(func)
-	, info_(new ThreadSystemInfo(0))
+ : func_(func),
+   info_(new ThreadSystemInfo(0))
 {
 }
 
 Thread::~Thread() {
-	delete info_;
+  delete info_;
 }
 
 void Thread::Run(void *args) {
-	ThreadRunInfo *run_info = new ThreadRunInfo(this, args);
-	info_->set_finished(false);
-	info_->set_handle(_beginthread(&RunThread, 0, (void *)run_info));
+  ThreadRunInfo *run_info = new ThreadRunInfo(this, args);
+  info_->set_finished(false);
+  info_->set_handle(_beginthread(&RunThread, 0, (void *)run_info));
 }
 
 void Thread::Start(void *args) {
-	func_(args);
+  func_(args);
 }
 
 void Thread::Join() {
-	while (!info_->is_finished()) {
-		Sleep(1);
-	}
+  while (!info_->is_finished()) {
+    Sleep(1);
+  }
 }
 
 void Thread::Finish() {
-	info_->set_finished(true);
+  info_->set_finished(true);
 }

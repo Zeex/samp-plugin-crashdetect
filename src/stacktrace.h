@@ -26,40 +26,37 @@
 #define STACKTRACE_H
 
 #include <deque>
+#include <iosfwd>
 #include <string>
 
 class StackFrame {
-public:
-	std::ostream &operator<<(std::ostream &os) const {
-		return os << AsString();
-	}
+ public:
+  StackFrame(void *ret_addr, const std::string &name = std::string());
+  virtual ~StackFrame();
 
-	StackFrame(void *ret_addr, const std::string &name = std::string());
-	virtual ~StackFrame();
+  void *return_address() const { return return_address_; }
+  std::string callee_name() const { return callee_name_; }
 
-	void *GetRetAddr() const { return ret_addr_; }
-	std::string GetFuncName() const { return name_; }
+  void Print(std::ostream &stream) const;
 
-	virtual std::string AsString() const;
-
-private:
-	void *ret_addr_;
-	std::string name_;
+ private:
+  void *return_address_;
+  std::string callee_name_;
 };
 
 class StackTrace {
-public:
-	StackTrace(void *context = 0);
+ public:
+  StackTrace(void *context = 0);
 
-	std::deque<StackFrame> GetFrames() const {
-		return frames_;
-	}
+  std::deque<StackFrame> GetFrames() const {
+    return frames_;
+  }
 
-protected:
-	struct HappyCompiler {};
-	StackTrace(HappyCompiler *happyCompiler);
+ protected:
+  struct HappyCompiler {};
+  StackTrace(HappyCompiler *happyCompiler);
 
-	std::deque<StackFrame> frames_;
+  std::deque<StackFrame> frames_;
 };
 
 #endif // !STACKTRACE_H

@@ -22,61 +22,60 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cstddef>
-#include <string>
 #include <vector>
 
-#include <Windows.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #include "os.h"
 
 std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
-	std::vector<char> name(max_length + 1);
-	if (address != 0) {
-		MEMORY_BASIC_INFORMATION mbi;
-		VirtualQuery(address, &mbi, sizeof(mbi));
-		GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], max_length);
-	}
-	return std::string(&name[0]);
+  std::vector<char> name(max_length + 1);
+  if (address != 0) {
+    MEMORY_BASIC_INFORMATION mbi;
+    VirtualQuery(address, &mbi, sizeof(mbi));
+    GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], max_length);
+  }
+  return std::string(&name[0]);
 }
 
 static os::ExceptionHandler except_handler = 0;
 static LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
 
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
-	if (::except_handler != 0) {
-		::except_handler(exceptionInfo->ContextRecord);
-	}
-	if (::prev_except_handler != 0) {
-		return ::prev_except_handler(exceptionInfo);
-	}
-	return EXCEPTION_CONTINUE_SEARCH;
+  if (::except_handler != 0) {
+    ::except_handler(exceptionInfo->ContextRecord);
+  }
+  if (::prev_except_handler != 0) {
+    return ::prev_except_handler(exceptionInfo);
+  }
+  return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
-	::except_handler = handler;
-	if (handler != 0) {
-		::prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
-	} else {
-		SetUnhandledExceptionFilter(::prev_except_handler);
-	}
+  ::except_handler = handler;
+  if (handler != 0) {
+    ::prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
+  } else {
+    SetUnhandledExceptionFilter(::prev_except_handler);
+  }
 }
 
 static os::InterruptHandler interrupt_handler;
 static __declspec(thread) bool this_thread_set_ctrl_handler;
 
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
-	switch (dwCtrlType) {
-	case CTRL_C_EVENT:
-		if (::interrupt_handler != 0 && this_thread_set_ctrl_handler) {
-			::interrupt_handler(0);
-		}
-	}
-	return FALSE;
+  switch (dwCtrlType) {
+  case CTRL_C_EVENT:
+    if (::interrupt_handler != 0 && this_thread_set_ctrl_handler) {
+      ::interrupt_handler(0);
+    }
+  }
+  return FALSE;
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
-	::interrupt_handler = handler;
-	::this_thread_set_ctrl_handler = true;
-	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
+  ::interrupt_handler = handler;
+  ::this_thread_set_ctrl_handler = true;
+  SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }

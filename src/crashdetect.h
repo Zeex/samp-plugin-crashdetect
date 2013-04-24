@@ -39,43 +39,44 @@ class AMXError;
 class NPCall;
 
 class CrashDetect : public AMXService<CrashDetect> {
-	friend class AMXService<CrashDetect>;
-public:
-	virtual int Load();
-	virtual int Unload();
+  friend class AMXService<CrashDetect>;
 
-public:
-	explicit CrashDetect(AMX *amx);
+ public:
+  virtual int Load();
+  virtual int Unload();
 
-public:
-	int DoAmxCallback(cell index, cell *result, cell *params);
-	int DoAmxExec(cell *retval, int index);
+ public:
+  explicit CrashDetect(AMX *amx);
 
-	void HandleException();
-	void HandleInterrupt();
-	void HandleExecError(int index, cell *retval, const AMXError &error);
-	void PrintError(const AMXError &error);
+ public:
+  int DoAmxCallback(cell index, cell *result, cell *params);
+  int DoAmxExec(cell *retval, int index);
 
-	cell GetAmxOpcode(cell index);
+  void HandleException();
+  void HandleInterrupt();
+  void HandleExecError(int index, cell *retval, const AMXError &error);
+  void PrintError(const AMXError &error);
 
-public:
-	static void OnException(void *context);
-	static void OnInterrupt(void *context);
+  cell GetAmxOpcode(cell index);
 
-	static void Printf(const char *format, ...);
-	static void PrintAmxBacktrace();
-	static void PrintNativeBacktrace(void *context = 0);
+ public:
+  static void OnException(void *context);
+  static void OnInterrupt(void *context);
 
-private:
-	AMXScript amx_;
-	AMXDebugInfo debug_info_;
-	std::string amx_path_;
-	std::string amx_name_;
-	AMX_CALLBACK prev_callback_;
+  static void Printf(const char *format, ...);
+  static void PrintAmxBacktrace();
+  static void PrintNativeBacktrace(void *context = 0);
 
-private:
-	static bool block_exec_errors_;
-	static std::stack<NPCall*> np_calls_;
+ private:
+  AMXScript amx_;
+  AMXDebugInfo debug_info_;
+  std::string amx_path_;
+  std::string amx_name_;
+  AMX_CALLBACK prev_callback_;
+
+ private:
+  static bool block_exec_errors_;
+  static std::stack<NPCall*> np_calls_;
 };
 
 #endif // !CRASHDETECT_H
