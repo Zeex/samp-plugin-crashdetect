@@ -146,6 +146,36 @@ class AMXDebugInfo {
     const AMX_DBG_TAG *tag_;
   };
 
+  class Automaton {
+   public:
+     Automaton() : automaton_(0) {}
+     Automaton(const AMX_DBG_MACHINE *automaton) : automaton_(automaton) {}
+
+     int16_t     GetID() const        { return automaton_->automaton; }
+     cell        GetAddress() const   { return automaton_->address; }
+     std::string GetName() const      { return automaton_->name; }
+
+     operator bool() { return automaton_ != 0; }
+
+   private:
+    const AMX_DBG_MACHINE *automaton_;
+  };
+
+  class State {
+   public:
+     State() : state_(0) {}
+     State(const AMX_DBG_STATE *state) : state_(state) {}
+
+     int16_t     GetID() const        { return state_->state; }
+     int16_t     GetAutomaton() const { return state_->automaton; }
+     std::string GetName() const      { return state_->name; }
+
+     operator bool() { return state_ != 0; }
+
+   private:
+     const AMX_DBG_STATE *state_;
+  };
+
   class SymbolDim;
 
   class Symbol {
@@ -223,16 +253,19 @@ class AMXDebugInfo {
   bool IsLoaded() const;
   void Free();
 
-  Line   GetLine(cell address) const;
-  File   GetFile(cell address) const;
-  Symbol GetFunction(cell address) const;
-  Tag    GetTag(int tag_id) const;  
+  Line      GetLine(cell address) const;
+  File      GetFile(cell address) const;
+  Symbol    GetFunction(cell address) const;
+  Symbol    GetExactFunction(cell address) const;
+  Tag       GetTag(int32_t tag_id) const;  
+  Automaton GetAutomaton(cell address) const;
+  State     GetState(int16_t automaton_id, int16_t state_id) const;
 
   int32_t     GetLineNumber(cell addrss) const;
   std::string GetFileName(cell address) const;
   std::string GetFunctionName(cell address) const;
   std::string GetTagName(cell address) const;
-
+  
   cell GetFunctionAddress(const std::string &func, const std::string &file) const;
   cell GetLineAddress(long line, const std::string &file) const;
 
@@ -260,6 +293,18 @@ class AMXDebugInfo {
     return SymbolTable(amxdbg_->symboltbl, amxdbg_->hdr->symbols);
   }
 
+  typedef Table<AMX_DBG_MACHINE*, Automaton> AutomatonTable;
+
+  AutomatonTable GetAutomata() const {
+    return AutomatonTable(amxdbg_->automatontbl, amxdbg_->hdr->automatons);
+  }
+
+  typedef Table<AMX_DBG_STATE*, State> StateTable;
+
+  StateTable GetStates() const {
+    return StateTable(amxdbg_->statetbl, amxdbg_->hdr->states);
+  }
+
   static bool IsPresent(AMX *amx);
 
  private:
@@ -268,6 +313,7 @@ class AMXDebugInfo {
 
   static bool HasDebugInfo(AMX *amx);
 
+ private:
   AMX_DBG *amxdbg_;
 };
 
@@ -276,6 +322,8 @@ typedef AMXDebugInfo::Line      AMXDebugLine;
 typedef AMXDebugInfo::Tag       AMXDebugTag;
 typedef AMXDebugInfo::Symbol    AMXDebugSymbol;
 typedef AMXDebugInfo::SymbolDim AMXDebugSymbolDim;
+typedef AMXDebugInfo::Automaton AMXDebugAutomaton;
+typedef AMXDebugInfo::State     AMXDebugState;
 
 static inline bool operator<(const AMXDebugSymbol &left, const AMXDebugSymbol &right) {
   return left.GetAddress() < right.GetAddress();

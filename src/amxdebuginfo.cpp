@@ -158,7 +158,24 @@ AMXDebugSymbol AMXDebugInfo::GetFunction(cell address) const {
   return function;
 }
 
-AMXDebugTag AMXDebugInfo::GetTag(int tag_id) const {
+AMXDebugSymbol AMXDebugInfo::GetExactFunction(cell address) const {
+  Symbol function;
+  SymbolTable symbols = GetSymbols();
+  for (SymbolTable::const_iterator it = symbols.begin();
+       it != symbols.end(); ++it) {
+    if (!it->IsFunction())
+      continue;
+    if (IsBuggedForward(it->GetPOD())) 
+      continue;
+    if (it->GetCodeStart() == address) {
+      function = *it;
+      break;
+    }
+  }
+  return function;
+}
+
+AMXDebugTag AMXDebugInfo::GetTag(int32_t tag_id) const {
   Tag tag;
   TagTable tags = GetTags();
   TagTable::const_iterator it = tags.begin();
@@ -170,6 +187,32 @@ AMXDebugTag AMXDebugInfo::GetTag(int tag_id) const {
     tag = *it;
   }
   return tag;
+}
+
+AMXDebugAutomaton AMXDebugInfo::GetAutomaton(cell address) const {
+  Automaton automaton;
+  AutomatonTable automata = GetAutomata();
+  for (AutomatonTable::const_iterator it = automata.begin();
+       it != automata.end(); ++it) {
+    if (it->GetAddress() == address) {
+      automaton = *it;
+      break;
+    }
+  }
+  return automaton;
+}
+
+AMXDebugState AMXDebugInfo::GetState(int16_t automaton_id, int16_t state_id) const {
+  State state;
+  StateTable states = GetStates();
+  for (StateTable::const_iterator it = states.begin();
+       it != states.end(); ++it) {
+    if (it->GetAutomaton() == automaton_id && it->GetID() == state_id) {
+      state = *it;
+      break;
+    }
+  }
+  return state;
 }
 
 int32_t AMXDebugInfo::GetLineNumber(cell address) const {
