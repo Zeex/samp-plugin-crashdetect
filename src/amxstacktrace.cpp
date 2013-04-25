@@ -358,11 +358,11 @@ AMXStackFrame AMXStackFrame::GetPrevious() const {
 void AMXStackFrame::Print(std::ostream &stream,
                           const AMXDebugInfo *debug_info) const {
   bool have_debug_info = debug_info != 0 && debug_info->IsLoaded();
-  bool have_states = (GetStateVarAddress(amx_, caller_address_) != 0);
+  bool uses_automata = (GetStateVarAddress(amx_, caller_address_) > 0);
 
   AMXDebugSymbol caller;
   if (have_debug_info) {
-    if (have_states) {
+    if (uses_automata) {
       caller = debug_info->GetExactFunction(caller_address_);
     } else {
       caller = debug_info->GetFunction(return_address_);
@@ -412,7 +412,7 @@ void AMXStackFrame::Print(std::ostream &stream,
     // function address for the code start because in different states
     // they may be not the same.
     cell arg_address = caller_address_;
-    if (have_states) {
+    if (uses_automata) {
       arg_address = GetRealFunctionAddress(amx_, caller_address_,
                                                  return_address_);
     }
@@ -515,7 +515,7 @@ void AMXStackFrame::Print(std::ostream &stream,
 
   stream << ")";
 
-  if (caller && have_states) {
+  if (caller && uses_automata) {
     cell sv_address = GetStateVarAddress(amx_, caller_address_);
     AMXDebugAutomaton automaton = debug_info->GetAutomaton(sv_address);
     if (automaton) {
