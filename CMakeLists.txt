@@ -137,7 +137,8 @@ else()
   string(STRIP "${version}" version)
 endif()
 
-string(REGEX REPLACE "[.-]" "," version_rc ${version})
+string(REGEX REPLACE "[.]" "," version_rc ${version})
+string(REGEX REPLACE "[-].*" "" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
 
