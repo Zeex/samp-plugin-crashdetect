@@ -25,24 +25,45 @@
 #include <string>
 
 #include "tcpsocket.h"
+#include "thread.h"
+#include "updater.h"
 #include "version.h"
 
-static const std::string kCrLf = "\r\n";
-static const std::string kHttpHeaderDelim = kCrLf + kCrLf;
+namespace {
 
-static const std::string kHostString = "zeex.github.io";
-static const std::string kPortString = "80";
-static const std::string kRequestUriString = "/samp-plugin-crashdetect/version";
+const std::string kCrLf = "\r\n";
+const std::string kHttpHeaderDelim = kCrLf + kCrLf;
 
-static const std::string kRequestString =
+const std::string kHostString = "zeex.github.io";
+const std::string kPortString = "80";
+const std::string kRequestUriString = "/samp-plugin-crashdetect/version";
+
+const std::string kRequestString =
   "GET " + kRequestUriString + " HTTP/1.1" + kCrLf +
   "Host: " + kHostString + kHttpHeaderDelim; 
 
-static const int kReceiveTimeoutMs = 60000;
-static const int kReceiveBufferSize = 1024;
+const int kReceiveTimeoutMs = 60000;
+const int kReceiveBufferSize = 1024;
 
-Version QueryLatestVersion() {
+void FetchVersionThread(void *args) {
+  Updater::FetchVersion();
+}
+
+} // anonymous namespace
+
+Thread Updater::fetch_thread_(FetchVersionThread);
+bool Updater::version_fetched_ = true;
+Version Updater::latest_version_;
+
+// static
+void Updater::InitiateVersionFetch() {
+  fetch_thread_.Run();
+}
+
+// static
+void Updater::FetchVersion() {
   Version version;
+  version_fetched_ = false;
 
   TCPSocket socket;
   socket.SetReceiveTimeout(kReceiveTimeoutMs);
@@ -75,5 +96,6 @@ Version QueryLatestVersion() {
     }
   }
 
-  return version;
+  latest_version_ = version;
+  version_fetched_ = true;
 }

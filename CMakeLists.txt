@@ -58,10 +58,10 @@ set(SOURCES
   "plugin/stacktrace-generic.h"
   "plugin/tcpsocket.h"
   "plugin/thread.h"
+  "plugin/updater.cpp"
+  "plugin/updater.h"
   "plugin/version.cpp"
   "plugin/version.h"
-  "plugin/versioncheck.cpp"
-  "plugin/versioncheck.h"
   "${CMAKE_CURRENT_BINARY_DIR}/plugin/plugin.rc"
   "${CMAKE_CURRENT_BINARY_DIR}/plugin/pluginversion.h"
 )

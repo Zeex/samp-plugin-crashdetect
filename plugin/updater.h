@@ -22,12 +22,39 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef VERSIONCHECK_H
-#define VERSIONCHECK_H
+#ifndef UPDATER_H
+#define UPDATER_H
 
+#include "thread.h"
 #include "version.h"
 
-// Query latest release version number from remote server.
-Version QueryLatestVersion();
+class Updater {
+ public:
+  // Initiate a version fetch in a separate thread.
+  static void InitiateVersionFetch();
 
-#endif // !VERSIONCHECK_H
+  // Fetch latest release version number from remote server.
+  static void FetchVersion();
+
+  // Checks whether FetchVersion() finished. Returns false on
+  // subsequent calls (to avoid having another global flag).
+  static bool version_fetched() {
+  	if (bool result = version_fetched_) {
+      version_fetched_ = false;
+      return true;
+    }
+    return false;
+  }
+
+  // Returns the fecthed version.
+  static Version latest_version() {
+  	return latest_version_;
+  }
+
+ private:
+  static Thread fetch_thread_;
+  static bool version_fetched_;
+  static Version latest_version_;
+};
+
+#endif // !UPDATER_H

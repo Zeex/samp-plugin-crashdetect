@@ -39,11 +39,8 @@
 #include "plugincommon.h"
 #include "pluginversion.h"
 #include "thread.h"
+#include "updater.h"
 #include "version.h"
-#include "versioncheck.h"
-
-static Version latest_version;
-static bool notify_update = false;
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
   return CrashDetect::Get(amx)->DoAmxCallback(index, result, params);
@@ -59,13 +56,6 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 static void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
   CrashDetect::Get(amx)->HandleExecError(index, retval, error);
 }
-
-static void CheckVersionThread(void *args) {
-  ::latest_version = QueryLatestVersion();
-  ::notify_update = true;
-}
-
-static Thread version_check_thread(CheckVersionThread);
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
   return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES | SUPPORTS_PROCESS_TICK;
@@ -91,7 +81,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   os::SetExceptionHandler(CrashDetect::OnException);
   os::SetInterruptHandler(CrashDetect::OnInterrupt);
 
-  ::version_check_thread.Run();
+  Updater::InitiateVersionFetch();
 
   logprintf("  CrashDetect v"PROJECT_VERSION_STRING" is OK.");
   return true;
@@ -113,12 +103,12 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
 }
 
 PLUGIN_EXPORT void PLUGIN_CALL ProcessTick() {
-  if (::notify_update) {
+  if (Updater::version_fetched()) {
+    Version latest_version = Updater::latest_version();
     Version current_version(PROJECT_VERSION_STRING);
-    if (current_version < ::latest_version) {
+    if (current_version < latest_version) {
       logprintf("New version of CrashDetect is available for download (%s)",
-                ::latest_version.AsString().c_str());
+                latest_version.AsString().c_str());
     }
-    ::notify_update = false;
   }
 }
