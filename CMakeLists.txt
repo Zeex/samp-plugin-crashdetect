@@ -15,83 +15,83 @@ include(SampPlugin)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/amx")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/src")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/plugin")
 
 if(UNIX)
   add_definitions(-DLINUX)
 endif()
 
 set(SOURCES
-  "src/amxdebuginfo.cpp"
-  "src/amxdebuginfo.h"
-  "src/amxerror.cpp"
-  "src/amxerror.h"
-  "src/amxopcode.cpp"
-  "src/amxopcode.h"
-  "src/amxpathfinder.cpp"
-  "src/amxpathfinder.h"
-  "src/amxscript.cpp"
-  "src/amxscript.h"
-  "src/amxservice.h"
-  "src/amxstacktrace.cpp"
-  "src/amxstacktrace.h"
-  "src/configreader.cpp"
-  "src/configreader.h"
-  "src/compiler.h"
-  "src/crashdetect.cpp"
-  "src/crashdetect.h"
-  "src/fileutils.cpp"
-  "src/fileutils.h"
-  "src/hook.cpp"
-  "src/hook.h"
-  "src/logprintf.cpp"
-  "src/logprintf.h"
-  "src/npcall.cpp"
-  "src/npcall.h"
-  "src/os.h"
-  "src/plugin.cpp"
-  "src/plugin.def"
-  "src/plugincommon.h"
-  "src/stacktrace.cpp"
-  "src/stacktrace.h"
-  "src/stacktrace-generic.cpp"
-  "src/stacktrace-generic.h"
-  "src/tcpsocket.h"
-  "src/thread.h"
-  "src/version.cpp"
-  "src/version.h"
-  "src/versioncheck.cpp"
-  "src/versioncheck.h"
-  "${CMAKE_CURRENT_BINARY_DIR}/src/plugin.rc"
-  "${CMAKE_CURRENT_BINARY_DIR}/src/pluginversion.h"
+  "plugin/amxdebuginfo.cpp"
+  "plugin/amxdebuginfo.h"
+  "plugin/amxerror.cpp"
+  "plugin/amxerror.h"
+  "plugin/amxopcode.cpp"
+  "plugin/amxopcode.h"
+  "plugin/amxpathfinder.cpp"
+  "plugin/amxpathfinder.h"
+  "plugin/amxscript.cpp"
+  "plugin/amxscript.h"
+  "plugin/amxservice.h"
+  "plugin/amxstacktrace.cpp"
+  "plugin/amxstacktrace.h"
+  "plugin/configreader.cpp"
+  "plugin/configreader.h"
+  "plugin/compiler.h"
+  "plugin/crashdetect.cpp"
+  "plugin/crashdetect.h"
+  "plugin/fileutils.cpp"
+  "plugin/fileutils.h"
+  "plugin/hook.cpp"
+  "plugin/hook.h"
+  "plugin/logprintf.cpp"
+  "plugin/logprintf.h"
+  "plugin/npcall.cpp"
+  "plugin/npcall.h"
+  "plugin/os.h"
+  "plugin/plugin.cpp"
+  "plugin/plugin.def"
+  "plugin/plugincommon.h"
+  "plugin/stacktrace.cpp"
+  "plugin/stacktrace.h"
+  "plugin/stacktrace-generic.cpp"
+  "plugin/stacktrace-generic.h"
+  "plugin/tcpsocket.h"
+  "plugin/thread.h"
+  "plugin/version.cpp"
+  "plugin/version.h"
+  "plugin/versioncheck.cpp"
+  "plugin/versioncheck.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/plugin/plugin.rc"
+  "${CMAKE_CURRENT_BINARY_DIR}/plugin/pluginversion.h"
 )
 
 if(WIN32)
   list(APPEND SOURCES
-    "src/fileutils-win32.cpp"
-    "src/hook-win32.cpp"
-    "src/os-win32.cpp"
-    "src/stacktrace-win32.cpp"
-    "src/tcpsocket-win32.cpp"
-    "src/thread-win32.cpp"
+    "plugin/fileutils-win32.cpp"
+    "plugin/hook-win32.cpp"
+    "plugin/os-win32.cpp"
+    "plugin/stacktrace-win32.cpp"
+    "plugin/tcpsocket-win32.cpp"
+    "plugin/thread-win32.cpp"
   )
 elseif(UNIX)
   list(APPEND SOURCES
-    "src/fileutils-unix.cpp"
-    "src/hook-unix.cpp"
-    "src/os-unix.cpp"
-    "src/stacktrace-unix.cpp"
-    "src/tcpsocket-unix.cpp"
-    "src/thread-unix.cpp"
+    "plugin/fileutils-unix.cpp"
+    "plugin/hook-unix.cpp"
+    "plugin/os-unix.cpp"
+    "plugin/stacktrace-unix.cpp"
+    "plugin/tcpsocket-unix.cpp"
+    "plugin/thread-unix.cpp"
   )
 else()
   message(FATAL_ERROR "Unsupported operating system.")
 endif()
 
 if(MSVC)
-  list(APPEND SOURCES "src/compiler-msvc.cpp")
+  list(APPEND SOURCES "plugin/compiler-msvc.cpp")
 elseif(CMAKE_COMPILER_IS_GNUCXX)
-  list(APPEND SOURCES "src/compiler-gcc.cpp")
+  list(APPEND SOURCES "plugin/compiler-gcc.cpp")
 else()
   message(FATAL_ERROR "Unsupported compiler.")
 endif()
@@ -147,7 +147,7 @@ set(PROJECT_VERSION_RC "${version_rc}")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory("amx")
-add_subdirectory("src")
+add_subdirectory("plugin")
 add_subdirectory("tests")
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ".")
