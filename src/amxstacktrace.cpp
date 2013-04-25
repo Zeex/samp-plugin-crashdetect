@@ -294,6 +294,12 @@ std::vector<cell> GetStateIDs(AMXScript amx, cell function_address,
       } else {
         states.push_back(0); // fallback
       }
+    } else {
+      if (states.size() > 0) {
+        // State table entries appear to be sorted by address, so if
+        // this one doesn't match here's no point in checking the rest.
+        break;
+      }
     }
   }
   return states;
