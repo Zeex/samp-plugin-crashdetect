@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "amxdebuginfo.h"
+#include "amxopcode.h"
 #include "amxscript.h"
 #include "amxstacktrace.h"
 
@@ -200,11 +201,10 @@ std::pair<std::string, bool> GetStringContents(AMXScript amx, cell address,
 }
 
 cell GetStateVarAddress(AMXScript amx, cell function_address) {
-  static const int load_pri = 1;
   if (IsCodeAddress(amx, function_address) &&
       IsCodeAddress(amx, function_address + sizeof(cell))) {
     cell opcode = *reinterpret_cast<cell*>(amx.GetCode() + function_address);
-    if (opcode == load_pri) {
+    if (opcode == RelocateAmxOpcode(AMX_OP_LOAD_PRI)) {
       return *reinterpret_cast<cell*>(amx.GetCode() + function_address
                                       + sizeof(cell));
     }

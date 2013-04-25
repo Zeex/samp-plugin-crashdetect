@@ -32,6 +32,7 @@
 
 #include "amxdebuginfo.h"
 #include "amxerror.h"
+#include "amxopcode.h"
 #include "amxpathfinder.h"
 #include "amxscript.h"
 #include "amxstacktrace.h"
@@ -354,7 +355,7 @@ void CrashDetect::PrintError(const AMXError &error) {
     case AMX_ERR_BOUNDS: {
       const cell *ip = reinterpret_cast<const cell*>(amx_.GetCode() + amx_.GetCip());
       cell opcode = *ip;
-      if (opcode == GetAmxOpcode(kOpBounds)) {
+      if (opcode == RelocateAmxOpcode(AMX_OP_BOUNDS)) {
         cell bound = *(ip + 1);
         cell index = amx_.GetPri();
         if (index < 0) {
@@ -392,26 +393,11 @@ void CrashDetect::PrintError(const AMXError &error) {
     case AMX_ERR_NATIVE: {
       const cell *ip = reinterpret_cast<const cell*>(amx_.GetCode() + amx_.GetCip());
       cell opcode = *(ip - 2);
-      if (opcode == GetAmxOpcode(kOpSysreqC)) {
+      if (opcode == RelocateAmxOpcode(AMX_OP_SYSREQ_C)) {
         cell index = *(ip - 1);
         Printf(" %s", amx_.GetNativeName(index));
       }
       break;
     }
   }
-}
-
-cell CrashDetect::GetAmxOpcode(cell index) {
-  #ifdef LINUX
-    static cell *opcode_map_ = 0;
-    if (opcode_map_ == 0) {
-      uint16_t flags = amx_.GetFlags();
-      amx_.SetFlags(flags | AMX_FLAG_BROWSE);
-      amx_Exec(amx_, reinterpret_cast<cell*>(&opcode_map_), 0);
-      amx_.SetFlags(flags);
-    }
-    return opcode_map_[index];
-  #else
-    return index;
-  #endif
 }

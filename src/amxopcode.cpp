@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2013 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,59 +22,27 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef CRASHDETECT_H
-#define CRASHDETECT_H
+#include "amxopcode.h"
 
-#include <map>
-#include <stack>
-#include <string>
+static cell *GetOpcodeMap() {
+  #if defined __GNUC__
+    cell *opcode_map;
+    AMX amx = {0};
+    amx.flags |= AMX_FLAG_BROWSE;
+    amx_Exec(&amx, reinterpret_cast<cell*>(&opcode_map), 0);
+    amx.flags &= ~AMX_FLAG_BROWSE;
+    return opcode_map;
+  #else
+    return 0;
+  #endif
+}
 
-#include <amx/amx.h>
-
-#include "amxdebuginfo.h"
-#include "amxscript.h"
-#include "amxservice.h"
-
-class AMXError;
-class NPCall;
-
-class CrashDetect : public AMXService<CrashDetect> {
-  friend class AMXService<CrashDetect>;
-
- public:
-  virtual int Load();
-  virtual int Unload();
-
- public:
-  explicit CrashDetect(AMX *amx);
-
- public:
-  int DoAmxCallback(cell index, cell *result, cell *params);
-  int DoAmxExec(cell *retval, int index);
-
-  void HandleException();
-  void HandleInterrupt();
-  void HandleExecError(int index, cell *retval, const AMXError &error);
-  void PrintError(const AMXError &error);
-
- public:
-  static void OnException(void *context);
-  static void OnInterrupt(void *context);
-
-  static void Printf(const char *format, ...);
-  static void PrintAmxBacktrace();
-  static void PrintNativeBacktrace(void *context = 0);
-
- private:
-  AMXScript amx_;
-  AMXDebugInfo debug_info_;
-  std::string amx_path_;
-  std::string amx_name_;
-  AMX_CALLBACK prev_callback_;
-
- private:
-  static bool block_exec_errors_;
-  static std::stack<NPCall*> np_calls_;
-};
-
-#endif // !CRASHDETECT_H
+cell RelocateAmxOpcode(cell opcode) {
+  #if defined __GNUC__
+    static cell *opcode_map = GetOpcodeMap();
+    if (opcode >= 0 && opcode < NUM_AMX_OPCODES) {
+      return opcode_map[opcode];
+    }
+  #endif
+	return opcode;
+}

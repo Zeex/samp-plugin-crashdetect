@@ -26,6 +26,8 @@ set(SOURCES
   "src/amxdebuginfo.h"
   "src/amxerror.cpp"
   "src/amxerror.h"
+  "src/amxopcode.cpp"
+  "src/amxopcode.h"
   "src/amxpathfinder.cpp"
   "src/amxpathfinder.h"
   "src/amxscript.cpp"
