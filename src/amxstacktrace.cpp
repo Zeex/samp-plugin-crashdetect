@@ -224,7 +224,7 @@ class CaseTable {
                                                    + address + sizeof(cell));
     int num_records = case_table[0].value;
 
-    for (int i = 1; i <= num_records; i++) {
+    for (int i = 0; i <= num_records; i++) {
       cell dest = case_table[i].address
                   - reinterpret_cast<cell>(amx.GetCode());
       records_.push_back(std::make_pair(case_table[i].value, dest));
@@ -268,7 +268,7 @@ cell GetRealFunctionAddress(AMXScript amx, cell function_address,
       }
     }
   }
-  return 0;
+  return -1;
 }
 
 std::vector<cell> GetStateIDs(AMXScript amx, cell function_address,
@@ -289,7 +289,11 @@ std::vector<cell> GetStateIDs(AMXScript amx, cell function_address,
   CaseTable state_table(amx, state_table_address);
   for (int i = 0; i < state_table.GetNumRecords(); i++) {
     if (state_table.GetAddressAt(i) == real_address) {
-      states.push_back(state_table.GetValueAt(i));
+      if (i > 0) {
+        states.push_back(state_table.GetValueAt(i));
+      } else {
+        states.push_back(0); // fallback
+      }
     }
   }
   return states;
