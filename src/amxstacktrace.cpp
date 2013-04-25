@@ -397,8 +397,8 @@ void AMXStackFrame::Print(std::ostream &stream,
       stream << " at " << filename;
     }
     long line = debug_info->GetLineNumber(return_address_);
-    if (line != 0) {
-      stream << ":" << line;
+    if (line >= 0) {
+      stream << ":" << line + 1;
     }
   }
 }

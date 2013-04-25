@@ -117,7 +117,6 @@ AMXDebugLine AMXDebugInfo::GetLine(cell address) const {
     continue;
   }
   line = *last;
-  ++line.line_.line; 
   return line;
 }
 
@@ -178,7 +177,7 @@ int32_t AMXDebugInfo::GetLineNumber(cell address) const {
   if (line) {
     return line.GetNumber();
   }
-  return 0;
+  return -1;
 }
 
 std::string AMXDebugInfo::GetFileName(cell address) const {

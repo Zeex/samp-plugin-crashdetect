@@ -105,7 +105,6 @@ class AMXDebugInfo {
   };
 
   class File {
-    friend class AMXDebugInfo;
    public:
     File() : file_(0) {}
     File(const AMX_DBG_FILE *file) : file_(file) {}
@@ -120,7 +119,6 @@ class AMXDebugInfo {
   };
 
   class Line {
-    friend class AMXDebugInfo;
    public:
     Line() { line_.address = 0; }
     Line(AMX_DBG_LINE line) : line_(line) {}
@@ -135,7 +133,6 @@ class AMXDebugInfo {
   };
 
   class Tag {
-    friend class AMXDebugInfo;
    public:
     Tag() : tag_(0) {}
     Tag(const AMX_DBG_TAG *tag) : tag_(tag) {}
@@ -152,7 +149,6 @@ class AMXDebugInfo {
   class SymbolDim;
 
   class Symbol {
-    friend class AMXDebugInfo;
    public:
     enum VClass {
       Global      = 0,
