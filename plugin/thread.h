@@ -22,6 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef THREAD_H
+#define THREAD_H
+
 typedef void (*ThreadRoutine)(void *args);
 
 class ThreadSystemInfo;
@@ -57,3 +60,5 @@ class Thread {
   ThreadRoutine    func_;
   ThreadSystemInfo *info_;
 };
+
+#endif // !THREAD_H
