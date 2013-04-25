@@ -50,16 +50,16 @@ class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
 };
 
 bool IsStackAddress(AMXScript amx, cell address) {
-  return (address >= amx.GetHlw() && address < amx.GetStp());
+  return address >= amx.GetHlw() && address < amx.GetStp();
 }
 
 bool IsDataAddress(AMXScript amx, cell address) {
-  return address < amx.GetStp();
+  return address >= 0 && address < amx.GetStp();
 }
 
 bool IsCodeAddress(AMXScript amx, cell address) {
   const AMX_HEADER *hdr = amx.GetHeader();
-  return address < hdr->dat - hdr->cod;
+  return address >= 0 && address < hdr->dat - hdr->cod;
 }
 
 bool IsPublicFunction(AMXScript amx, cell address) {
