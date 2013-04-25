@@ -17,10 +17,10 @@ macro(test name)
 endmacro()
 
 test("misc/args")
-test("misc/bad_frame")
+#test("misc/bad_frame")
 #test("misc/crash")
 
 test("error/bounds")
 #test("error/invinstr")
 #test("error/notfound")
-test("error/stacklow")
+#test("error/stacklow")
