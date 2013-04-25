@@ -289,12 +289,6 @@ void CrashDetect::HandleExecError(int index, cell *retval, const AMXError &error
     return;
   }
 
-  // Block errors while calling OnRuntimeError as it may result in yet
-  // another error (and for certain errors it in fact always does, e.g.
-  // stack/heap collision due to insufficient stack space for making
-  // the public call).
-  block_exec_errors_ = true;
-
   // The following error codes should not be treated as errors:
   //
   // 1. AMX_ERR_NONE is always returned when a public function returns
@@ -310,6 +304,12 @@ void CrashDetect::HandleExecError(int index, cell *retval, const AMXError &error
   if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
     return;
   }
+
+  // Block errors while calling OnRuntimeError as it may result in yet
+  // another error (and for certain errors it in fact always does, e.g.
+  // stack/heap collision due to insufficient stack space for making
+  // the public call).
+  block_exec_errors_ = true;
 
   // public OnRuntimeError(code, &bool:suppress);
   cell callback_index = amx_.GetPublicIndex("OnRuntimeError");
@@ -327,10 +327,9 @@ void CrashDetect::HandleExecError(int index, cell *retval, const AMXError &error
   if (suppress == 0) {
     PrintError(error);
     if (error.code() != AMX_ERR_NOTFOUND &&
-      error.code() != AMX_ERR_INDEX    &&
-      error.code() != AMX_ERR_CALLBACK &&
-      error.code() != AMX_ERR_INIT)
-    {
+        error.code() != AMX_ERR_INDEX    &&
+        error.code() != AMX_ERR_CALLBACK &&
+        error.code() != AMX_ERR_INIT) {
       PrintAmxBacktrace();
     }
   }
