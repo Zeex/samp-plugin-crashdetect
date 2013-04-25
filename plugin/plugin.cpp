@@ -24,11 +24,6 @@
 
 #include <string>
 
-#ifdef _WIN32
-  #include <malloc.h>
-#endif
-
-#include "amx.h"
 #include "amxerror.h"
 #include "compiler.h"
 #include "crashdetect.h"
