@@ -539,7 +539,7 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
 
 void AMXStackFramePrinter::PrintVariableArguments(int number) {
   assert(number > 0);
-  *stream_ << "... <" << number << " variable ";
+  *stream_ << "... <" << number << " ";
   if (number <= 1) {
     *stream_ << "argument";
   } else {
