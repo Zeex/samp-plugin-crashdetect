@@ -30,16 +30,69 @@
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 
-class AMXStackFrame {
+class AMXStackFrame;
+
+class AMXStackFramePrinter {
  public:
   static const int kMaxPrintString = 30;
 
+  AMXStackFramePrinter();
+
+  void set_stream(std::ostream *stream) {
+    stream_ = stream;
+  }
+
+  void set_debug_info(const AMXDebugInfo *debug_info) {
+    debug_info_ = debug_info;
+  }
+
+  void Print(const AMXStackFrame &frame);
+
+  void PrintTag(const AMXDebugSymbol &symbol);
+
+  void PrintReturnAddress(const AMXStackFrame &frame);
+
+  void PrintCallerName(const AMXStackFrame &frame);
+  void PrintCallerName(const AMXStackFrame &frame,
+                       const AMXDebugSymbol &caller);
+
+  void PrintArgument(const AMXStackFrame &frame,
+                     const AMXDebugSymbol &arg,
+                     int index);
+
+  void PrintArgumentValue(const AMXStackFrame &frame,
+                          const AMXDebugSymbol &arg,
+                          int index);
+
+  void PrintVariableArguments(int number);
+
+  void PrintArgumentList(const AMXStackFrame &frame);
+
+  void PrintState(const AMXStackFrame &frame);
+
+  void PrintSourceLocation(cell address);
+
+ private:
+  bool HaveDebugInfo() const;
+  bool UsesAutomata(const AMXStackFrame &frame) const;
+  AMXDebugSymbol GetCallerSymbol(const AMXStackFrame &frame) const;
+
+ private:
+  std::ostream *stream_;
+  const AMXDebugInfo *debug_info_;
+};
+
+class AMXStackFrame {
+ public:
   AMXStackFrame(AMXScript amx, cell address);
 
   AMXStackFrame(AMXScript amx, cell address,
                                cell return_address,
                                cell callee_address,
                                cell caller_address);
+
+  AMXScript &amx() { return amx_; }
+  const AMXScript &amx() const { return amx_; }
 
   cell address() const { return address_; }
 

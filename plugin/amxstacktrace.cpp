@@ -109,6 +109,87 @@ cell GetCallerAddress(AMXScript amx, cell frame_address) {
   return 0;
 }
 
+} // anonymous namespace
+
+AMXStackFrame::AMXStackFrame(AMXScript amx, cell address)
+ : amx_(amx),
+   address_(0),
+   return_address_(0),
+   callee_address_(0),
+   caller_address_(0)
+{
+  if (IsStackAddress(amx_, address)) {
+    address_ = address;
+  }
+  if (address_ != 0) {
+    return_address_ = GetReturnAddressSafe(amx_, address_);
+    if (return_address_ != 0) {
+      callee_address_ = GetCalleeAddressSafe(amx_, return_address_);
+      caller_address_ = GetCallerAddress(amx_, address_);
+    }
+  }
+}
+
+AMXStackFrame::AMXStackFrame(AMXScript amx,
+                             cell address,
+                             cell return_address,
+                             cell callee_address,
+                             cell caller_address)
+ : amx_(amx),
+   address_(0),
+   return_address_(0),
+   callee_address_(0),
+   caller_address_(0)
+{
+  if (IsStackAddress(amx_, address)) {
+    address_ = address;
+  }
+  if (IsCodeAddress(amx_, return_address)) {
+    return_address_ = return_address;
+  }
+  if (IsCodeAddress(amx_, callee_address)) {
+    callee_address_ = callee_address;
+  }
+  if (IsCodeAddress(amx_, caller_address)) {
+    caller_address_ = caller_address;
+  }
+}
+
+AMXStackFrame AMXStackFrame::GetPrevious() const {
+  return AMXStackFrame(amx_, GetPreviousFrame(amx_, address_));
+}
+
+void AMXStackFrame::Print(std::ostream &stream,
+                          const AMXDebugInfo *debug_info) const {
+  AMXStackFramePrinter printer;
+  printer.set_stream(&stream);
+  printer.set_debug_info(debug_info);
+  printer.Print(*this);
+}
+
+AMXStackTrace::AMXStackTrace(AMXScript amx)
+ : current_frame_(amx, amx.GetFrm())
+{
+}
+
+AMXStackTrace::AMXStackTrace(AMXScript amx, cell frame)
+ : current_frame_(amx, frame)
+{
+}
+
+bool AMXStackTrace::Next() {
+  if (current_frame_) {
+    current_frame_ = current_frame_.GetPrevious();
+    if (current_frame_.return_address() == 0) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+namespace {
+
 class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
  public:
   IsArgumentOf(cell function_address) : function_address_(function_address) {}
@@ -119,7 +200,7 @@ class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
   cell function_address_;
 };
 
-cell GetArgValue(AMXScript amx, cell frame_address, int index) {
+cell GetArgumentValue(AMXScript amx, cell frame_address, int index) {
   cell data = reinterpret_cast<cell>(amx.GetData());
   cell arg_offset = data + frame_address + (3 + index) * sizeof(cell);
   return *reinterpret_cast<cell*>(arg_offset);
@@ -305,259 +386,262 @@ std::vector<cell> GetStateIDs(AMXScript amx, cell function_address,
 
 } // anonymous namespace
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, cell address)
- : amx_(amx),
-   address_(0),
-   return_address_(0),
-   callee_address_(0),
-   caller_address_(0)
+AMXStackFramePrinter::AMXStackFramePrinter()
+ : stream_(0),
+   debug_info_(0)
 {
-  if (IsStackAddress(amx_, address)) {
-    address_ = address;
-  }
-  if (address_ != 0) {
-    return_address_ = GetReturnAddressSafe(amx_, address_);
-    if (return_address_ != 0) {
-      callee_address_ = GetCalleeAddressSafe(amx_, return_address_);
-      caller_address_ = GetCallerAddress(amx_, address_);
-    }
-  }
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx,
-                             cell address,
-                             cell return_address,
-                             cell callee_address,
-                             cell caller_address)
- : amx_(amx),
-   address_(0),
-   return_address_(0),
-   callee_address_(0),
-   caller_address_(0)
-{
-  if (IsStackAddress(amx_, address)) {
-    address_ = address;
-  }
-  if (IsCodeAddress(amx_, return_address)) {
-    return_address_ = return_address;
-  }
-  if (IsCodeAddress(amx_, callee_address)) {
-    callee_address_ = callee_address;
-  }
-  if (IsCodeAddress(amx_, caller_address)) {
-    caller_address_ = caller_address;
-  }
-}
+void AMXStackFramePrinter::Print(const AMXStackFrame &frame) {
+  PrintReturnAddress(frame);
+  *stream_ << " in ";
 
-AMXStackFrame AMXStackFrame::GetPrevious() const {
-  return AMXStackFrame(amx_, GetPreviousFrame(amx_, address_));
-}
-
-void AMXStackFrame::Print(std::ostream &stream,
-                          const AMXDebugInfo *debug_info) const {
-  bool have_debug_info = debug_info != 0 && debug_info->IsLoaded();
-  bool uses_automata = (GetStateVarAddress(amx_, caller_address_) > 0);
-
-  AMXDebugSymbol caller;
-  if (have_debug_info) {
-    if (uses_automata) {
-      caller = debug_info->GetExactFunction(caller_address_);
-    } else {
-      caller = debug_info->GetFunction(return_address_);
-    }
-  }
-
-  if (return_address_ == 0) {
-    stream << "???????? in ";
-  } else {
-    stream << std::hex << std::setw(8) << std::setfill('0') 
-      << return_address_ << std::dec << " in ";
-  }
-
+  AMXDebugSymbol caller = GetCallerSymbol(frame);
   if (caller) {
-    if (IsPublicFunction(amx_, caller.GetCodeStart()) &&
-        !IsMain(amx_, caller.GetCodeStart())) {
-      stream << "public ";
-    }
-    std::string func_tag = debug_info->GetTagName((caller).GetTag());
-    if (!func_tag.empty() && func_tag != "_") {
-      stream << func_tag << ":";
-    }    
-    stream << caller.GetName();
+    PrintCallerName(frame, caller);
   } else {
-    if (IsMain(amx_, caller_address_)) {
-      stream << "main";
+    PrintCallerName(frame);
+  }
+
+  *stream_ << " (";
+
+  if (HaveDebugInfo()) {
+    PrintArgumentList(frame);
+  }
+
+  *stream_ << ")";
+
+  if (UsesAutomata(frame)) {
+    *stream_ << " ";
+    PrintState(frame);
+  }
+
+  if (HaveDebugInfo() && frame.return_address() != 0) {
+    *stream_ << " at ";
+    PrintSourceLocation(frame.return_address());
+  }
+}
+
+void AMXStackFramePrinter::PrintTag(const AMXDebugSymbol &symbol) {
+  std::string tag_name = debug_info_->GetTagName(symbol.GetTag());
+  if (!tag_name.empty() && tag_name != "_") {
+    *stream_ << tag_name << ":";
+  }
+}
+
+void AMXStackFramePrinter::PrintReturnAddress(const AMXStackFrame &frame) {
+  if (frame.return_address() == 0) {
+    *stream_ << "????????";
+  } else {
+    char old_fill = stream_->fill('0');
+    *stream_ << std::hex << std::setw(8)
+             << frame.return_address()
+             << std::dec;
+    stream_->fill(old_fill);
+  }
+}
+
+void AMXStackFramePrinter::PrintCallerName(const AMXStackFrame &frame) {
+  if (IsMain(frame.amx(), frame.caller_address())) {
+    *stream_ << "main";
+  } else {
+    const char *name = 0;
+    if (frame.caller_address() != 0) {
+      name = frame.amx().FindPublic(frame.caller_address());
+    }
+    if (name != 0) {
+      *stream_ << "public " << name;
     } else {
-      const char *name = 0;
-      if (caller_address_ != 0) {
-        name = amx_.FindPublic(caller_address_);
-      }
-      if (name != 0) {
-        stream << "public " << name;
-      } else {
-        stream << "??";
+      *stream_ << "??";
+    }
+  }
+}
+
+void AMXStackFramePrinter::PrintCallerName(const AMXStackFrame &frame,
+                                           const AMXDebugSymbol &caller) {
+  bool is_public = IsPublicFunction(frame.amx(),
+                                    caller.GetCodeStart());
+  bool is_main = IsMain(frame.amx(), caller.GetCodeStart());
+  if (is_public && !is_main) {
+    *stream_ << "public ";
+  }
+  PrintTag(caller);
+  *stream_ << caller.GetName();
+}
+
+void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame,
+                                         const AMXDebugSymbol &arg,
+                                         int index) {
+  if (arg.IsReference()) {
+    *stream_ << "&";
+  }
+
+  PrintTag(arg);
+  *stream_ << arg.GetName();
+
+  if (!arg.IsVariable()) {
+    std::vector<AMXDebugSymbolDim> dims = arg.GetDims();
+
+    if (arg.IsArray() || arg.IsArrayRef()) {
+      for (std::size_t i = 0; i < dims.size(); ++i) {
+        if (dims[i].GetSize() == 0) {
+          *stream_ << "[]";
+        } else {
+          std::string tag = debug_info_->GetTagName(dims[i].GetTag()) + ":";
+          if (tag == "_:") tag.clear();
+          *stream_ << "[" << tag << dims[i].GetSize() << "]";
+        }
       }
     }
   }
 
-  stream << " (";
+  *stream_ << "=";
+  PrintArgumentValue(frame, arg, index);
+}
 
-  AMXStackFrame prev = GetPrevious();
+void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
+                                              const AMXDebugSymbol &arg,
+                                              int index) {
+  std::string tag_name = debug_info_->GetTagName(arg.GetTag());
+  cell value = GetArgumentValue(frame.amx(), frame.address(), index);
 
-  if (have_debug_info && caller && prev) {
+  if (arg.IsVariable()) {
+    if (tag_name == "bool:") {
+      *stream_ << (value ? "true" : "false");
+    } else if (tag_name == "Float:") {
+      *stream_ << std::fixed << std::setprecision(5) << amx_ctof(value);
+    } else {
+      *stream_ << value;
+    }
+  } else {
+    std::vector<AMXDebugSymbolDim> dims = arg.GetDims();
+
+    // For arrays/references we just output their AMX address.
+    *stream_ << "@0x" << std::hex << std::setw(8) << std::setfill('0')
+             << value << std::dec;
+
+    if ((arg.IsArray() || arg.IsArrayRef())
+        && dims.size() == 1
+        && tag_name == "_"
+        && debug_info_->GetTagName(dims[0].GetTag()) == "_")
+    {
+      std::string string; bool packed;
+      GetStringContents(frame.amx(), value, dims[0].GetSize(), string, packed);
+      *stream_ << (packed ? " !" : " ");
+      if (string.length() > kMaxPrintString) {
+        string.replace(kMaxPrintString,
+                        string.length() - kMaxPrintString, "...");
+      }
+      *stream_ << "\"" << string << "\"";
+    }
+  }
+}
+
+void AMXStackFramePrinter::PrintVariableArguments(int number) {
+  assert(number > 0);
+  *stream_ << "... <" << number << " variable ";
+  if (number <= 1) {
+    *stream_ << "argument";
+  } else {
+    *stream_ << "arguments";
+  }
+  *stream_ << ">";
+}
+
+void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
+  AMXStackFrame prev_frame = frame.GetPrevious();
+
+  if (prev_frame) {
     // Although the symbol's code start address points at the state
     // switch code block, function arguments actually use the real
     // function address for the code start because in different states
     // they may be not the same.
-    cell arg_address = caller_address_;
-    if (uses_automata) {
-      arg_address = GetRealFunctionAddress(amx_, caller_address_,
-                                                 return_address_);
+    cell arg_address = frame.caller_address();
+    if (UsesAutomata(frame)) {
+      arg_address = GetRealFunctionAddress(frame.amx(), frame.caller_address(),
+                                                        frame.return_address());
     }
 
     std::vector<AMXDebugSymbol> args;
-    std::remove_copy_if(debug_info->GetSymbols().begin(),
-                        debug_info->GetSymbols().end(),
+    std::remove_copy_if(debug_info_->GetSymbols().begin(),
+                        debug_info_->GetSymbols().end(),
                         std::back_inserter(args),
                         std::not1(IsArgumentOf(arg_address)));
     std::sort(args.begin(), args.end());
 
     // Build a comma-separated list of arguments and their values.
+
     for (std::size_t i = 0; i < args.size(); i++) {
-      AMXDebugSymbol &arg = args[i];
-
-      if (i != 0) {
-        stream << ", ";
+      if (i > 0) {
+        *stream_ << ", ";
       }
+      PrintArgument(prev_frame, args[i], i);
+    }
 
-      if (arg.IsReference()) {
-        stream << "&";
-      }
-
-      std::string tag = debug_info->GetTag(arg.GetTag()).GetName() + ":";
-      if (tag == "_:") {
-        stream << arg.GetName();
-      } else {
-        stream << tag << arg.GetName();
-      }
-
-      cell value = GetArgValue(amx_, prev.address(), i);
-      if (arg.IsVariable()) {
-        if (tag == "bool:") {
-          stream << "=" << (value ? "true" : "false");
-        } else if (tag == "Float:") {
-          stream << "=" << std::fixed << std::setprecision(5) << amx_ctof(value);
-        } else {
-          stream << "=" << value;
-        }
-      } else {
-        std::vector<AMXDebugSymbolDim> dims = arg.GetDims();
-        if (arg.IsArray() || arg.IsArrayRef()) {
-          for (std::size_t i = 0; i < dims.size(); ++i) {
-            if (dims[i].GetSize() == 0) {
-              stream << "[]";
-            } else {
-              std::string tag = debug_info->GetTagName(dims[i].GetTag()) + ":";
-              if (tag == "_:") tag.clear();
-              stream << "[" << tag << dims[i].GetSize() << "]";
-            }
-          }
-        }
-
-        // For arrays/references we just output their amx_ address.
-        stream << "=@0x" << std::hex << std::setw(8) << std::setfill('0')
-               << value << std::dec;
-
-        if ((arg.IsArray() || arg.IsArrayRef())
-            && dims.size() == 1
-            && tag == "_:"
-            && debug_info->GetTagName(dims[0].GetTag()) == "_")
-        {
-          std::string string; bool packed;
-          GetStringContents(amx_, value, dims[0].GetSize(), string, packed);
-          stream << (packed ? " !" : " ");
-          if (string.length() > kMaxPrintString) {
-            string.replace(kMaxPrintString,
-                           string.length() - kMaxPrintString, "...");
-          }
-          stream << "\"" << string << "\"";
-        }
-      }
-    }  
-
+    // If the number of actual arguments passed to the function exceeds
+    // that obtained via debug info the function may take a variable
+    // number of arguments. In this case we don't evaluate them but just
+    // just say that they are present as we can't say anything about
+    // their names and types.
     int num_args = static_cast<int>(args.size());
-    int num_var_args = GetNumArgs(amx_, prev.address()) - num_args;
+    int num_var_args = GetNumArgs(frame.amx(), prev_frame.address()) - num_args;
 
-    // If number of arguments passed to the function exceeds that obtained
-    // through debug info it's likely that the function takes a variable
-    // number of arguments. In this case we don't evaluate them but rather
-    // just say that they are present (because we can't say anything about
-    // their names and types).
     if (num_var_args > 0) {
       if (num_args != 0) {
-        stream << ", ";
+        *stream_ << ", ";
       }
-      stream << "... <" << num_var_args << " variable ";
-      if (num_var_args == 1) {
-        stream << "argument";
-      } else {
-        stream << "arguments";
-      }
-      stream << ">";
+      PrintVariableArguments(num_var_args);
     }
   }
+}
 
-  stream << ")";
-
-  if (caller && uses_automata) {
-    cell sv_address = GetStateVarAddress(amx_, caller_address_);
-    AMXDebugAutomaton automaton = debug_info->GetAutomaton(sv_address);
-    if (automaton) {
-      std::vector<cell> states = GetStateIDs(amx_, caller_address_, return_address_);
-      if (!states.empty()) {
-        stream << " <";
-        for (std::size_t i = 0; i < states.size(); i++ ) {
-          static const char *separator = "";
-          AMXDebugState state = debug_info->GetState(automaton.GetID(), states[i]);
-          if (state) {
-            stream << separator << automaton.GetName() << ":" << state.GetName();
-          }
-          separator = ", ";
+void AMXStackFramePrinter::PrintState(const AMXStackFrame &frame) {
+  AMXDebugAutomaton automaton = debug_info_->GetAutomaton(
+    GetStateVarAddress(frame.amx(), frame.caller_address()));
+  if (automaton) {
+    std::vector<cell> states = GetStateIDs(frame.amx(), frame.caller_address(),
+                                                        frame.return_address());
+    if (!states.empty()) {
+      *stream_ << "<";
+      for (std::size_t i = 0; i < states.size(); i++ ) {
+        if (i > 0) {
+          *stream_ << ", ";
         }
-        stream << ">";
+        AMXDebugState state = debug_info_->GetState(automaton.GetID(), states[i]);
+        if (state) {
+          *stream_ << automaton.GetName() << ":" << state.GetName();
+        }
       }
-    }
-  }
-
-  if (have_debug_info && return_address_ != 0) {
-    std::string filename = debug_info->GetFileName(return_address_);
-    if (!filename.empty()) {
-      stream << " at " << filename;
-    }
-    long line = debug_info->GetLineNumber(return_address_);
-    if (line >= 0) {
-      stream << ":" << line + 1;
+      *stream_ << ">";
     }
   }
 }
 
-AMXStackTrace::AMXStackTrace(AMXScript amx)
- : current_frame_(amx, amx.GetFrm())
-{
-}
-
-AMXStackTrace::AMXStackTrace(AMXScript amx, cell frame)
- : current_frame_(amx, frame)
-{
-}
-
-bool AMXStackTrace::Next() {
-  if (current_frame_) {
-    current_frame_ = current_frame_.GetPrevious();
-    if (current_frame_.return_address() == 0) {
-      return false;
-    }
-    return true;
+void AMXStackFramePrinter::PrintSourceLocation(cell address) {
+  std::string filename = debug_info_->GetFileName(address);
+  if (filename.empty()) {
+    filename.assign("<unknown file>");
   }
-  return false;
+  *stream_ << filename << ":" << debug_info_->GetLineNumber(address) + 1;
+}
+
+bool AMXStackFramePrinter::HaveDebugInfo() const {
+  return debug_info_ != 0 && debug_info_->IsLoaded();
+}
+
+bool AMXStackFramePrinter::UsesAutomata(const AMXStackFrame &frame) const {
+  return GetStateVarAddress(frame.amx(), frame.caller_address()) > 0;
+}
+
+AMXDebugSymbol AMXStackFramePrinter::GetCallerSymbol(
+                                            const AMXStackFrame &frame) const {
+  AMXDebugSymbol caller;
+  if (HaveDebugInfo()) {
+    if (UsesAutomata(frame)) {
+      caller = debug_info_->GetExactFunction(frame.caller_address());
+    } else {
+      caller = debug_info_->GetFunction(frame.return_address());
+    }
+  }
+  return caller;
 }
