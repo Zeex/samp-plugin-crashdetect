@@ -35,6 +35,7 @@ class AMXStackFrame;
 class AMXStackFramePrinter {
  public:
   static const int kMaxPrintString = 30;
+  static const int kCellWidthChars = sizeof(cell) * 2;
 
   AMXStackFramePrinter();
 

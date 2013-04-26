@@ -430,7 +430,7 @@ void AMXStackFramePrinter::PrintReturnAddress(const AMXStackFrame &frame) {
     *stream_ << "????????";
   } else {
     char old_fill = stream_->fill('0');
-    *stream_ << std::hex << std::setw(8)
+    *stream_ << std::hex << std::setw(kCellWidthChars)
              << frame.return_address()
              << std::dec;
     stream_->fill(old_fill);
@@ -503,7 +503,8 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
                                               int index) {
   cell value = GetArgumentValue(frame.amx(), frame.address(), index);
   char old_fill = stream_->fill('0');
-  *stream_ << std::hex << "0x" << std::setw(8) << value << std::dec;
+  *stream_ << std::hex << "0x" << std::setw(kCellWidthChars)
+           << value << std::dec;
   stream_->fill(old_fill);
 }
 
@@ -526,7 +527,8 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
 
     // For arrays/references we just output their AMX address.
     char old_fill = stream_->fill('0');
-    *stream_ << "@0x" << std::hex << std::setw(8) << value << std::dec;
+    *stream_ << "@0x" << std::hex << std::setw(kCellWidthChars)
+             << value << std::dec;
     stream_->fill(old_fill);
 
     if ((arg.IsArray() || arg.IsArrayRef())
