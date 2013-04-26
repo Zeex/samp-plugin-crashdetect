@@ -637,11 +637,7 @@ AMXDebugSymbol AMXStackFramePrinter::GetCallerSymbol(
                                             const AMXStackFrame &frame) const {
   AMXDebugSymbol caller;
   if (HaveDebugInfo()) {
-    if (UsesAutomata(frame)) {
-      caller = debug_info_->GetExactFunction(frame.caller_address());
-    } else {
-      caller = debug_info_->GetFunction(frame.return_address());
-    }
+    caller = debug_info_->GetExactFunction(frame.caller_address());
   }
   return caller;
 }
