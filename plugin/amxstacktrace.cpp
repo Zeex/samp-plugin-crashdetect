@@ -119,9 +119,9 @@ class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
   cell function_address_;
 };
 
-cell GetArgValue(AMXScript amx, cell frame, int index) {
+cell GetArgValue(AMXScript amx, cell frame_address, int index) {
   cell data = reinterpret_cast<cell>(amx.GetData());
-  cell arg_offset = data + frame + (3 + index) * sizeof(cell);
+  cell arg_offset = data + frame_address + (3 + index) * sizeof(cell);
   return *reinterpret_cast<cell*>(arg_offset);
 }
 
@@ -129,13 +129,6 @@ cell GetNumArgs(AMXScript amx, cell frame_address) {
   cell data = reinterpret_cast<cell>(amx.GetData());
   cell num_args_offset = data + frame_address + 2 * sizeof(cell);
   return *reinterpret_cast<cell*>(num_args_offset) / sizeof(cell);
-}
-
-cell GetNumArgsSafe(AMXScript amx, cell frame_address) {
-  if (IsStackAddress(amx, frame_address)) {
-    return GetNumArgs(amx, frame_address);
-  }
-  return 0;
 }
 
 bool IsPrintableChar(char c) {
@@ -409,9 +402,9 @@ void AMXStackFrame::Print(std::ostream &stream,
 
   stream << " (";
 
-  if (have_debug_info && caller && address_ != 0) {
-    AMXStackFrame prev = GetPrevious();
+  AMXStackFrame prev = GetPrevious();
 
+  if (have_debug_info && caller && prev) {
     // Although the symbol's code start address points at the state
     // switch code block, function arguments actually use the real
     // function address for the code start because in different states
@@ -493,7 +486,7 @@ void AMXStackFrame::Print(std::ostream &stream,
     }  
 
     int num_args = static_cast<int>(args.size());
-    int num_var_args = GetNumArgsSafe(amx_, prev.address()) - num_args;
+    int num_var_args = GetNumArgs(amx_, prev.address()) - num_args;
 
     // If number of arguments passed to the function exceeds that obtained
     // through debug info it's likely that the function takes a variable
