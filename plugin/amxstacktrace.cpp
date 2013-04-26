@@ -404,11 +404,7 @@ void AMXStackFramePrinter::Print(const AMXStackFrame &frame) {
   }
 
   *stream_ << " (";
-
-  if (HaveDebugInfo()) {
-    PrintArgumentList(frame);
-  }
-
+  PrintArgumentList(frame);
   *stream_ << ")";
 
   if (HaveDebugInfo() && UsesAutomata(frame)) {
@@ -469,6 +465,10 @@ void AMXStackFramePrinter::PrintCallerName(const AMXStackFrame &frame,
   *stream_ << caller.GetName();
 }
 
+void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame, int index) {
+  PrintArgumentValue(frame, index);
+}
+
 void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame,
                                          const AMXDebugSymbol &arg,
                                          int index) {
@@ -500,6 +500,14 @@ void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame,
 }
 
 void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
+                                              int index) {
+  cell value = GetArgumentValue(frame.amx(), frame.address(), index);
+  char old_fill = stream_->fill('0');
+  *stream_ << std::hex << "0x" << std::setw(8) << value << std::dec;
+  stream_->fill(old_fill);
+}
+
+void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
                                               const AMXDebugSymbol &arg,
                                               int index) {
   std::string tag_name = debug_info_->GetTagName(arg.GetTag());
@@ -517,8 +525,9 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
     std::vector<AMXDebugSymbolDim> dims = arg.GetDims();
 
     // For arrays/references we just output their AMX address.
-    *stream_ << "@0x" << std::hex << std::setw(8) << std::setfill('0')
-             << value << std::dec;
+    char old_fill = stream_->fill('0');
+    *stream_ << "@0x" << std::hex << std::setw(8) << value << std::dec;
+    stream_->fill(old_fill);
 
     if ((arg.IsArray() || arg.IsArrayRef())
         && dims.size() == 1
@@ -563,19 +572,31 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
     }
 
     std::vector<AMXDebugSymbol> args;
-    std::remove_copy_if(debug_info_->GetSymbols().begin(),
-                        debug_info_->GetSymbols().end(),
-                        std::back_inserter(args),
-                        std::not1(IsArgumentOf(arg_address)));
-    std::sort(args.begin(), args.end());
+    int num_actual_args = 0;
 
-    // Build a comma-separated list of arguments and their values.
+    if (HaveDebugInfo()) {
+      std::remove_copy_if(debug_info_->GetSymbols().begin(),
+                          debug_info_->GetSymbols().end(),
+                          std::back_inserter(args),
+                          std::not1(IsArgumentOf(arg_address)));
+      std::sort(args.begin(), args.end());
+      num_actual_args = static_cast<int>(args.size());
+    } else {
+      num_actual_args = GetNumArgs(frame.amx(), prev_frame.address());
+    }
 
-    for (std::size_t i = 0; i < args.size(); i++) {
+    // Print a comma-separated list of arguments and their values.
+    // If debug info is not available argument names are omitted,
+    // so only the values are printed.
+    for (int i = 0; i < num_actual_args; i++) {
       if (i > 0) {
         *stream_ << ", ";
       }
-      PrintArgument(prev_frame, args[i], i);
+      if (HaveDebugInfo()) {
+        PrintArgument(prev_frame, args[i], i);
+      } else {
+        PrintArgument(prev_frame, i);
+      }
     }
 
     // If the number of actual arguments passed to the function exceeds
@@ -583,11 +604,10 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
     // number of arguments. In this case we don't evaluate them but just
     // just say that they are present as we can't say anything about
     // their names and types.
-    int num_args = static_cast<int>(args.size());
-    int num_var_args = GetNumArgs(frame.amx(), prev_frame.address()) - num_args;
-
+    int num_var_args = GetNumArgs(frame.amx(), prev_frame.address())
+                     - num_actual_args;
     if (num_var_args > 0) {
-      if (num_args != 0) {
+      if (num_actual_args != 0) {
         *stream_ << ", ";
       }
       PrintVariableArguments(num_var_args);

@@ -57,9 +57,13 @@ class AMXStackFramePrinter {
                        const AMXDebugSymbol &caller);
 
   void PrintArgument(const AMXStackFrame &frame,
+                     int index);
+  void PrintArgument(const AMXStackFrame &frame,
                      const AMXDebugSymbol &arg,
                      int index);
 
+  void PrintArgumentValue(const AMXStackFrame &frame,
+                          int index);
   void PrintArgumentValue(const AMXStackFrame &frame,
                           const AMXDebugSymbol &arg,
                           int index);
