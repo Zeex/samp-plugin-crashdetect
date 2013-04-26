@@ -40,29 +40,6 @@ std::vector<AMXDebugSymbolDim> AMXDebugSymbol::GetDims() const {
   return dims;
 }
 
-cell AMXDebugSymbol::GetValue(AMX *amx, cell frm) const {
-  AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx->base);
-
-  unsigned char *data = reinterpret_cast<unsigned char*>(amx->base + hdr->dat);
-  unsigned char *code = reinterpret_cast<unsigned char*>(amx->base + hdr->cod);
-
-  cell address = GetAddress();
-  // Pawn Implementer's Guide:
-  // The address is relative to either the code segment (cod), the data segment
-  // (dat) or to the frame of the current function whose address is in the frm
-  // pseudo-register.  
-  if (address > hdr->cod) {
-    return *reinterpret_cast<cell*>(code + address);
-  } else if (address > hdr->dat && address < hdr->cod) {
-    return *reinterpret_cast<cell*>(data + address);
-  } else {
-    if (frm == 0) {
-      frm = amx->frm;
-    }
-    return *reinterpret_cast<cell*>(data + frm + address);
-  }  
-}
-
 AMXDebugInfo::AMXDebugInfo()
  : amxdbg_(0)
 {

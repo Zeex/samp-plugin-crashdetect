@@ -223,8 +223,6 @@ class AMXDebugInfo {
 
     std::vector<SymbolDim> GetDims() const;
 
-    cell GetValue(AMX *amx, cell frm = 0) const;
-
     operator bool() { return symbol_ != 0; }
 
    private:
