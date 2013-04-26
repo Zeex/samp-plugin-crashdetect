@@ -125,6 +125,19 @@ cell GetArgValue(AMXScript amx, cell frame, int index) {
   return *reinterpret_cast<cell*>(arg_offset);
 }
 
+cell GetNumArgs(AMXScript amx, cell frame_address) {
+  cell data = reinterpret_cast<cell>(amx.GetData());
+  cell num_args_offset = data + frame_address + 2 * sizeof(cell);
+  return *reinterpret_cast<cell*>(num_args_offset) / sizeof(cell);
+}
+
+cell GetNumArgsSafe(AMXScript amx, cell frame_address) {
+  if (IsStackAddress(amx, frame_address)) {
+    return GetNumArgs(amx, frame_address);
+  }
+  return 0;
+}
+
 bool IsPrintableChar(char c) {
   return (c >= 32 && c <= 126);
 }
@@ -133,11 +146,26 @@ char IsPrintableChar(cell c) {
   return IsPrintableChar(static_cast<char>(c & 0xFF));
 }
 
+cell *GetStringPtr(AMXScript amx, cell address) {
+  if (IsDataAddress(amx, address)) {
+    return reinterpret_cast<cell*>(amx.GetData() + address);
+  }
+  return 0;
+}
+
+bool IsPackedString(const cell *string) {
+  return *reinterpret_cast<const ucell*>(string) > UNPACKEDMAX;
+}
+
+cell GetMaxStringSize(AMXScript amx, cell address) {
+  return amx.GetHeader()->stp - address;
+}
+
 std::string GetPackedString(const cell *string, std::size_t size) {
   std::string s;
   for (std::size_t i = 0; i < size; i++) {
-    cell cp = string[i / sizeof(cell)]
-              >> ((sizeof(cell) - i % sizeof(cell) - 1) * 8);
+    cell cp = string[i / sizeof(cell)] >>
+              ((sizeof(cell) - i % sizeof(cell) - 1) * 8);
     char cu = IsPrintableChar(cp) ? cp : '\0';
     if (cu == '\0') {
       break;
@@ -160,44 +188,21 @@ std::string GetUnpackedString(const cell *string, std::size_t size) {
   return s;
 }
 
-cell GetNumArgs(AMXScript amx, cell frame_address) {
-  cell data = reinterpret_cast<cell>(amx.GetData());
-  cell num_args_offset = data + frame_address + 2 * sizeof(cell);
-  return *reinterpret_cast<cell*>(num_args_offset) / sizeof(cell);
-}
+void GetStringContents(AMXScript amx, cell address, std::size_t size,
+                       std::string &string, bool &packed) {
 
-cell GetNumArgsSafe(AMXScript amx, cell frame_address) {
-  if (IsStackAddress(amx, frame_address)) {
-    return GetNumArgs(amx, frame_address);
+  cell *ptr = GetStringPtr(amx, address);
+  if (ptr != 0) {
+    packed = IsPackedString(ptr);
+    if (size == 0) {
+     size = GetMaxStringSize(amx, address);
+    }
+    if (packed) {
+      string = GetPackedString(ptr, size);
+    } else {
+      string = GetUnpackedString(ptr, size);
+    }
   }
-  return 0;
-}
-
-std::pair<std::string, bool> GetStringContents(AMXScript amx, cell address,
-                                               std::size_t size) {
-  std::pair<std::string, bool> result = std::make_pair("", false);
-
-  const AMX_HEADER *hdr = amx.GetHeader();
-
-  if (!IsDataAddress(amx, address)) {
-    return result;
-  }
-
-  const cell *cstr = reinterpret_cast<const cell*>(amx.GetData() + address);
-
-  if (size == 0) {
-    size = hdr->stp - address;
-  }
-
-  if (*reinterpret_cast<const cell*>(cstr) > UNPACKEDMAX) {
-    result.first = GetPackedString(cstr, size);
-    result.second = true;
-  } else {
-    result.first = GetUnpackedString(cstr, size);
-    result.second = false;
-  }
-
-  return result;
 }
 
 cell GetStateVarAddress(AMXScript amx, cell function_address) {
@@ -475,18 +480,14 @@ void AMXStackFrame::Print(std::ostream &stream,
             && tag == "_:"
             && debug_info->GetTagName(dims[0].GetTag()) == "_")
         {
-          std::pair<std::string, bool> s = GetStringContents(amx_, value,
-                                                            dims[0].GetSize());
-          stream << " ";
-          if (s.second) {
-            stream << "!"; // packed string
+          std::string string; bool packed;
+          GetStringContents(amx_, value, dims[0].GetSize(), string, packed);
+          stream << (packed ? " !" : " ");
+          if (string.length() > kMaxPrintString) {
+            string.replace(kMaxPrintString,
+                           string.length() - kMaxPrintString, "...");
           }
-          if (s.first.length() > kMaxPrintString) {
-            // The text appears to be overly long for us.
-            s.first.replace(kMaxPrintString,
-                            s.first.length() - kMaxPrintString, "...");
-          }
-          stream << "\"" << s.first << "\"";
+          stream << "\"" << string << "\"";
         }
       }
     }  
