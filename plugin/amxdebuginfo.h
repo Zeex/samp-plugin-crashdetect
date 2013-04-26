@@ -264,7 +264,7 @@ class AMXDebugInfo {
   int32_t     GetLineNumber(cell addrss) const;
   std::string GetFileName(cell address) const;
   std::string GetFunctionName(cell address) const;
-  std::string GetTagName(cell address) const;
+  std::string GetTagName(int32_t tag_id) const;
   
   cell GetFunctionAddress(const std::string &func, const std::string &file) const;
   cell GetLineAddress(long line, const std::string &file) const;

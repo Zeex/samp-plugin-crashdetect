@@ -241,9 +241,9 @@ std::string AMXDebugInfo::GetFunctionName(cell address) const {
   return name;
 }
 
-std::string AMXDebugInfo::GetTagName(cell address) const {
+std::string AMXDebugInfo::GetTagName(int32_t tag_id) const {
   std::string name;
-  Tag tag = GetTag(address);
+  Tag tag = GetTag(tag_id);
   if (tag) {
     name = tag.GetName();
   }
