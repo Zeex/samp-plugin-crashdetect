@@ -515,9 +515,9 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
   cell value = GetArgumentValue(frame.amx(), frame.address(), index);
 
   if (arg.IsVariable()) {
-    if (tag_name == "bool:") {
+    if (tag_name == "bool") {
       *stream_ << (value ? "true" : "false");
-    } else if (tag_name == "Float:") {
+    } else if (tag_name == "Float") {
       *stream_ << std::fixed << std::setprecision(5) << amx_ctof(value);
     } else {
       *stream_ << value;
