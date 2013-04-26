@@ -411,7 +411,7 @@ void AMXStackFramePrinter::Print(const AMXStackFrame &frame) {
 
   *stream_ << ")";
 
-  if (UsesAutomata(frame)) {
+  if (HaveDebugInfo() && UsesAutomata(frame)) {
     *stream_ << " ";
     PrintState(frame);
   }
