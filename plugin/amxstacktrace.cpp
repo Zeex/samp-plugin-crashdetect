@@ -539,9 +539,9 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
       std::string string; bool packed;
       GetStringContents(frame.amx(), value, dims[0].GetSize(), string, packed);
       *stream_ << (packed ? " !" : " ");
-      if (string.length() > kMaxPrintString) {
-        string.replace(kMaxPrintString,
-                        string.length() - kMaxPrintString, "...");
+      if (string.length() > kMaxString) {
+        string.replace(kMaxString,
+                        string.length() - kMaxString, "...");
       }
       *stream_ << "\"" << string << "\"";
     }
@@ -584,7 +584,8 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
       std::sort(args.begin(), args.end());
       num_actual_args = static_cast<int>(args.size());
     } else {
-      num_actual_args = GetNumArgs(frame.amx(), prev_frame.address());
+      num_actual_args = std::min(kMaxRawArgs,
+                                 GetNumArgs(frame.amx(), prev_frame.address()));
     }
 
     // Print a comma-separated list of arguments and their values.
