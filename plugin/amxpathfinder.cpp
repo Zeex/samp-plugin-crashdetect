@@ -66,7 +66,7 @@ void AMXPathFinder::AddSearchPath(const std::string &path) {
   search_paths_.push_back(path);
 }
 
-std::string AMXPathFinder::FindAMX(AMXScript amx) {
+std::string AMXPathFinder::FindAmx(AMXScript amx) {
   // Look up in cache first.
   AMXToStringMap::const_iterator cache_iterator = amx_to_string_.find(amx);
   if (cache_iterator != amx_to_string_.end()) {
@@ -90,11 +90,11 @@ std::string AMXPathFinder::FindAMX(AMXScript amx) {
       filename.append(fileutils::kNativePathSepString);
       filename.append(*file_iterator);
 
-      std::time_t last_write = fileutils::GetModificationTime(filename);
+      std::time_t mtime = fileutils::GetModificationTime(filename);
 
       StringToAMXFileMap::iterator script_it = string_to_amx_file_.find(filename);
       if (script_it == string_to_amx_file_.end() || 
-          script_it->second->GetModificationTime() < last_write) {
+          script_it->second->mtime() < mtime) {
         if (script_it != string_to_amx_file_.end()) {
           string_to_amx_file_.erase(script_it);
         }
@@ -109,7 +109,7 @@ std::string AMXPathFinder::FindAMX(AMXScript amx) {
   for (StringToAMXFileMap::const_iterator mapIter = string_to_amx_file_.begin(); 
       mapIter != string_to_amx_file_.end(); ++mapIter) 
   {
-    const AMX *otherAmx = mapIter->second->GetAmx();
+    const AMX *otherAmx = mapIter->second->amx();
     if (std::memcmp(amx.GetHeader(), otherAmx->base, sizeof(AMX_HEADER)) == 0) {
       result = mapIter->first;
       amx_to_string_.insert(std::make_pair(amx, result));

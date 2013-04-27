@@ -30,9 +30,7 @@
 #include <map>
 #include <string>
 
-#include <amx/amx.h>
-
-class AMXScript;
+#include "amxscript.h"
 
 // AMXPathFinder can search for an .amx file corresponding to a given AMX instance.
 class AMXPathFinder {
@@ -43,7 +41,7 @@ class AMXPathFinder {
   void AddSearchPath(const std::string &path);
 
   // Same as above but returns the path as a string (which can be empty)
-  std::string FindAMX(AMXScript amx);
+  std::string FindAmx(AMXScript amx);
 
  private:
   std::list<std::string> search_paths_;
@@ -55,15 +53,21 @@ class AMXPathFinder {
 
     bool IsLoaded() const { return amx_ != 0; }
 
-    const AMX *GetAmx() const { return amx_; }
-    const std::string &GetName() const { return name_; }
-    std::time_t GetModificationTime() const { return mtime_; }
+    const AMX *amx() const {
+      return amx_;
+    }
+    const std::string &name() const {
+      return name_; 
+    }
+    std::time_t mtime() const {
+      return mtime_;
+    }
 
    private:
-    // Disallow copying
     AMXFile(const AMXFile &other);
     AMXFile &operator=(const AMXFile &other);
 
+   private:
     AMX *amx_;
     std::string name_;
     std::time_t mtime_;

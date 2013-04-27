@@ -46,9 +46,6 @@
 
 #define AMX_EXEC_GDK (-10)
 
-static const int kOpBounds  = 121;
-static const int kOpSysreqC = 123;
-
 bool CrashDetect::block_exec_errors_ = false;
 std::stack<NPCall*> CrashDetect::np_calls_;
 
@@ -240,7 +237,7 @@ int CrashDetect::Load() {
     }
   }
 
-  amx_path_ = pathFinder.FindAMX(amx_);
+  amx_path_ = pathFinder.FindAmx(amx_);
   amx_name_ = fileutils::GetFileName(amx_path_);
 
   if (!amx_path_.empty() && AMXDebugInfo::IsPresent(amx_)) {

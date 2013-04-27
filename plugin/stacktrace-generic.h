@@ -22,8 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef STACKTRACE_MANUAL_H
-#define STACKTRACE_MANUAL_H
+#ifndef STACKTRACE_GENERIC_H
+#define STACKTRACE_GENERIC_H
 
 #include "stacktrace.h"
 
@@ -32,4 +32,4 @@ class StackTraceGeneric : public StackTrace {
   StackTraceGeneric(void *frame = 0, void *pc = 0);
 };
 
-#endif // !STACKTRACE_H
+#endif // !STACKTRACE_GENERIC_H

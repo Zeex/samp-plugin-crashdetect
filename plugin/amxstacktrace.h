@@ -27,66 +27,9 @@
 
 #include <iosfwd>
 
-#include "amxdebuginfo.h"
 #include "amxscript.h"
 
-class AMXStackFrame;
-
-class AMXStackFramePrinter {
- public:
-  static const int kMaxString = 30;
-  static const int kMaxRawArgs = 5;
-  static const int kCellWidthChars = sizeof(cell) * 2;
-
-  AMXStackFramePrinter();
-
-  void set_stream(std::ostream *stream) {
-    stream_ = stream;
-  }
-
-  void set_debug_info(const AMXDebugInfo *debug_info) {
-    debug_info_ = debug_info;
-  }
-
-  void Print(const AMXStackFrame &frame);
-
-  void PrintTag(const AMXDebugSymbol &symbol);
-
-  void PrintReturnAddress(const AMXStackFrame &frame);
-
-  void PrintCallerName(const AMXStackFrame &frame);
-  void PrintCallerName(const AMXStackFrame &frame,
-                       const AMXDebugSymbol &caller);
-
-  void PrintArgument(const AMXStackFrame &frame,
-                     int index);
-  void PrintArgument(const AMXStackFrame &frame,
-                     const AMXDebugSymbol &arg,
-                     int index);
-
-  void PrintArgumentValue(const AMXStackFrame &frame,
-                          int index);
-  void PrintArgumentValue(const AMXStackFrame &frame,
-                          const AMXDebugSymbol &arg,
-                          int index);
-
-  void PrintVariableArguments(int number);
-
-  void PrintArgumentList(const AMXStackFrame &frame);
-
-  void PrintState(const AMXStackFrame &frame);
-
-  void PrintSourceLocation(cell address);
-
- private:
-  bool HaveDebugInfo() const;
-  bool UsesAutomata(const AMXStackFrame &frame) const;
-  AMXDebugSymbol GetCallerSymbol(const AMXStackFrame &frame) const;
-
- private:
-  std::ostream *stream_;
-  const AMXDebugInfo *debug_info_;
-};
+class AMXDebugInfo;
 
 class AMXStackFrame {
  public:
@@ -150,6 +93,63 @@ class AMXStackTrace {
 
  private:
   AMXStackFrame current_frame_;
+};
+
+class AMXStackFramePrinter {
+ public:
+  static const int kMaxString = 30;
+  static const int kMaxRawArgs = 5;
+  static const int kCellWidthChars = sizeof(cell) * 2;
+
+  AMXStackFramePrinter();
+
+  void set_stream(std::ostream *stream) {
+    stream_ = stream;
+  }
+
+  void set_debug_info(const AMXDebugInfo *debug_info) {
+    debug_info_ = debug_info;
+  }
+
+  void Print(const AMXStackFrame &frame);
+
+  void PrintTag(const AMXDebugSymbol &symbol);
+
+  void PrintReturnAddress(const AMXStackFrame &frame);
+
+  void PrintCallerName(const AMXStackFrame &frame);
+  void PrintCallerName(const AMXStackFrame &frame,
+                       const AMXDebugSymbol &caller);
+
+  void PrintArgument(const AMXStackFrame &frame,
+                     int index);
+  void PrintArgument(const AMXStackFrame &frame,
+                     const AMXDebugSymbol &arg,
+                     int index);
+
+  void PrintArgumentValue(const AMXStackFrame &frame,
+                          int index);
+  void PrintArgumentValue(const AMXStackFrame &frame,
+                          const AMXDebugSymbol &arg,
+                          int index);
+
+  void PrintVariableArguments(int number);
+
+  void PrintArgumentList(const AMXStackFrame &frame);
+
+  void PrintState(const AMXStackFrame &frame);
+
+  void PrintSourceLocation(cell address);
+
+ private:
+  bool HaveDebugInfo() const;
+  bool UsesAutomata(const AMXStackFrame &frame) const;
+
+  AMXDebugSymbol GetCallerSymbol(const AMXStackFrame &frame) const;
+
+ private:
+  std::ostream *stream_;
+  const AMXDebugInfo *debug_info_;
 };
 
 #endif // !AMXSTACKTRACE_H
