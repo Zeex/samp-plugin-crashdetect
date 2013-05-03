@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cassert>
 #include <vector>
 
 #define WIN32_LEAN_AND_MEAN
@@ -43,19 +44,20 @@ static os::ExceptionHandler except_handler = 0;
 static LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
 static __declspec(thread) bool this_thread_set_except_handler;
 
-static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
+static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
   if (::this_thread_set_except_handler) {
     if (::except_handler != 0) {
-      ::except_handler(exceptionInfo->ContextRecord);
+      ::except_handler(exception->ContextRecord);
     }
     if (::prev_except_handler != 0) {
-      return ::prev_except_handler(exceptionInfo);
+      return ::prev_except_handler(exception);
     }
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
+  assert(::except_handler == 0 && "Only one thread may set exception handler");
   ::except_handler = handler;
   ::this_thread_set_except_handler = true;
   if (handler != 0) {
@@ -79,6 +81,7 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
+  assert(::interrupt_handler == 0 && "Only one thread may set interrupt handler");
   ::interrupt_handler = handler;
   ::this_thread_set_ctrl_handler = true;
   SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
