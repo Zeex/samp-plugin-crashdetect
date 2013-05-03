@@ -41,19 +41,23 @@ std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
 
 static os::ExceptionHandler except_handler = 0;
 static LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
+static __declspec(thread) bool this_thread_set_except_handler;
 
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo) {
-  if (::except_handler != 0) {
-    ::except_handler(exceptionInfo->ContextRecord);
-  }
-  if (::prev_except_handler != 0) {
-    return ::prev_except_handler(exceptionInfo);
+  if (::this_thread_set_except_handler) {
+    if (::except_handler != 0) {
+      ::except_handler(exceptionInfo->ContextRecord);
+    }
+    if (::prev_except_handler != 0) {
+      return ::prev_except_handler(exceptionInfo);
+    }
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
   ::except_handler = handler;
+  ::this_thread_set_except_handler = true;
   if (handler != 0) {
     ::prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
   } else {
@@ -67,7 +71,7 @@ static __declspec(thread) bool this_thread_set_ctrl_handler;
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
   switch (dwCtrlType) {
   case CTRL_C_EVENT:
-    if (::interrupt_handler != 0 && this_thread_set_ctrl_handler) {
+    if (::interrupt_handler != 0 && ::this_thread_set_ctrl_handler) {
       ::interrupt_handler(0);
     }
   }
