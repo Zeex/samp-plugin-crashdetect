@@ -46,3 +46,4 @@ cell RelocateAmxOpcode(cell opcode) {
   #endif
 	return opcode;
 }
+

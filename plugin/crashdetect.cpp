@@ -398,3 +398,4 @@ void CrashDetect::PrintError(const AMXError &error) {
     }
   }
 }
+
