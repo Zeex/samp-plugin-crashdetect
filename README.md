@@ -49,9 +49,8 @@ the `PATH` variable. The path can be absolute or relative to the server root.
 
 ### Is it possible to perform some action whenever a runtime error occurs?
 
-Yes, use the `OnRuntimeError(error_code)` callback. But remember that if
-something goes wrong inside of it (i.e. another error) you can end up with
-infinite recursion!
+Yes, use the `OnRuntimeError(error_code, &bool:suppress)` callback. Set the
+`suppress` parameter to `true` to suppress error message.
 
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
