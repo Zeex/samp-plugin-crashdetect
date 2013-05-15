@@ -15,8 +15,7 @@ examples.
 Download
 --------
 
-Get latest binaries for Windows and Linux from the [**`downloads`**][downloads]
-branch (hit *View Raw* to download).
+Get latest binaries for Windows and Linux [here][download].
 
 FAQ
 ---
@@ -56,6 +55,6 @@ infinite recursion!
 
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
-[downloads]: https://github.com/Zeex/samp-plugin-crashdetect/tree/downloads
+[download]: https://www.dropbox.com/sh/jpv5nggselur9su/HbO2UZXUg0
 [donate]: http://pledgie.com/campaigns/19750
 [donate_button]: http://www.pledgie.com/campaigns/19750.png
