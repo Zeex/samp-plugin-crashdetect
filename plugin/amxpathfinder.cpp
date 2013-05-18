@@ -35,9 +35,9 @@
 #include "fileutils.h"
 
 AMXPathFinder::AMXFile::AMXFile(const std::string &name)
- : name_(name),
-   mtime_(fileutils::GetModificationTime(name)),
-   amx_(reinterpret_cast<AMX*>(std::malloc(sizeof(*amx_))))
+ : amx_(reinterpret_cast<AMX*>(std::malloc(sizeof(*amx_)))),
+   name_(name),
+   mtime_(fileutils::GetModificationTime(name))
 {
   if (amx_ != 0) {
     if (aux_LoadProgram(amx_, name.c_str(), 0) != AMX_ERR_NONE) {

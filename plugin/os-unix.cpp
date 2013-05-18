@@ -67,7 +67,7 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
   ::this_thread_handles_sigsegv = true;
   ::except_handler = handler;
 
-  struct sigaction action = {0};
+  struct sigaction action;
   sigemptyset(&action.sa_mask);
   action.sa_sigaction = HandleSIGSEGV;
   action.sa_flags = SA_SIGINFO;
@@ -98,7 +98,7 @@ void os::SetInterruptHandler(InterruptHandler handler) {
   ::this_thread_handles_sigint = true;
   ::interrupt_handler = handler;
 
-  struct sigaction action = {0};
+  struct sigaction action;
   sigemptyset(&action.sa_mask);
   action.sa_sigaction = HandleSIGINT;
   action.sa_flags = SA_SIGINFO;

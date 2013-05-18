@@ -65,7 +65,7 @@ const char *AMXScript::FindPublic(cell address) const {
   const AMX_FUNCSTUBNT *publics = GetPublics();
   int n = GetNumPublics();
   for (int i = 0; i < n; i++) {
-    if (publics[i].address == address) {
+    if (publics[i].address == static_cast<ucell>(address)) {
       return GetName(publics[i].nameofs);
     }
   }
@@ -76,7 +76,7 @@ const char *AMXScript::FindNative(cell address) const {
   const AMX_FUNCSTUBNT *natives = GetNatives();
   int n = GetNumNatives();
   for (int i = 0; i < n; i++) {
-    if (natives[i].address == address) {
+    if (natives[i].address == static_cast<ucell>(address)) {
       return GetName(natives[i].nameofs);
     }
   }

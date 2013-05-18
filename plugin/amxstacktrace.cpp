@@ -384,10 +384,6 @@ std::vector<cell> GetStateIDs(AMXScript amx, cell function_address,
   return states;
 }
 
-static const int kMaxString = 30;
-static const int kMaxRawArgs = 5;
-static const int kCellWidthChars = sizeof(cell) * 2;
-
 } // anonymous namespace
 
 AMXStackFramePrinter::AMXStackFramePrinter()
@@ -540,13 +536,17 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
         && tag_name == "_"
         && debug_info_->GetTagName(dims[0].GetTag()) == "_")
     {
-      std::string string; bool packed;
+      std::string string;
+      bool packed;
+      
       GetStringContents(frame.amx(), value, dims[0].GetSize(), string, packed);
       *stream_ << (packed ? " !" : " ");
+      
+      static const std::size_t kMaxString = 30;
       if (string.length() > kMaxString) {
-        string.replace(kMaxString,
-                        string.length() - kMaxString, "...");
+        string.replace(kMaxString, string.length() - kMaxString, "...");
       }
+      
       *stream_ << "\"" << string << "\"";
     }
   }
@@ -588,6 +588,7 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
       std::sort(args.begin(), args.end());
       num_actual_args = static_cast<int>(args.size());
     } else {
+      static const int kMaxRawArgs = 5;
       num_actual_args = std::min(kMaxRawArgs,
                                  GetNumArgs(frame.amx(), prev_frame.address()));
     }

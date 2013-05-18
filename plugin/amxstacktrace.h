@@ -97,6 +97,8 @@ class AMXStackTrace {
 
 class AMXStackFramePrinter {
  public:
+  static const int kCellWidthChars = sizeof(cell) * 2;
+ 
   AMXStackFramePrinter();
 
   void set_stream(std::ostream *stream) {

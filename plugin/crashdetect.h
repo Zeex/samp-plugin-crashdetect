@@ -39,9 +39,9 @@ class AMXError;
 class NPCall;
 
 class CrashDetect : public AMXService<CrashDetect> {
-  friend class AMXService<CrashDetect>;
-
  public:
+  virtual ~CrashDetect() {}
+ 
   virtual int Load();
   virtual int Unload();
 

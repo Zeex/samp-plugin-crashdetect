@@ -60,6 +60,7 @@ void *RunThread(void *args) {
   Thread *thread = run_info->thread();
   thread->Start(run_info->args());
   delete run_info;
+  return 0;
 }
 
 Thread::Thread()

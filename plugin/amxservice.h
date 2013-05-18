@@ -35,6 +35,7 @@ template<typename T>
 class AMXService {
  public:
   AMXService(AMXScript amx) : amx_(amx) {}
+  virtual ~AMXService() {}
 
   AMXScript amx() { return amx_; }
 

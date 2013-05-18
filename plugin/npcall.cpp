@@ -27,18 +27,18 @@
 NPCall::NPCall(Type type, AMXScript amx, cell index)
  : type_(type),
    amx_(amx),
+   frm_(amx.GetFrm()),
+   cip_(amx.GetCip()),
    index_(index)
 {
-  frm_ = amx_.GetFrm();
-  cip_ = amx_.GetCip();
 }
 
 NPCall::NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
  : type_(type),
    amx_(amx),
-   index_(index),
    frm_(frm),
-   cip_(cip)
+   cip_(cip),
+   index_(index)
 {
 }
 
