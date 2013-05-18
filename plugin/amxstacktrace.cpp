@@ -384,6 +384,10 @@ std::vector<cell> GetStateIDs(AMXScript amx, cell function_address,
   return states;
 }
 
+static const int kMaxString = 30;
+static const int kMaxRawArgs = 5;
+static const int kCellWidthChars = sizeof(cell) * 2;
+
 } // anonymous namespace
 
 AMXStackFramePrinter::AMXStackFramePrinter()
