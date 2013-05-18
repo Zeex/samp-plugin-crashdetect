@@ -93,7 +93,7 @@ static void HandleSIGINT(int sig, siginfo_t *info, void *context) {
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
-  assert(::except_handler == 0 && "Only one thread may set interrupt handler");
+  assert(::interrupt_handler == 0 && "Only one thread may set interrupt handler");
 
   ::this_thread_handles_sigint = true;
   ::interrupt_handler = handler;
