@@ -42,10 +42,10 @@ std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
 
 static os::ExceptionHandler except_handler = 0;
 static LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
-static __declspec(thread) bool this_thread_set_except_handler;
+static DWORD except_handler_thread_id;
 
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
-  if (::this_thread_set_except_handler) {
+  if (::except_handler_thread_id == GetCurrentThreadId()) {
     if (::except_handler != 0) {
       ::except_handler(exception->ContextRecord);
     }
@@ -59,7 +59,7 @@ static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
 void os::SetExceptionHandler(ExceptionHandler handler) {
   assert(::except_handler == 0 && "Only one thread may set exception handler");
   ::except_handler = handler;
-  ::this_thread_set_except_handler = true;
+  ::except_handler_thread_id = GetCurrentThreadId();
   if (handler != 0) {
     ::prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
   } else {
@@ -68,12 +68,13 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
 }
 
 static os::InterruptHandler interrupt_handler;
-static __declspec(thread) bool this_thread_set_ctrl_handler;
+static DWORD ctrl_handler_thread_id;
 
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
   switch (dwCtrlType) {
   case CTRL_C_EVENT:
-    if (::interrupt_handler != 0 && ::this_thread_set_ctrl_handler) {
+    if (::interrupt_handler != 0 &&
+        ::ctrl_handler_thread_id == GetCurrentThreadId()) {
       ::interrupt_handler(0);
     }
   }
@@ -83,6 +84,6 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 void os::SetInterruptHandler(InterruptHandler handler) {
   assert(::interrupt_handler == 0 && "Only one thread may set interrupt handler");
   ::interrupt_handler = handler;
-  ::this_thread_set_ctrl_handler = true;
+  ::ctrl_handler_thread_id = GetCurrentThreadId();
   SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }
