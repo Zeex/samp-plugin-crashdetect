@@ -44,6 +44,6 @@ cell RelocateAmxOpcode(cell opcode) {
       return opcode_map[opcode];
     }
   #endif
-	return opcode;
+  return opcode;
 }
 

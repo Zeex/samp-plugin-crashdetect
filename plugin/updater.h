@@ -39,7 +39,7 @@ class Updater {
   // Checks whether FetchVersion() finished. Returns false on
   // subsequent calls (to avoid having another global flag).
   static bool version_fetched() {
-  	if (version_fetched_) {
+    if (version_fetched_) {
       version_fetched_ = false;
       return true;
     }
@@ -48,7 +48,7 @@ class Updater {
 
   // Returns the fecthed version.
   static Version latest_version() {
-  	return latest_version_;
+    return latest_version_;
   }
 
  private:
