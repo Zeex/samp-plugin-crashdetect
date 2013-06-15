@@ -19,6 +19,7 @@ endmacro()
 test("misc/args")
 #test("misc/bad_frame")
 #test("misc/crash")
+test("misc/states")
 
 test("error/bounds")
 #test("error/invinstr")
