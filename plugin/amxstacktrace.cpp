@@ -338,7 +338,7 @@ cell GetStateTableAddressSafe(AMXScript amx, cell function_address) {
 
 cell GetRealFunctionAddress(AMXScript amx, cell function_address,
                                            cell return_address) {
-  cell state_table_address = GetStateTableAddress(amx, function_address);
+  cell state_table_address = GetStateTableAddressSafe(amx, function_address);
   if (state_table_address != 0) {
     CaseTable state_table(amx, state_table_address);
     for (int i = 0; i < state_table.GetNumRecords(); i++) {
