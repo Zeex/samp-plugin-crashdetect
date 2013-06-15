@@ -626,14 +626,14 @@ void AMXStackFramePrinter::PrintState(const AMXStackFrame &frame) {
     std::vector<cell> states = GetStateIDs(frame.amx(), frame.caller_address(),
                                                         frame.return_address());
     if (!states.empty()) {
-      *stream_ << "<";
+      *stream_ << "<" << automaton.GetName() << ":";
       for (std::size_t i = 0; i < states.size(); i++ ) {
         if (i > 0) {
           *stream_ << ", ";
         }
         AMXDebugState state = debug_info_->GetState(automaton.GetID(), states[i]);
         if (state) {
-          *stream_ << automaton.GetName() << ":" << state.GetName();
+          *stream_ << state.GetName();
         }
       }
       *stream_ << ">";
