@@ -30,7 +30,6 @@
 #include <iterator>
 #include <sstream>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "amxdebuginfo.h"
@@ -297,31 +296,28 @@ class CaseTable {
     cell value;
     cell address;
   };
-
   CaseTable(AMXScript amx, cell address) {
-    Record *case_table = reinterpret_cast<Record*>(amx.GetCode()
-                                                   + address + sizeof(cell));
-    int num_records = case_table[0].value;
-
+    Record *table = reinterpret_cast<Record*>(amx.GetCode()
+                                              + address + sizeof(cell));
+    int num_records = table[0].value;
+    records_.resize(num_records + 1);
     for (int i = 0; i <= num_records; i++) {
-      cell dest = case_table[i].address
-                  - reinterpret_cast<cell>(amx.GetCode());
-      records_.push_back(std::make_pair(case_table[i].value, dest));
+      records_[i].value = table[i].value;
+      records_[i].address = table[i].address
+                            - reinterpret_cast<cell>(amx.GetCode());
     }
   }
-
   int GetNumRecords() const {
     return static_cast<int>(records_.size());
   }
   cell GetValueAt(cell index) const {
-    return records_[index].first;
+    return records_[index].value;
   }
   cell GetAddressAt(cell index) const {
-    return records_[index].second;
+    return records_[index].address;
   }
-
  private:
-  std::vector<std::pair<cell, cell> > records_;
+  std::vector<Record> records_;
 };
 
 cell GetStateTableAddress(AMXScript amx, cell function_address) {
