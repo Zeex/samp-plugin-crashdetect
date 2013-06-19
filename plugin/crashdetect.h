@@ -35,6 +35,10 @@
 #include "amxscript.h"
 #include "amxservice.h"
 
+namespace os {
+  class Context;
+}
+
 class AMXError;
 class NPCall;
 
@@ -52,15 +56,18 @@ class CrashDetect : public AMXService<CrashDetect> {
   void HandleInterrupt();
   void HandleExecError(int index, cell *retval, const AMXError &error);
 
-  static void OnException(void *context);
-  static void OnInterrupt(void *context);
+  static void OnException(const os::Context &context);
+  static void OnInterrupt(const os::Context &context);
 
  public:
   static void PrintAmxBacktrace();
   static void PrintAmxBacktrace(std::ostream &stream);
 
-  static void PrintNativeBacktrace(void *context);
-  static void PrintNativeBacktrace(std::ostream &stream, void *context);
+  static void PrintNativeBacktrace(const os::Context &context);
+  static void PrintNativeBacktrace(std::ostream &stream,
+                                   const os::Context &context);
+
+  static void PrintNativeRegisters(const os::Context &context);
 
  private:
   static void Printf(const char *format, ...);

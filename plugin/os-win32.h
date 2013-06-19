@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2013 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,52 +22,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <string>
+#ifndef OS_WIN32_H
+#define OS_WIN32_H
 
-#include <execinfo.h>
+#include <windows.h>
 
-#include "stacktrace.h"
-#include "stacktrace-generic.h"
+#include "os.h"
 
-static const int kMaxFrames = 100;
+namespace os {
 
-static std::string GetSymbolName(const std::string &symbol) {
-  std::string name;
+class Context : public BasicContext {
+ public:
+  Context() : os_context_(0) {}
+  explicit Context(PCONTEXT context);
+  PCONTEXT os_context() const { return os_context_; }
+ private:
+  PCONTEXT os_context_;
+};
 
-  if (!symbol.empty()) {
-    std::string::size_type lp = symbol.find('(');
-    std::string::size_type rp = symbol.find_first_of(")+-", lp);
+} // namespace os
 
-    if (lp != std::string::npos && rp != std::string::npos) {
-      name = symbol.substr(lp + 1, rp - lp - 1);
-    }
-  }
-
-  return name;
-}
-
-StackTrace::StackTrace(const os::Context&) {
-  #ifdef HAVE_BACKTRACE
-    void *trace[kMaxFrames];
-    int trace_length = backtrace(trace, kMaxFrames);
-
-    #ifdef HAVE_BACKTRACE_SYMBOLS
-      char **symbols = backtrace_symbols(trace, trace_length);
-    #endif
-
-    for (int i = 0; i < trace_length; i++) {
-      #ifdef HAVE_BACKTRACE_SYMBOLS
-        if (symbols[i] != 0) {
-          std::string name = GetSymbolName(symbols[i]);
-          frames_.push_back(StackFrame(trace[i], name));
-        } else {
-          frames_.push_back(StackFrame(trace[i]));
-        }
-      #else
-        frames_.push_back(StackFrame(trace[i]));
-      #endif
-    }
-  #else
-    frames_ = StackTraceGeneric().GetFrames();
-  #endif
-}
+#endif // !OS_WIN32_H

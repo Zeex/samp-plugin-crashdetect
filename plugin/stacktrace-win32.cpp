@@ -28,6 +28,7 @@
 #include <Windows.h>
 #include <DbgHelp.h>
 
+#include "os.h"
 #include "stacktrace.h"
 #include "stacktrace-generic.h"
 
@@ -138,12 +139,12 @@ class DbgHelp {
 
 } // anonymous namespace
 
-StackTrace::StackTrace(void *their_context) {
-  PCONTEXT context = reinterpret_cast<PCONTEXT>(their_context);
+StackTrace::StackTrace(const os::Context &context) {
+  PCONTEXT context_ptr = context.os_context();
   CONTEXT current_context;
-  if (their_context == NULL) {
+  if (context_ptr == NULL) {
     RtlCaptureContext(&current_context);
-    context = &current_context;
+    context_ptr = &current_context;
   }
 
   HANDLE process = GetCurrentProcess();
@@ -156,12 +157,12 @@ StackTrace::StackTrace(void *their_context) {
   ZeroMemory(&stack_frame, sizeof(stack_frame));
 
   // http://stackoverflow.com/a/136942/249230
-  stack_frame.AddrPC.Offset = context->Eip;
-  stack_frame.AddrReturn.Offset = context->Eip;
+  stack_frame.AddrPC.Offset = context_ptr->Eip;
+  stack_frame.AddrReturn.Offset = context_ptr->Eip;
   stack_frame.AddrPC.Mode = AddrModeFlat;
-  stack_frame.AddrFrame.Offset = context->Ebp;
+  stack_frame.AddrFrame.Offset = context_ptr->Ebp;
   stack_frame.AddrFrame.Mode = AddrModeFlat;
-  stack_frame.AddrStack.Offset = context->Esp;
+  stack_frame.AddrStack.Offset = context_ptr->Esp;
   stack_frame.AddrStack.Mode = AddrModeFlat;
 
   if (!dbghelp.StackWalk64 != 0) {
@@ -216,7 +217,7 @@ StackTrace::StackTrace(void *their_context) {
 
     if (!dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process,
                              GetCurrentThread(), &stack_frame,
-                             (PVOID)context, NULL, NULL, NULL, NULL)) {
+                             (PVOID)context_ptr, NULL, NULL, NULL, NULL)) {
       break;
     }
   }
@@ -229,6 +230,6 @@ StackTrace::StackTrace(void *their_context) {
 
 fail:
   frames_ = StackTraceGeneric(
-    reinterpret_cast<void*>(context->Ebp),
-    reinterpret_cast<void*>(context->Eip)).GetFrames();
+    reinterpret_cast<void*>(context_ptr->Ebp),
+    reinterpret_cast<void*>(context_ptr->Eip)).GetFrames();
 }

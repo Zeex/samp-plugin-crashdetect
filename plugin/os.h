@@ -29,25 +29,57 @@
 #include <cstdio>
 #include <string>
 
+#include "cstdint.h"
+
+#ifdef _MSC_VER
+  #pragma warning(push)
+  #pragma warning(disable: 4351) // new behavior: elements of array 'X'
+                                 // will be default initialized
+#endif
+
 namespace os {
+
+class BasicContext {
+ public:
+  enum Register {
+    EAX, ECX, EDX, EBX, ESI, EDI, ESP, EBP, EIP, EFLAGS,
+    NUM_REGISTERS
+  };
+  explicit BasicContext(): registers_() {}
+  std::int32_t GetRegister(Register reg) const { return registers_[reg]; }
+ protected:
+  std::int32_t registers_[NUM_REGISTERS];
+};
+
+class Context;
 
 // GetModulePathFromAddr finds which module (executable/DLL) a given 
 // address belongs to.
 std::string GetModulePathFromAddr(void *address,
                                   std::size_t max_length = FILENAME_MAX);
 
-typedef void (*ExceptionHandler)(void *context);
+typedef void (*ExceptionHandler)(const Context &context);
 
 // SetExceptionHandler sets a global exception handler on Windows and SIGSEGV
 // signal handler on Linux.
 void SetExceptionHandler(ExceptionHandler handler);
 
-typedef void (*InterruptHandler)(void *context);
+typedef void (*InterruptHandler)(const Context &context);
 
 // SetInterruptHandler sets a global Ctrl+C event handler on Windows
 // and SIGINT signal handler on Linux.
 void SetInterruptHandler(InterruptHandler handler);
 
 } // namespace os
+
+#ifdef _WIN32
+  #include "os-win32.h"
+#else
+  #include "os-unix.h"
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif // !OS_H

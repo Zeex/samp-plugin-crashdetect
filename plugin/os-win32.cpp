@@ -25,10 +25,22 @@
 #include <cassert>
 #include <vector>
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "os-win32.h"
 
-#include "os.h"
+os::Context::Context(PCONTEXT context)
+  : os_context_(context)
+{
+  registers_[EAX] = os_context_->Eax;
+  registers_[ECX] = os_context_->Ecx;
+  registers_[EDX] = os_context_->Edx;
+  registers_[EBX] = os_context_->Ebx;
+  registers_[ESI] = os_context_->Esi;
+  registers_[EDI] = os_context_->Edi;
+  registers_[ESP] = os_context_->Esp;
+  registers_[EBP] = os_context_->Ebp;
+  registers_[EIP] = os_context_->Eip;
+  registers_[EFLAGS] = os_context_->EFlags;
+}
 
 std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
   std::vector<char> name(max_length + 1);
@@ -47,7 +59,8 @@ static DWORD except_handler_thread_id;
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
   if (::except_handler_thread_id == GetCurrentThreadId()) {
     if (::except_handler != 0) {
-      ::except_handler(exception->ContextRecord);
+      os::Context context(exception->ContextRecord);
+      ::except_handler(context);
     }
     if (::prev_except_handler != 0) {
       return ::prev_except_handler(exception);
@@ -75,7 +88,7 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
   case CTRL_C_EVENT:
     if (::interrupt_handler != 0 &&
         ::ctrl_handler_thread_id == GetCurrentThreadId()) {
-      ::interrupt_handler(0);
+      ::interrupt_handler(os::Context(0));
     }
   }
   return FALSE;
