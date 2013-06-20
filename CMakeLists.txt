@@ -40,6 +40,7 @@ set(SOURCES
   "plugin/compiler.h"
   "plugin/crashdetect.cpp"
   "plugin/crashdetect.h"
+  "plugin/cstdint.h"
   "plugin/fileutils.cpp"
   "plugin/fileutils.h"
   "plugin/hook.cpp"

@@ -24,6 +24,7 @@
 
 #include <cstring>
 
+#include "cstdint.h"
 #include "hook.h"
 
 Hook::Hook() 
@@ -60,8 +61,8 @@ bool Hook::Install() {
   memcpy(src_, &JMP, 1);
 
   // Jump address is relative to the next instruction's address
-  size_t offset = (int)dst_ - ((int)src_ + kJmpInstrSize);
-  memcpy((void*)((int)src_ + 1), &offset, kJmpInstrSize - 1);
+  size_t offset = (std::int32_t)dst_ - ((std::int32_t)src_ + kJmpInstrSize);
+  memcpy((void*)((std::int32_t)src_ + 1), &offset, kJmpInstrSize - 1);
 
   installed_ = true;
   return true;
@@ -93,10 +94,11 @@ bool Hook::IsInstalled() const {
 
 // static 
 void *Hook::GetTargetAddress(void *jmp) {
-  if (*reinterpret_cast<unsigned char*>(jmp) == 0xE9) {
-    int next_instr = reinterpret_cast<int>(reinterpret_cast<char*>(jmp) + kJmpInstrSize);
-    int rel_addr = *reinterpret_cast<int*>(reinterpret_cast<char*>(jmp) + 1);
-    int abs_addr = rel_addr + next_instr;
+  unsigned char *jmp_c = reinterpret_cast<unsigned char*>(jmp);
+  if (*jmp_c == 0xE9) {
+    std::int32_t next = reinterpret_cast<std::int32_t>(jmp_c + kJmpInstrSize);
+    std::int32_t rel_addr = *reinterpret_cast<std::int32_t*>(jmp_c + 1);
+    std::int32_t abs_addr = rel_addr + next;
     return reinterpret_cast<void*>(abs_addr);
   }
   return 0;
