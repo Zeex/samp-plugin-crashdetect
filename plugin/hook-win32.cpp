@@ -27,7 +27,7 @@
 
 #include "hook.h"
 
-void Hook::Unprotect(void *address, int size) {
+void Hook::Unprotect(void *address, std::size_t size) {
   DWORD oldProtect;
   VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &oldProtect);
 }

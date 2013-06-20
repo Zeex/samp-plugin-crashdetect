@@ -25,13 +25,15 @@
 #ifndef HOOK_H
 #define HOOK_H
 
+#include <cstddef>
+
 #if !defined _M_IX86 && !defined __i386__
   #error Unsupported architecture
 #endif
 
 class Hook {
  public:
-  static const int kJmpInstrSize = 5;
+  static const std::size_t kJmpInstrSize = 5;
 
   Hook();
   Hook(void *src, void *dst);
@@ -89,7 +91,7 @@ class Hook {
   };
 
  private:
-  static void Unprotect(void *address, int size);
+  static void Unprotect(void *address, std::size_t size);
 
  private:
   Hook(const Hook &);

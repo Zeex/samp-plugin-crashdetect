@@ -28,8 +28,9 @@
 #include "cstdint.h"
 #include "hook.h"
 
-void Hook::Unprotect(void *address, int size) {
+void Hook::Unprotect(void *address, std::size_t size) {
   std::int32_t aligned_address = reinterpret_cast<std::int32_t>(address);
   aligned_address &= ~(getpagesize() - 1);
-  mprotect(reinterpret_cast<void*>(aligned_address), size, PROT_READ | PROT_WRITE | PROT_EXEC);
+  mprotect(reinterpret_cast<void*>(aligned_address), size,
+           PROT_READ | PROT_WRITE | PROT_EXEC);
 }
