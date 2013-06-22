@@ -584,7 +584,7 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
       std::sort(args.begin(), args.end());
       num_actual_args = static_cast<int>(args.size());
     } else {
-      static const int kMaxRawArgs = 5;
+      static const int kMaxRawArgs = 10;
       num_actual_args = std::min(kMaxRawArgs,
                                  GetNumArgs(frame.amx(), prev_frame.address()));
     }
