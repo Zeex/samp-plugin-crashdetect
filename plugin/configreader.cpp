@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2013 Zeex
+// Copyright (c) 2011-2013, Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,10 +26,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
-#include <functional>
 #include <iostream>
-#include <locale>
-#include <stdexcept>
 #include <sstream>
 #include <string>
 
@@ -52,52 +49,40 @@ struct is_not_space {
   }
 };
 
-static inline std::string &ltrim(std::string &s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), is_not_space()));
-        return s;
+static inline std::string &TrimStringLeft(std::string &s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), is_not_space()));
+  return s;
 }
 
-static inline std::string &rtrim(std::string &s) {
-        s.erase(std::find_if(s.rbegin(), s.rend(), is_not_space()).base(), s.end());
-        return s;
+static inline std::string &TrimStringRight(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), is_not_space()).base(), s.end());
+  return s;
 }
 
-static inline std::string &trim(std::string &s) {
-        return ltrim(rtrim(s));
+static inline std::string &TrimString(std::string &s) {
+  return TrimStringLeft(TrimStringRight(s));
 }
 
 bool ConfigReader::LoadFile(const std::string &filename) {
   std::ifstream cfg(filename.c_str());
 
   if (cfg.is_open()) {
-    loaded_ = true;
+    std::string line, name, value;
 
-    std::string line;
     while (std::getline(cfg, line, '\n')) {
-      std::stringstream linestream(line);
+      std::stringstream stream(line);
 
-      // Get first word in the line
-      std::string name;
-      std::getline(linestream, name, ' ');
-      trim(name);
+      std::getline(stream, name, ' ');
+      TrimString(name);
 
-      // Get the rest
-      std::string value;
-      std::getline(linestream, value, '\n');
-      trim(value);
+      std::getline(stream, value, '\n');
+      TrimString(value);
 
-      options_[name] = value;
+      options_.insert(std::make_pair(name, value));
     }
+
+    loaded_ = true;
   }
 
   return loaded_;
-}
-
-template<>
-std::string ConfigReader::GetOption<std::string>(const std::string &name, const std::string &defaultValue) const {
-  std::map<std::string, std::string>::const_iterator it = options_.find(name);
-  if (it == options_.end()) {
-    return defaultValue;
-  }
-  return it->second;
 }

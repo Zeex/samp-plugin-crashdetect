@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2013 Zeex
+// Copyright (c) 2011-2013, Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,36 +31,44 @@
 
 class ConfigReader {
  public:
+  typedef std::map<std::string, std::string> OptionMap;
+
   ConfigReader();
   ConfigReader(const std::string &filename);
 
   bool LoadFile(const std::string &filename);
 
   template<typename T>
-  T GetOption(const std::string &name, const T &defaultValue) const;
+  void GetOption(const std::string &name, T &value) const;
+
+  template<typename T>
+  T GetOptionDefault(const std::string &name, const T &defaultValue) const;
 
   bool IsLoaded() const { return loaded_; }
 
  private:
-  bool loaded_;
-  std::map<std::string, std::string> options_;
+  bool loaded_;  
+  OptionMap options_;
 };
 
 template<typename T>
-T ConfigReader::GetOption(const std::string &name, const T &defaultValue) const {
-  std::map<std::string, std::string>::const_iterator it = options_.find(name);
-  if (it == options_.end()) {
-    return defaultValue;
-  }
-  std::stringstream sstream(it->second);
-  T value;
-  sstream >> value;
-  if (!sstream) {
-    return defaultValue;
-  }
-  return value;
+void ConfigReader::GetOption(const std::string &name, T &value) const {
+  value = GetOptionDefault(name, value);
 }
 
-template<> std::string ConfigReader::GetOption(const std::string &name, const std::string &value) const;
+template<typename T>
+T ConfigReader::GetOptionDefault(const std::string &name,
+                                 const T &default_) const {
+  OptionMap::const_iterator iterator = options_.find(name);
+  if (iterator != options_.end()) {
+    std::stringstream sstream(iterator->second);
+    T value;
+    sstream >> value;
+    if (sstream) {
+      return value;
+    }
+  }
+  return default_;
+}
 
 #endif // !CONFIGREADER_H
