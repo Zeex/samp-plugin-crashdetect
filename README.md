@@ -54,6 +54,6 @@ Yes, use the `OnRuntimeError(error_code, &bool:suppress)` callback. Set the
 
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
-[download]: https://www.dropbox.com/sh/jpv5nggselur9su/HbO2UZXUg0
+[download]: https://github.com/Zeex/samp-plugin-crashdetect/releases 
 [donate]: http://pledgie.com/campaigns/19750
 [donate_button]: http://www.pledgie.com/campaigns/19750.png
