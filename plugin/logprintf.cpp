@@ -35,9 +35,11 @@ void vlogprintf(const char *format, std::va_list va) {
 
   args.push_back(reinterpret_cast<const void*>(format));
 
-  // For each format speficier there has to be one dword argument. This will
-  // not work for long values that are longer than 4 bytes e.g. long double
-  // or long long.
+  // vlogprintf() doesn't work for arguments that are bigger than 4 bytes
+  // in size because it simply counts the number of specifiers, disregarding
+  // their actual meaning. For example, on Windows it works fine oth int
+  // and long (because they are 32-bit there) but not for double (and hence
+  // any floating-point values, including float).
   for (int i = 0; format[i] != '\0'; i++) {
     if (format[i] == '%' && format[i + 1] != '%') {
       args.push_back(va_arg(va, const void *));
