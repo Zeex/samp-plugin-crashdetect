@@ -25,6 +25,8 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
+#include <cstddef>
+
 namespace compiler {
 
 void *GetStackFrame(int depth = 0);
@@ -32,8 +34,8 @@ void *GetStackTop();
 void *GetStackBottom();
 void *GetReturnAddress(void *frame = 0, int depth = 0);
 
-void *CallFunctionCdecl(void *func, const void *const *args, int nargs);
-void *CallFunctionStdcall(void *func, const void *const *args, int nargs);
+void *CallFunctionCdecl(void *func, const void *args, std::size_t size);
+void *CallFunctionStdcall(void *func, const void *args, std::size_t size);
 
 } // namespace compiler
 

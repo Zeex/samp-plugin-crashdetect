@@ -26,14 +26,16 @@
 #include <vector>
 
 #include "compiler.h"
+#include "cstdint.h"
 #include "logprintf.h"
 
 logprintf_t logprintf;
 
 void vlogprintf(const char *format, std::va_list va) {
-  std::vector<const void*> args;
+  typedef std::uint32_t Dword;
+  std::vector<Dword> args;
 
-  args.push_back(reinterpret_cast<const void*>(format));
+  args.push_back(reinterpret_cast<Dword>(format));
 
   // vlogprintf() doesn't work for arguments that are bigger than 4 bytes
   // in size because it simply counts the number of specifiers, disregarding
@@ -42,9 +44,10 @@ void vlogprintf(const char *format, std::va_list va) {
   // any floating-point values, including float).
   for (int i = 0; format[i] != '\0'; i++) {
     if (format[i] == '%' && format[i + 1] != '%') {
-      args.push_back(va_arg(va, const void *));
+      args.push_back(va_arg(va, Dword));
     }
   }
 
-  compiler::CallFunctionCdecl((void*)::logprintf, &args[0], args.size());
+  std::size_t size = args.size() * sizeof(Dword);
+  compiler::CallFunctionCdecl((void*)::logprintf, &args[0], size);
 }

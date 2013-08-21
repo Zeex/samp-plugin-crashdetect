@@ -22,6 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstddef>
+
 namespace compiler {
 
 __declspec(naked) void *GetReturnAddress(void *frame, int depth) {
@@ -72,46 +74,48 @@ __declspec(naked) void *GetStackBottom() {
   __asm ret
 }
 
-__declspec(naked) void *CallFunctionCdecl(void *func, const void *const *args, int nargs)
+__declspec(naked) void *CallFunctionCdecl(void *func, const void *args, std::size_t size)
 {
-  __asm mov eax, dword ptr [esp + 4]
-  __asm mov edx, dword ptr [esp + 8]
-  __asm mov ecx, dword ptr [esp + 12]
+  __asm push ebp
+  __asm mov ebp, esp
+  __asm push esi
   __asm push edi
-  __asm mov edi, ecx
-  __asm sal edi, 2
-  __asm push esi
-begin_loop:
-  __asm cmp ecx, 0
-  __asm jle end_loop
-  __asm dec ecx
-  __asm mov esi, dword ptr [edx + ecx * 4]
-  __asm push esi
-  __asm jmp begin_loop
-end_loop:
+  __asm push ebx
+  __asm mov eax, dword ptr [ebp + 8]
+  __asm mov esi, dword ptr [ebp + 12]
+  __asm mov ebx, dword ptr [ebp + 16]
+  __asm mov ecx, ebx
+  __asm sub esp, ecx
+  __asm mov edi, esp
+  __asm rep movsb
   __asm call eax
-  __asm add esp, edi
-  __asm pop esi
+  __asm add esp, ebx
+  __asm pop ebx
   __asm pop edi
+  __asm pop esi
+  __asm pop ebp
   __asm ret
 }
 
-__declspec(naked) void *CallFunctionStdcall(void *func, const void *const *args, int nargs)
+__declspec(naked) void *CallFunctionStdcall(void *func, const void *args, std::size_t size)
 {
-  __asm mov eax, dword ptr [esp + 4]
-  __asm mov edx, dword ptr [esp + 8]
-  __asm mov ecx, dword ptr [esp + 12]
+  __asm push ebp
+  __asm mov ebp, esp
   __asm push esi
-begin_loop:
-  __asm cmp ecx, 0
-  __asm jle end_loop
-  __asm dec ecx
-  __asm mov esi, dword ptr [edx + ecx * 4]
-  __asm push esi
-  __asm jmp begin_loop
-end_loop:
+  __asm push edi
+  __asm push ebx
+  __asm mov eax, dword ptr [ebp + 8]
+  __asm mov esi, dword ptr [ebp + 12]
+  __asm mov ebx, dword ptr [ebp + 16]
+  __asm mov ecx, ebx
+  __asm sub esp, ecx
+  __asm mov edi, esp
+  __asm rep movsb
   __asm call eax
+  __asm pop ebx
+  __asm pop edi
   __asm pop esi
+  __asm pop ebp
   __asm ret
 }
 
