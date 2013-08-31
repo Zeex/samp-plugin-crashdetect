@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <sstream>
 #include <string>
 
 #include "amxerror.h"
@@ -51,6 +52,61 @@ static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 static void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
   CrashDetect::Get(amx)->HandleExecError(index, retval, error);
 }
+
+namespace natives {
+
+// native GetAmxBacktrace(string[], size = sizeof(string));
+cell AMX_NATIVE_CALL GetAmxBacktrace(AMX *amx, cell *params) {
+  cell string = params[1];
+  cell size = params[2];
+
+  cell *string_ptr;
+  if (amx_GetAddr(amx, string, &string_ptr) == AMX_ERR_NONE) {
+    std::stringstream stream;
+    CrashDetect::PrintAmxBacktrace(stream);
+    return amx_SetString(string_ptr, stream.str().c_str(),
+                         0, 0, size) == AMX_ERR_NONE;
+  }
+
+  return 0;
+}
+
+// native PrintAmxBacktrace();
+cell AMX_NATIVE_CALL PrintAmxBacktrace(AMX *amx, cell *params) {
+  CrashDetect::PrintAmxBacktrace();
+  return 1;
+}
+
+// native GetNativeBacktrace(string[], size = sizeof(string));
+cell AMX_NATIVE_CALL GetNativeBacktrace(AMX *amx, cell *params) {
+  cell string = params[1];
+  cell size = params[2];
+
+  cell *string_ptr;
+  if (amx_GetAddr(amx, string, &string_ptr) == AMX_ERR_NONE) {
+    std::stringstream stream;
+    CrashDetect::PrintNativeBacktrace(stream, 0);
+    return amx_SetString(string_ptr, stream.str().c_str(),
+                         0, 0, size) == AMX_ERR_NONE;
+  }
+
+  return 0;
+}
+
+// native PrintNativeBacktrace();
+cell AMX_NATIVE_CALL PrintNativeBacktrace(AMX *amx, cell *params) {
+  CrashDetect::PrintNativeBacktrace(0);
+  return 1;
+}
+
+const AMX_NATIVE_INFO list[] = {
+  {"GetAmxBacktrace",      natives::GetAmxBacktrace},
+  {"PrintAmxBacktrace",    natives::PrintAmxBacktrace},
+  {"GetNativeBacktrace",   natives::GetNativeBacktrace},
+  {"PrintNativeBacktrace", natives::PrintNativeBacktrace}
+};
+
+} // namespace natives
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
   return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES | SUPPORTS_PROCESS_TICK;
@@ -87,6 +143,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
   if (error == AMX_ERR_NONE) {
     amx_SetCallback(amx, AmxCallback);
     amx_SetExecErrorHandler(amx, AmxExecError);
+    return amx_Register(amx, natives::list, -1);
   }
   return error;
 }
