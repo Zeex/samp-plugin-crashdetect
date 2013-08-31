@@ -25,8 +25,6 @@
 #ifndef AMXSCRIPT_H
 #define AMXSCRIPT_H
 
-#include <limits>
-
 #include <amx/amx.h>
 
 #include "amxerror.h"
