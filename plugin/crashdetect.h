@@ -55,15 +55,22 @@ class CrashDetect : public AMXService<CrashDetect> {
   void HandleException();
   void HandleInterrupt();
   void HandleExecError(int index, cell *retval, const AMXError &error);
-  void PrintError(const AMXError &error);
 
- public:
   static void OnException(void *context);
   static void OnInterrupt(void *context);
 
-  static void Printf(const char *format, ...);
+ public:
   static void PrintAmxBacktrace();
-  static void PrintNativeBacktrace(void *context = 0);
+  static void PrintAmxBacktrace(std::ostream &stream);
+
+  static void PrintNativeBacktrace(void *context);
+  static void PrintNativeBacktrace(std::ostream &stream, void *context);
+
+ private:
+  static void Printf(const char *format, ...);
+  static void PrintLines(std::string string);
+
+  static void PrintError(AMXScript amx, const AMXError &error);
 
  private:
   AMXScript amx_;
