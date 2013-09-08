@@ -321,10 +321,8 @@ void CrashDetect::PrintNativeBacktrace(std::ostream &stream, void *context) {
 
 CrashDetect::CrashDetect(AMX *amx)
  : AMXService<CrashDetect>(amx),
-   amx_(amx),
    prev_callback_(0)
 {
-
 }
 
 int CrashDetect::Load() {
@@ -351,15 +349,15 @@ int CrashDetect::Load() {
     }
   }
 
-  amx_path_ = pathFinder.FindAmx(amx_);
+  amx_path_ = pathFinder.FindAmx(amx());
   amx_name_ = fileutils::GetFileName(amx_path_);
 
-  if (!amx_path_.empty() && AMXDebugInfo::IsPresent(amx_)) {
+  if (!amx_path_.empty() && AMXDebugInfo::IsPresent(amx())) {
     debug_info_.Load(amx_path_);
   }
 
-  amx_.DisableSysreqD();
-  prev_callback_ = amx_.GetCallback();
+  amx().DisableSysreqD();
+  prev_callback_ = amx().GetCallback();
 
   return AMX_ERR_NONE;
 }
@@ -369,18 +367,18 @@ int CrashDetect::Unload() {
 }
 
 int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
-  NPCall call = NPCall::Native(amx_, index);
+  NPCall call = NPCall::Native(amx(), index);
   np_calls_.push(&call);
-  int error = prev_callback_(amx_, index, result, params);
+  int error = prev_callback_(amx(), index, result, params);
   np_calls_.pop();
   return error;
 }
 
 int CrashDetect::DoAmxExec(cell *retval, int index) {  
-  NPCall call = NPCall::Public(amx_, index);
+  NPCall call = NPCall::Public(amx(), index);
   np_calls_.push(&call);
 
-  int error = ::amx_Exec(amx_, retval, index);
+  int error = ::amx_Exec(amx(), retval, index);
   if (error == AMX_ERR_CALLBACK ||
       error == AMX_ERR_NOTFOUND ||
       error == AMX_ERR_INIT     ||
@@ -432,20 +430,20 @@ void CrashDetect::HandleExecError(int index, cell *retval, const AMXError &error
   PrintAmxBacktrace(bt_stream);
 
   // public OnRuntimeError(code, &bool:suppress);
-  cell callback_index = amx_.GetPublicIndex("OnRuntimeError");
+  cell callback_index = amx().GetPublicIndex("OnRuntimeError");
   cell suppress = 0;
 
   if (callback_index >= 0) {
     cell suppress_addr, *suppress_ptr;
-    amx_PushArray(amx_, &suppress_addr, &suppress_ptr, &suppress, 1);
-    amx_Push(amx_, error.code());
-    amx_Exec(amx_, retval, callback_index);
-    amx_Release(amx_, suppress_addr);
+    amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
+    amx_Push(amx(), error.code());
+    amx_Exec(amx(), retval, callback_index);
+    amx_Release(amx(), suppress_addr);
     suppress = *suppress_ptr;
   }
 
   if (suppress == 0) {
-    PrintError(amx_, error);
+    PrintError(amx(), error);
     if (error.code() != AMX_ERR_NOTFOUND &&
         error.code() != AMX_ERR_INDEX    &&
         error.code() != AMX_ERR_CALLBACK &&

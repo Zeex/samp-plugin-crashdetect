@@ -71,7 +71,6 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void PrintError(AMXScript amx, const AMXError &error);
 
  private:
-  AMXScript amx_;
   AMXDebugInfo debug_info_;
   std::string amx_path_;
   std::string amx_name_;
