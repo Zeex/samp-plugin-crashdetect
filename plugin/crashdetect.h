@@ -39,13 +39,10 @@ class AMXError;
 class NPCall;
 
 class CrashDetect : public AMXService<CrashDetect> {
- public:
-  virtual ~CrashDetect() {}
- 
-  virtual int Load();
-  virtual int Unload();
+ public: 
+  int Load();
+  int Unload();
 
- public:
   int DoAmxCallback(cell index, cell *result, cell *params);
   int DoAmxExec(cell *retval, int index);
 

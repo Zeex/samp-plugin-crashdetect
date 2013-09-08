@@ -39,18 +39,18 @@
 #include "version.h"
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-  return CrashDetect::Get(amx)->DoAmxCallback(index, result, params);
+  return CrashDetect::GetInstance(amx)->DoAmxCallback(index, result, params);
 }
 
 static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
   if (amx->flags & AMX_FLAG_BROWSE) {
     return amx_Exec(amx, retval, index);
   }
-  return CrashDetect::Get(amx)->DoAmxExec(retval, index);
+  return CrashDetect::GetInstance(amx)->DoAmxExec(retval, index);
 }
 
 static void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
-  CrashDetect::Get(amx)->HandleExecError(index, retval, error);
+  CrashDetect::GetInstance(amx)->HandleExecError(index, retval, error);
 }
 
 namespace natives {
@@ -139,7 +139,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-  int error = CrashDetect::Create(amx)->Load();
+  int error = CrashDetect::CreateInstance(amx)->Load();
   if (error == AMX_ERR_NONE) {
     amx_SetCallback(amx, AmxCallback);
     amx_SetExecErrorHandler(amx, AmxExecError);
@@ -149,8 +149,8 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-  int error = CrashDetect::Get(amx)->Unload();
-  CrashDetect::Destroy(amx);
+  int error = CrashDetect::GetInstance(amx)->Unload();
+  CrashDetect::DestroyInstance(amx);
   return error;
 }
 

@@ -74,7 +74,7 @@ class HexDword {
 // static
 void CrashDetect::OnException(void *context) {
   if (!np_calls_.empty()) {
-    CrashDetect::Get(np_calls_.top()->amx())->HandleException();
+    CrashDetect::GetInstance(np_calls_.top()->amx())->HandleException();
   } else {
     Printf("Server crashed due to an unknown error");
   }
@@ -84,7 +84,7 @@ void CrashDetect::OnException(void *context) {
 // static
 void CrashDetect::OnInterrupt(void *context) {
   if (!np_calls_.empty()) {
-    CrashDetect::Get(np_calls_.top()->amx())->HandleInterrupt();
+    CrashDetect::GetInstance(np_calls_.top()->amx())->HandleInterrupt();
   } else {
     Printf("Server received interrupt signal");
   }
@@ -236,8 +236,8 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 
     // public function
     else if (call->IsPublic()) {
-      const AMXDebugInfo &debug_info = CrashDetect::Get(amx)->debug_info_;
-      const std::string &amx_name = CrashDetect::Get(amx)->amx_name_;
+      const AMXDebugInfo &debug_info = CrashDetect::GetInstance(amx)->debug_info_;
+      const std::string &amx_name = CrashDetect::GetInstance(amx)->amx_name_;
 
       amx.PushStack(cip);
       amx.PushStack(frm);
