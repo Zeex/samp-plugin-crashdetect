@@ -25,8 +25,6 @@
 #ifndef NPCALL_H
 #define NPCALL_H
 
-#include <amx/amx.h>
-
 #include "amxscript.h"
 
 class NPCall {
@@ -42,8 +40,8 @@ class NPCall {
   static NPCall Public(AMXScript amx, cell index);
   static NPCall Native(AMXScript amx, cell index);
 
-  Type type() const { return type_; }
   AMXScript amx() const { return amx_; }
+  Type type() const { return type_; }
   cell index() const { return index_; }
   cell frm() const { return frm_; }
   cell cip() const { return cip_; }
@@ -52,8 +50,8 @@ class NPCall {
   bool IsNative() const { return type_ == NATIVE; }
 
  private:
-  Type type_;
   AMXScript amx_;
+  Type type_;
   cell frm_;
   cell cip_;
   cell index_;
