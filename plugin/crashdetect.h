@@ -46,9 +46,6 @@ class CrashDetect : public AMXService<CrashDetect> {
   virtual int Unload();
 
  public:
-  explicit CrashDetect(AMX *amx);
-
- public:
   int DoAmxCallback(cell index, cell *result, cell *params);
   int DoAmxExec(cell *retval, int index);
 
@@ -65,6 +62,10 @@ class CrashDetect : public AMXService<CrashDetect> {
 
   static void PrintNativeBacktrace(void *context);
   static void PrintNativeBacktrace(std::ostream &stream, void *context);
+
+ private:
+  template<typename T> friend class AMXService;
+  explicit CrashDetect(AMX *amx);
 
  private:
   static void Printf(const char *format, ...);
