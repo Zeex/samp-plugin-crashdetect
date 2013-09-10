@@ -100,7 +100,7 @@ class Hook {
  private:
   void *src_;
   void *dst_;
-  unsigned char code_[5];
+  unsigned char code_[kJmpInstrSize];
   bool installed_;
 };
 
