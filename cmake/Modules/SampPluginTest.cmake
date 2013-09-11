@@ -40,14 +40,16 @@ function(add_samp_plugin_test)
 
 	get_target_property(PLUGIN_PATH ${ARG_TARGET} LOCATION)
 
-	list(FIND CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}" index)
-	if(MSVC_IDE AND CMAKE_BUILD_TYPE AND NOT index EQUAL -1)
-		string(REPLACE "$(Configuration)" ${CMAKE_BUILD_TYPE}
-		       PLUGIN_PATH ${PLUGIN_PATH})
-	else()
-		message(AUTHOR_WARNING "CMAKE_BUILD_TYPE must be set to one of the "
-		                       "existing build configurations in order for "
-		                       "the tests to work")
+	if(MSVC_IDE)
+		list(FIND CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}" index)
+		if(CMAKE_BUILD_TYPE AND NOT index EQUAL -1)
+			string(REPLACE "$(Configuration)" ${CMAKE_BUILD_TYPE}
+				   PLUGIN_PATH ${PLUGIN_PATH})
+		else()
+			message(AUTHOR_WARNING "CMAKE_BUILD_TYPE must be set to one of the "
+								   "existing build configurations in order for "
+								   "the tests to work")
+		endif()
 	endif()
 
 	list(APPEND arguments
