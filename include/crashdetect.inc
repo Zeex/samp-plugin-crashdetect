@@ -23,6 +23,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 native PrintAmxBacktrace();
-native GetAmxBacktrace(string[], size = sizeof(string));
 native PrintNativeBacktrace();
+
+native GetAmxBacktrace(string[], size = sizeof(string));
 native GetNativeBacktrace(string[], size = sizeof(string));
