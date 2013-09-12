@@ -25,8 +25,8 @@
 #include "npcall.h"
 
 NPCall::NPCall(Type type, AMXScript amx, cell index)
- : type_(type),
-   amx_(amx),
+ : amx_(amx),
+   type_(type),
    frm_(amx.GetFrm()),
    cip_(amx.GetCip()),
    index_(index)
@@ -34,8 +34,8 @@ NPCall::NPCall(Type type, AMXScript amx, cell index)
 }
 
 NPCall::NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
- : type_(type),
-   amx_(amx),
+ : amx_(amx),
+   type_(type),
    frm_(frm),
    cip_(cip),
    index_(index)

@@ -40,6 +40,8 @@ class NPCall;
 
 class CrashDetect : public AMXService<CrashDetect> {
  public: 
+  explicit CrashDetect(AMX *amx);
+ 
   int Load();
   int Unload();
 
@@ -59,10 +61,6 @@ class CrashDetect : public AMXService<CrashDetect> {
 
   static void PrintNativeBacktrace(void *context);
   static void PrintNativeBacktrace(std::ostream &stream, void *context);
-
- private:
-  template<typename T> friend class AMXService;
-  explicit CrashDetect(AMX *amx);
 
  private:
   static void Printf(const char *format, ...);
