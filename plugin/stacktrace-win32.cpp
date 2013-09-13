@@ -33,7 +33,7 @@
 
 namespace {
 
-const int kMaxSymbolNameLength = 1024;
+const int kMaxSymbolNameLength = 128;
 
 class DbgHelp {
  public:
