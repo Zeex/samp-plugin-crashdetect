@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstddef>
 #include <cstdlib>
 
 #include <Windows.h>
@@ -30,135 +31,112 @@
 #include "stacktrace.h"
 #include "stacktrace-generic.h"
 
-// MSDN says that CaptureStackBackTrace() can't handle more than 62 frames on
-// Windows Server 2003 and Windows XP.
-static const int kMaxFrames = 62;
-static const int kMaxSymbolNameLength = 1024;
+namespace {
+
+const int kMaxSymbolNameLength = 1024;
 
 class DbgHelp {
-public:
-  DbgHelp(HANDLE process = NULL);
-  ~DbgHelp();
-
-  bool HaveSymInitialize() const {
-    return SymInitialize_ != NULL;
-  }
-  BOOL SymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess) const {
-    return SymInitialize_(hProcess, UserSearchPath, fInvadeProcess);
-  }
-
-  bool HaveSymFromAddr() const {
-    return SymFromAddr_ != NULL;
-  }
-  BOOL SymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol) const {
-    return SymFromAddr_(hProcess, Address, Displacement, Symbol);
-  }
-
-  bool HaveSymCleanup() const {
-    return SymCleanup_ != NULL;
-  }
-  BOOL SymCleanup(HANDLE hProcess) const {
-    return SymCleanup_(hProcess);
+ public:
+  DbgHelp(HANDLE process = NULL)
+   : module_(LoadLibrary("DbgHelp.dll")),
+     process_(process),
+     initialized_(false)
+  {
+    if (process_ == NULL) {
+      process_ = GetCurrentProcess();
+    }
+    if (module_ != NULL) {
+      InitFunctions();
+      if (SymInitialize != 0) {
+        initialized_ = SymInitialize(process_, NULL, TRUE) != FALSE;
+      }
+    }
   }
 
-  bool HaveSymGetOptions() const {
-    return SymGetOptions_ != NULL;
-  }
-  DWORD SymGetOptions() const {
-    return SymGetOptions_();
-  }
-
-  bool HaveSymSetOptions() const {
-    return SymSetOptions_ != NULL;
-  }
-  BOOL SymSetOptions(DWORD SymOptions) const {
-    return SymSetOptions_(SymOptions);
+  ~DbgHelp() {
+    if (module_ != NULL) {
+      if (initialized_ && SymCleanup != 0) {
+        SymCleanup(process_);
+      }
+      FreeLibrary(module_);
+    }
   }
 
-  bool HaveSymGetModuleInfo64() const {
-    return SymGetModuleInfo64_ != NULL;
-  }
-  BOOL SymGetModuleInfo64(HANDLE hProcess, DWORD64 dwAddr, PIMAGEHLP_MODULE64 ModuleInfo) const {
-    return SymGetModuleInfo64_(hProcess, dwAddr, ModuleInfo);
+  typedef BOOL (WINAPI *SymInitializePtr)(
+    HANDLE hProcess,
+    PCSTR UserSearchPath,
+    BOOL fInvadeProcess
+  );
+  SymInitializePtr SymInitialize;
+
+  typedef BOOL (WINAPI *SymCleanupPtr)(HANDLE hProcess);
+  SymCleanupPtr SymCleanup;
+
+  typedef BOOL (WINAPI *SymFromAddrPtr)(
+    HANDLE hProcess,
+    DWORD64 Address,
+    PDWORD64 Displacement,
+    PSYMBOL_INFO Symbol
+  );
+  SymFromAddrPtr SymFromAddr;
+
+  typedef DWORD (WINAPI *SymGetOptionsPtr)();
+  SymGetOptionsPtr SymGetOptions;
+
+  typedef BOOL (WINAPI *SymSetOptionsPtr)(DWORD SymOptions);
+  SymSetOptionsPtr SymSetOptions;
+
+  typedef BOOL (WINAPI *SymGetModuleInfo64Ptr)(
+    HANDLE hProcess,
+    DWORD64 dwAddr,
+    PIMAGEHLP_MODULE64 ModuleInfo
+  );
+  SymGetModuleInfo64Ptr SymGetModuleInfo64;
+
+  typedef BOOL (WINAPI *StackWalk64Ptr)(
+    DWORD MachineType,
+    HANDLE hProcess,
+    HANDLE hThread,
+    LPSTACKFRAME64 StackFrame,
+    LPVOID ContextRecord,
+    PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine,
+    PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
+    PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
+    PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
+  );
+  StackWalk64Ptr StackWalk64;
+
+  bool is_loaded() const {
+    return module_ != NULL;
   }
 
-  bool HaveStackWalk64() const {
-    return StackWalk64_ != NULL;
-  }
-  BOOL StackWalk64(DWORD MachineType, HANDLE hProcess, HANDLE hThread, LPSTACKFRAME64 StackFrame, LPVOID ContextRecord, PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine, PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine, PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine, PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress) {
-    return StackWalk64_(MachineType, hProcess, hThread, StackFrame, ContextRecord, ReadMemoryRoutine, FunctionTableAccessRoutine, GetModuleBaseRoutine, TranslateAddress);
+  bool is_initialized() const {
+    return initialized_;
   }
 
-  inline bool is_loaded() const {
-    return module_ != 0;
-  }
-  inline bool is_initialized() const {
-    return initialized_ != FALSE;
-  }
-
-private:
+ private:
   DbgHelp(const DbgHelp &);
   void operator=(const DbgHelp &);
 
-  typedef BOOL (WINAPI *SymInitializeType)(HANDLE, PCSTR, BOOL);
-  SymInitializeType SymInitialize_;
+  void InitFunctions() {
+    #define INIT_FUNC(Name) Name = (Name##Ptr)GetProcAddress(module_, #Name);
+    INIT_FUNC(SymInitialize);
+    INIT_FUNC(SymFromAddr);
+    INIT_FUNC(SymCleanup);
+    INIT_FUNC(SymGetOptions);
+    INIT_FUNC(SymSetOptions);
+    INIT_FUNC(SymGetModuleInfo64);
+    INIT_FUNC(StackWalk64);
+    #undef INIT_FUNC
+  }
 
-  typedef BOOL (WINAPI *SymFromAddrType)(HANDLE, DWORD64, PDWORD64, PSYMBOL_INFO);
-  SymFromAddrType SymFromAddr_;
-
-  typedef BOOL (WINAPI *SymCleanupType)(HANDLE);
-  SymCleanupType SymCleanup_;
-
-  typedef DWORD (WINAPI *SymGetOptionsType)();
-  SymGetOptionsType SymGetOptions_;
-
-  typedef DWORD (WINAPI *SymSetOptionsType)(DWORD);
-  SymSetOptionsType SymSetOptions_;
-
-  typedef BOOL (WINAPI *SymGetModuleInfo64Type)(HANDLE, DWORD64, PIMAGEHLP_MODULE64);
-  SymGetModuleInfo64Type SymGetModuleInfo64_;
-
-  typedef BOOL (WINAPI *StackWalk64Type)(DWORD, HANDLE, HANDLE, LPSTACKFRAME64, LPVOID ContextRecord,
-                                         PREAD_PROCESS_MEMORY_ROUTINE64, PFUNCTION_TABLE_ACCESS_ROUTINE64,
-                                         PGET_MODULE_BASE_ROUTINE64, PTRANSLATE_ADDRESS_ROUTINE64);
-  StackWalk64Type StackWalk64_;
-
+ private:
   HMODULE module_;
   HANDLE process_;
-  BOOL initialized_;
+  bool initialized_;
 };
 
-DbgHelp::DbgHelp(HANDLE process)
- : module_(LoadLibrary("DbgHelp.dll")),
-   process_(process),
-   initialized_(FALSE)
-{
-  if (process_ == NULL) {
-    process_ = GetCurrentProcess();
-  }
-
-  if (module_ != NULL) {
-    SymInitialize_ = (SymInitializeType)GetProcAddress(module_, "SymInitialize");
-    SymFromAddr_ = (SymFromAddrType)GetProcAddress(module_, "SymFromAddr");
-    SymCleanup_ = (SymCleanupType)GetProcAddress(module_, "SymCleanup");
-    SymGetOptions_ = (SymGetOptionsType)GetProcAddress(module_, "SymGetOptions");
-    SymSetOptions_ = (SymSetOptionsType)GetProcAddress(module_, "SymSetOptions");
-    SymGetModuleInfo64_ = (SymGetModuleInfo64Type)GetProcAddress(module_, "SymGetModuleInfo64");
-    StackWalk64_ = (StackWalk64Type)GetProcAddress(module_, "StackWalk64");
-    if (SymInitialize_ != NULL) {
-      initialized_ = SymInitialize_(process_, NULL, TRUE);
-    }
-  }
-}
-
-DbgHelp::~DbgHelp() {
-  if (module_ != NULL) {
-    if (initialized_ && SymCleanup_ != NULL) {
-      SymCleanup_(process_);
-    }
-    FreeLibrary(module_);
-  }
-}
+} // anonymous namespace
 
 StackTrace::StackTrace(void *their_context) {
   PCONTEXT context = reinterpret_cast<PCONTEXT>(their_context);
@@ -186,18 +164,19 @@ StackTrace::StackTrace(void *their_context) {
   stack_frame.AddrStack.Offset = context->Esp;
   stack_frame.AddrStack.Mode = AddrModeFlat;
 
-  if (!dbghelp.HaveStackWalk64()) {
+  if (!dbghelp.StackWalk64 != 0) {
     goto fail;
   }
 
   SYMBOL_INFO *symbol = NULL;
 
   if (dbghelp.is_initialized()) {
-    symbol = reinterpret_cast<SYMBOL_INFO*>(std::calloc(sizeof(*symbol) + kMaxSymbolNameLength, 1));
+    std::size_t symbol_size = sizeof(*symbol) + kMaxSymbolNameLength;
+    symbol = static_cast<SYMBOL_INFO*>(std::calloc(1, symbol_size));
     symbol->SizeOfStruct = sizeof(*symbol);
     symbol->MaxNameLen = kMaxSymbolNameLength;
 
-    if (dbghelp.HaveSymGetOptions() && dbghelp.HaveSymSetOptions()) {
+    if (dbghelp.SymGetOptions != 0 && dbghelp.SymSetOptions != 0) {
       DWORD options = dbghelp.SymGetOptions();
       options |= SYMOPT_FAIL_CRITICAL_ERRORS;
       dbghelp.SymSetOptions(options);
@@ -212,7 +191,7 @@ StackTrace::StackTrace(void *their_context) {
     }
 
     bool have_symbols = true;
-    if (dbghelp.HaveSymGetModuleInfo64()) {
+    if (dbghelp.SymGetModuleInfo64) {
       IMAGEHLP_MODULE64 module;
       ZeroMemory(&module, sizeof(IMAGEHLP_MODULE64));
       module.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
@@ -225,7 +204,8 @@ StackTrace::StackTrace(void *their_context) {
 
     const char *name = "";
     if (have_symbols) {
-      if (dbghelp.is_initialized() && dbghelp.HaveSymFromAddr() && symbol != NULL) {
+      if (dbghelp.is_initialized() && dbghelp.SymFromAddr != 0
+          && symbol != 0) {
         if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
           name = symbol->Name;
         }
@@ -234,9 +214,9 @@ StackTrace::StackTrace(void *their_context) {
 
     frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
 
-    BOOL result = dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process, GetCurrentThread(), &stack_frame,
-                                      (PVOID)context, NULL, NULL, NULL, NULL);
-    if (!result) {
+    if (!dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process,
+                             GetCurrentThread(), &stack_frame,
+                             (PVOID)context, NULL, NULL, NULL, NULL)) {
       break;
     }
   }
