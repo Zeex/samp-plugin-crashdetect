@@ -206,7 +206,8 @@ StackTrace::StackTrace(void *their_context) {
 
   while (true) {
     DWORD64 address = stack_frame.AddrReturn.Offset;
-    if (address <= 0) {
+
+    if (address == 0 || address & 0x80000000) {
       break;
     }
 
