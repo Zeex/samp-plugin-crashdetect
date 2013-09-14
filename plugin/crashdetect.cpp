@@ -307,18 +307,17 @@ void CrashDetect::HandleInterrupt() {
 }
 
 // static
-void CrashDetect::OnException(const os::Context &context) {
+void CrashDetect::OnException(void *context) {
   if (!np_calls.empty()) {
     CrashDetect::GetInstance(np_calls.top()->amx())->HandleException();
   } else {
     Printf("Server crashed due to an unknown error");
   }
   PrintNativeBacktrace(context);
-  PrintNativeRegisters(context);
 }
 
 // static
-void CrashDetect::OnInterrupt(const os::Context &context) {
+void CrashDetect::OnInterrupt(void *context) {
   if (!np_calls.empty()) {
     CrashDetect::GetInstance(np_calls.top()->amx())->HandleInterrupt();
   } else {
@@ -443,15 +442,14 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 }
 
 // static
-void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
+void CrashDetect::PrintNativeBacktrace(void *context) {
   std::stringstream stream;
   PrintNativeBacktrace(stream, context);
   PrintLines(stream.str());
 }
 
 // static
-void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
-                                       const os::Context &context) {
+void CrashDetect::PrintNativeBacktrace(std::ostream &stream, void *context) {
   StackTrace trace(context);
   std::deque<StackFrame> frames = trace.GetFrames();
 
@@ -476,22 +474,4 @@ void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
 
     stream << std::endl;
   }
-}
-
-// static
-void CrashDetect::PrintNativeRegisters(const os::Context &context) {
-  Printf("Native registers:");
-  Printf("eax: %08x  ecx: %08x  edx: %08x  ebx: %08x",
-         context.GetRegister(os::Context::EAX),
-         context.GetRegister(os::Context::ECX),
-         context.GetRegister(os::Context::EDX),
-         context.GetRegister(os::Context::EBX));
-  Printf("esi: %08x  edi: %08x  esp: %08x  ebp: %08x",
-         context.GetRegister(os::Context::ESI),
-         context.GetRegister(os::Context::EDI),
-         context.GetRegister(os::Context::ESP),
-         context.GetRegister(os::Context::EBP));
-  Printf("eip: %08x  eflags: %08x",
-         context.GetRegister(os::Context::EIP),
-         context.GetRegister(os::Context::EFLAGS));
 }

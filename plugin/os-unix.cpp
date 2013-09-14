@@ -33,21 +33,6 @@
 
 #include "os.h"
 
-os::Context::Context(ucontext_t *context)
-  : os_context_(context)
-{
-  registers_[EAX] = context->uc_mcontext.gregs[REG_EAX];
-  registers_[ECX] = context->uc_mcontext.gregs[REG_ECX];
-  registers_[EDX] = context->uc_mcontext.gregs[REG_EDX];
-  registers_[EBX] = context->uc_mcontext.gregs[REG_EBX];
-  registers_[ESI] = context->uc_mcontext.gregs[REG_ESI];
-  registers_[EDI] = context->uc_mcontext.gregs[REG_EDI];
-  registers_[ESP] = context->uc_mcontext.gregs[REG_ESP];
-  registers_[EBP] = context->uc_mcontext.gregs[REG_EBP];
-  registers_[EIP] = context->uc_mcontext.gregs[REG_EIP];
-  registers_[EFLAGS] = context->uc_mcontext.gregs[REG_EFL];
-}
-
 std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
   std::vector<char> name(max_length + 1);
   if (address != 0) {
@@ -62,13 +47,13 @@ static os::ExceptionHandler except_handler = 0;
 static struct sigaction prev_sigsegv_action;
 static __thread bool this_thread_handles_sigsegv;
 
-static void HandleSIGSEGV(int sig, siginfo_t *info, void *ucontext) {
+static void HandleSIGSEGV(int sig, siginfo_t *info, void *context)
+{
   if (!::this_thread_handles_sigsegv) {
     return;
   }
 
   if (::except_handler != 0) {
-    os::Context context(reinterpret_cast<ucontext_t*>(ucontext));
     ::except_handler(context);
   }
 
@@ -94,13 +79,12 @@ static os::InterruptHandler interrupt_handler;
 static struct sigaction prev_sigint_action;
 static __thread bool this_thread_handles_sigint;
 
-static void HandleSIGINT(int sig, siginfo_t *info, void *ucontext) {
+static void HandleSIGINT(int sig, siginfo_t *info, void *context) {
   if (!::this_thread_handles_sigint) {
     return;
   }
 
   if (::interrupt_handler != 0) {
-    os::Context context(reinterpret_cast<ucontext_t*>(ucontext));
     ::interrupt_handler(context);
   }
 

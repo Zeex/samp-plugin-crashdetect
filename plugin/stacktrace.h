@@ -29,10 +29,6 @@
 #include <iosfwd>
 #include <string>
 
-namespace os {
-  class Context;
-}
-
 class StackFrame {
  public:
   StackFrame(void *ret_addr, const std::string &name = std::string());
@@ -50,7 +46,7 @@ class StackFrame {
 
 class StackTrace {
  public:
-  StackTrace(const os::Context &context);
+  StackTrace(void *context = 0);
 
   std::deque<StackFrame> GetFrames() const {
     return frames_;

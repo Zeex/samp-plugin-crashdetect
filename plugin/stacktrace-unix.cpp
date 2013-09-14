@@ -46,7 +46,7 @@ static std::string GetSymbolName(const std::string &symbol) {
   return name;
 }
 
-StackTrace::StackTrace(const os::Context&) {
+StackTrace::StackTrace(void *context) {
   #ifdef HAVE_BACKTRACE
     void *trace[kMaxFrames];
     int trace_length = backtrace(trace, kMaxFrames);
