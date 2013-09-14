@@ -47,10 +47,9 @@
 
 #define AMX_EXEC_GDK (-10)
 
-bool CrashDetect::block_exec_errors_ = false;
-std::stack<NPCall*> CrashDetect::np_calls_;
-
 namespace {
+
+std::stack<NPCall*> np_calls;
 
 // Helper class for priting 32-bit integers in hex (e.g. memory addresses).
 class HexDword {
@@ -58,10 +57,10 @@ class HexDword {
   static const int kWidth = 8;
   HexDword(uint32_t value): value_(value) {}
   HexDword(void *value): value_(reinterpret_cast<uint32_t>(value)) {}
-  friend std::ostream &operator<<(std::ostream &stream, const HexDword &dword) {
+  friend std::ostream &operator<<(std::ostream &stream, const HexDword &x) {
     char fill = stream.fill();
     stream << std::setw(kWidth) << std::setfill('0') << std::hex
-       << dword.value_ << std::dec;
+           << x.value_ << std::dec;
     stream.fill(fill);
     return stream;
   }
@@ -69,31 +68,7 @@ class HexDword {
   uint32_t value_;
 };
 
-} // anonymous namespace
-
-// static
-void CrashDetect::OnException(const os::Context &context) {
-  if (!np_calls_.empty()) {
-    CrashDetect::GetInstance(np_calls_.top()->amx())->HandleException();
-  } else {
-    Printf("Server crashed due to an unknown error");
-  }
-  PrintNativeBacktrace(context);
-  PrintNativeRegisters(context);
-}
-
-// static
-void CrashDetect::OnInterrupt(const os::Context &context) {
-  if (!np_calls_.empty()) {
-    CrashDetect::GetInstance(np_calls_.top()->amx())->HandleInterrupt();
-  } else {
-    Printf("Server received interrupt signal");
-  }
-  PrintNativeBacktrace(context);
-}
-
-// static
-void CrashDetect::Printf(const char *format, ...) {
+void Printf(const char *format, ...) {
   std::va_list va;
   va_start(va, format);
 
@@ -105,8 +80,7 @@ void CrashDetect::Printf(const char *format, ...) {
   va_end(va);
 }
 
-// static
-void CrashDetect::PrintLines(std::string string) {
+void PrintLines(std::string string) {
   std::string::iterator current = string.begin();
   for (std::string::iterator it = string.begin(); it != string.end(); it++) {
     if (*it == '\n') {
@@ -117,13 +91,16 @@ void CrashDetect::PrintLines(std::string string) {
   }
 }
 
-// static
-void CrashDetect::PrintError(AMXScript amx, const AMXError &error) {
+cell *GetCurrentCodePtr(AMXScript amx) {
+  return reinterpret_cast<cell*>(amx.GetCode() + amx.GetCip());
+}
+
+void PrintError(AMXScript amx, const AMXError &error) {
   Printf("Run time error %d: \"%s\"", error.code(), error.GetString());
 
   switch (error.code()) {
     case AMX_ERR_BOUNDS: {
-      const cell *ip = reinterpret_cast<const cell*>(amx.GetCode() + amx.GetCip());
+      cell *ip = GetCurrentCodePtr(amx);
       cell opcode = *ip;
       if (opcode == RelocateAmxOpcode(AMX_OP_BOUNDS)) {
         cell bound = *(ip + 1);
@@ -131,7 +108,8 @@ void CrashDetect::PrintError(AMXScript amx, const AMXError &error) {
         if (index < 0) {
           Printf(" Accessing element at negative index %d", index);
         } else {
-          Printf(" Accessing element at index %d past array upper bound %d", index, bound);
+          Printf(" Accessing element at index %d past array upper bound %d",
+                 index, bound);
         }
       }
       break;
@@ -147,21 +125,25 @@ void CrashDetect::PrintError(AMXScript amx, const AMXError &error) {
       break;
     }
     case AMX_ERR_STACKERR:
-      Printf(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X", amx.GetStk(), amx.GetHea());
+      Printf(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X",
+             amx.GetStk(), amx.GetHea());
       break;
     case AMX_ERR_STACKLOW:
-      Printf(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X", amx.GetStk(), amx.GetStp());
+      Printf(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X",
+             amx.GetStk(), amx.GetStp());
       break;
     case AMX_ERR_HEAPLOW:
-      Printf(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X", amx.GetHea(), amx.GetHlw());
+      Printf(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X",
+             amx.GetHea(), amx.GetHlw());
       break;
     case AMX_ERR_INVINSTR: {
-      cell opcode = *(reinterpret_cast<const cell*>(amx.GetCode() + amx.GetCip()));
-      Printf(" Unknown opcode 0x%x at address 0x%08X", opcode , amx.GetCip());
+      cell opcode = *GetCurrentCodePtr(amx);
+      Printf(" Unknown opcode 0x%x at address 0x%08X",
+             opcode , amx.GetCip());
       break;
     }
     case AMX_ERR_NATIVE: {
-      const cell *ip = reinterpret_cast<const cell*>(amx.GetCode() + amx.GetCip());
+      const cell *ip = GetCurrentCodePtr(amx);
       cell opcode = *(ip - 2);
       if (opcode == RelocateAmxOpcode(AMX_OP_SYSREQ_C)) {
         cell index = *(ip - 1);
@@ -172,176 +154,12 @@ void CrashDetect::PrintError(AMXScript amx, const AMXError &error) {
   }
 }
 
-// static
-void CrashDetect::PrintAmxBacktrace() {
-  std::stringstream stream;
-  PrintAmxBacktrace(stream);
-  PrintLines(stream.str());
-}
-
-// static
-void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
-  if (np_calls_.empty()) {
-    return;
-  }
-
-  AMXScript top_amx = np_calls_.top()->amx();
-
-  if (top_amx.GetCip() == 0) {
-    return;
-  }
-
-  stream << "AMX backtrace:\n";
-
-  std::stack<NPCall*> np_calls = np_calls_;
-
-  cell cip = top_amx.GetCip();
-  cell frm = top_amx.GetFrm();
-  int level = 0;
-
-  while (!np_calls.empty() && cip != 0) {
-    const NPCall *call = np_calls.top();
-    AMXScript amx = call->amx();
-
-    if (amx != top_amx) {
-      assert(level != 0);
-      break;
-    }
-
-    // native function
-    if (call->IsNative()) {
-      cell address = amx.GetNativeAddress(call->index());
-      if (address != 0) {
-        stream << "#" << level++ << " native ";
-
-        const char *name = amx.GetNativeName(call->index());
-        if (name != 0) {
-          stream << name;
-        } else {
-          stream << "<unknown>";
-        }
-
-        char fill = stream.fill();
-        stream << " () [" << HexDword(address) << "]";
-        stream.fill(fill);
-
-        std::string path = os::GetModulePathFromAddr(reinterpret_cast<void*>(address));
-        std::string module = fileutils::GetFileName(path);
-        if (!module.empty()) {
-          stream << " from " << module;
-        }
-
-        stream << std::endl;
-      }
-    }
-
-    // public function
-    else if (call->IsPublic()) {
-      const AMXDebugInfo &debug_info = CrashDetect::GetInstance(amx)->debug_info_;
-      const std::string &amx_name = CrashDetect::GetInstance(amx)->amx_name_;
-
-      amx.PushStack(cip);
-      amx.PushStack(frm);
-      amx.SetFrm(amx.GetStk());
-
-      AMXStackTrace trace(amx, amx.GetFrm());
-      std::deque<AMXStackFrame> frames;
-
-      if (trace.current_frame()) {
-        do {
-          AMXStackFrame frame = trace.current_frame();
-          frames.push_back(frame);
-        }
-        while (trace.Next());
-        frames.back().set_caller_address(amx.GetPublicAddress(call->index()));
-      } else {
-        cell entry_point = amx.GetPublicAddress(call->index());
-        frames.push_front(AMXStackFrame(amx, amx.GetFrm(), 0, 0, entry_point));
-      }
-
-      frm = amx.PopStack();
-      cip = amx.PopStack();
-      amx.SetFrm(frm);
-
-      for (std::deque<AMXStackFrame>::const_iterator it = frames.begin();
-           it != frames.end(); it++) {
-        const AMXStackFrame &frame = *it;
-
-        stream << "#" << level++ << " ";
-        frame.Print(stream, &debug_info);
-
-        if (!debug_info.IsLoaded() && !amx_name.empty()) {
-          stream << " from " << amx_name;
-        }
-
-        stream << std::endl;
-      }
-
-      frm = call->frm();
-      cip = call->cip();
-    }
-
-    np_calls.pop();
-  }
-}
-
-// static
-void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
-  std::stringstream stream;
-  PrintNativeBacktrace(stream, context);
-  PrintLines(stream.str());
-}
-
-// static
-void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
-                                       const os::Context &context) {
-  StackTrace trace(context);
-  std::deque<StackFrame> frames = trace.GetFrames();
-
-  if (frames.empty()) {
-    return;
-  }
-
-  stream << "Native backtrace:\n";
-
-  int level = 0;
-  for (std::deque<StackFrame>::const_iterator it = frames.begin();
-       it != frames.end(); it++) {
-    const StackFrame &frame = *it;
-
-    stream << "#" << level++ << " ";
-    frame.Print(stream);
-
-    std::string module = os::GetModulePathFromAddr(frame.return_address());
-    if (!module.empty()) {
-      stream << " from " << module;
-    }
-
-    stream << std::endl;
-  }
-}
-
-// static
-void CrashDetect::PrintNativeRegisters(const os::Context &context) {
-  Printf("Native registers:");
-  Printf("eax: %08x  ecx: %08x  edx: %08x  ebx: %08x",
-         context.GetRegister(os::Context::EAX),
-         context.GetRegister(os::Context::ECX),
-         context.GetRegister(os::Context::EDX),
-         context.GetRegister(os::Context::EBX));
-  Printf("esi: %08x  edi: %08x  esp: %08x  ebp: %08x",
-         context.GetRegister(os::Context::ESI),
-         context.GetRegister(os::Context::EDI),
-         context.GetRegister(os::Context::ESP),
-         context.GetRegister(os::Context::EBP));
-  Printf("eip: %08x  eflags: %08x",
-         context.GetRegister(os::Context::EIP),
-         context.GetRegister(os::Context::EFLAGS));
-}
+} // anonymous namespace
 
 CrashDetect::CrashDetect(AMX *amx)
  : AMXService<CrashDetect>(amx),
-   prev_callback_(0)
+   prev_callback_(0),
+   block_exec_errors_(false)
 {
 }
 
@@ -357,7 +175,8 @@ int CrashDetect::Load() {
     std::string path;
     std::string::size_type begin = 0;
     while (begin < var.length()) {
-      std::string::size_type end = var.find(fileutils::kNativePathListSepChar, begin);
+      std::string::size_type end = var.find(fileutils::kNativePathListSepChar,
+                                            begin);
       if (end == std::string::npos) {
         end = var.length();
       }
@@ -388,15 +207,15 @@ int CrashDetect::Unload() {
 
 int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
   NPCall call = NPCall::Native(amx(), index);
-  np_calls_.push(&call);
+  np_calls.push(&call);
   int error = prev_callback_(amx(), index, result, params);
-  np_calls_.pop();
+  np_calls.pop();
   return error;
 }
 
 int CrashDetect::DoAmxExec(cell *retval, int index) {  
   NPCall call = NPCall::Public(amx(), index);
-  np_calls_.push(&call);
+  np_calls.push(&call);
 
   int error = ::amx_Exec(amx(), retval, index);
   if (error == AMX_ERR_CALLBACK ||
@@ -410,11 +229,12 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
     HandleExecError(index, retval, error);
   }
 
-  np_calls_.pop();
+  np_calls.pop();
   return error;
 }
 
-void CrashDetect::HandleExecError(int index, cell *retval, const AMXError &error) {
+void CrashDetect::HandleExecError(int index, cell *retval,
+                                  const AMXError &error) {
   if (block_exec_errors_) {
     return;
   }
@@ -481,6 +301,197 @@ void CrashDetect::HandleException() {
 }
 
 void CrashDetect::HandleInterrupt() {
-  Printf("Server received interrupt signal while executing %s", amx_name_.c_str());
+  Printf("Server received interrupt signal while executing %s",
+         amx_name_.c_str());
   PrintAmxBacktrace();
+}
+
+// static
+void CrashDetect::OnException(const os::Context &context) {
+  if (!np_calls.empty()) {
+    CrashDetect::GetInstance(np_calls.top()->amx())->HandleException();
+  } else {
+    Printf("Server crashed due to an unknown error");
+  }
+  PrintNativeBacktrace(context);
+  PrintNativeRegisters(context);
+}
+
+// static
+void CrashDetect::OnInterrupt(const os::Context &context) {
+  if (!np_calls.empty()) {
+    CrashDetect::GetInstance(np_calls.top()->amx())->HandleInterrupt();
+  } else {
+    Printf("Server received interrupt signal");
+  }
+  PrintNativeBacktrace(context);
+}
+
+// static
+void CrashDetect::PrintAmxBacktrace() {
+  std::stringstream stream;
+  PrintAmxBacktrace(stream);
+  PrintLines(stream.str());
+}
+
+// static
+void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
+  if (np_calls.empty()) {
+    return;
+  }
+
+  AMXScript top_amx = np_calls.top()->amx();
+
+  if (top_amx.GetCip() == 0) {
+    return;
+  }
+
+  stream << "AMX backtrace:\n";
+
+  std::stack<NPCall*> calls = np_calls;
+
+  cell cip = top_amx.GetCip();
+  cell frm = top_amx.GetFrm();
+  int level = 0;
+
+  while (!calls.empty() && cip != 0) {
+    const NPCall *call = calls.top();
+    AMXScript amx = call->amx();
+
+    if (amx != top_amx) {
+      assert(level != 0);
+      break;
+    }
+
+    // native function
+    if (call->IsNative()) {
+      cell address = amx.GetNativeAddress(call->index());
+      if (address != 0) {
+        stream << "#" << level++ << " native ";
+
+        const char *name = amx.GetNativeName(call->index());
+        if (name != 0) {
+          stream << name;
+        } else {
+          stream << "<unknown>";
+        }
+
+        char fill = stream.fill();
+        stream << " () [" << HexDword(address) << "]";
+        stream.fill(fill);
+
+        void *ptr = reinterpret_cast<void*>(address);
+        std::string path = os::GetModulePathFromAddr(ptr);
+        std::string module = fileutils::GetFileName(path);
+        if (!module.empty()) {
+          stream << " from " << module;
+        }
+
+        stream << std::endl;
+      }
+    }
+
+    // public function
+    else if (call->IsPublic()) {
+      CrashDetect *cd = CrashDetect::GetInstance(amx);
+      const std::string &amx_name = cd->amx_name_;
+      const AMXDebugInfo &debug_info = cd->debug_info_;
+
+      amx.PushStack(cip);
+      amx.PushStack(frm);
+      amx.SetFrm(amx.GetStk());
+
+      AMXStackTrace trace(amx, amx.GetFrm());
+      std::deque<AMXStackFrame> frames;
+
+      if (trace.current_frame()) {
+        do {
+          AMXStackFrame frame = trace.current_frame();
+          frames.push_back(frame);
+        }
+        while (trace.Next());
+        frames.back().set_caller_address(amx.GetPublicAddress(call->index()));
+      } else {
+        cell entry_point = amx.GetPublicAddress(call->index());
+        frames.push_front(AMXStackFrame(amx, amx.GetFrm(), 0, 0, entry_point));
+      }
+
+      frm = amx.PopStack();
+      cip = amx.PopStack();
+      amx.SetFrm(frm);
+
+      for (std::deque<AMXStackFrame>::const_iterator it = frames.begin();
+           it != frames.end(); it++) {
+        const AMXStackFrame &frame = *it;
+
+        stream << "#" << level++ << " ";
+        frame.Print(stream, &debug_info);
+
+        if (!debug_info.IsLoaded() && !amx_name.empty()) {
+          stream << " from " << amx_name;
+        }
+
+        stream << std::endl;
+      }
+
+      frm = call->frm();
+      cip = call->cip();
+    }
+
+    calls.pop();
+  }
+}
+
+// static
+void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
+  std::stringstream stream;
+  PrintNativeBacktrace(stream, context);
+  PrintLines(stream.str());
+}
+
+// static
+void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
+                                       const os::Context &context) {
+  StackTrace trace(context);
+  std::deque<StackFrame> frames = trace.GetFrames();
+
+  if (frames.empty()) {
+    return;
+  }
+
+  stream << "Native backtrace:\n";
+
+  int level = 0;
+  for (std::deque<StackFrame>::const_iterator it = frames.begin();
+       it != frames.end(); it++) {
+    const StackFrame &frame = *it;
+
+    stream << "#" << level++ << " ";
+    frame.Print(stream);
+
+    std::string module = os::GetModulePathFromAddr(frame.return_address());
+    if (!module.empty()) {
+      stream << " from " << module;
+    }
+
+    stream << std::endl;
+  }
+}
+
+// static
+void CrashDetect::PrintNativeRegisters(const os::Context &context) {
+  Printf("Native registers:");
+  Printf("eax: %08x  ecx: %08x  edx: %08x  ebx: %08x",
+         context.GetRegister(os::Context::EAX),
+         context.GetRegister(os::Context::ECX),
+         context.GetRegister(os::Context::EDX),
+         context.GetRegister(os::Context::EBX));
+  Printf("esi: %08x  edi: %08x  esp: %08x  ebp: %08x",
+         context.GetRegister(os::Context::ESI),
+         context.GetRegister(os::Context::EDI),
+         context.GetRegister(os::Context::ESP),
+         context.GetRegister(os::Context::EBP));
+  Printf("eip: %08x  eflags: %08x",
+         context.GetRegister(os::Context::EIP),
+         context.GetRegister(os::Context::EFLAGS));
 }

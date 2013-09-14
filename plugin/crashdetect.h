@@ -25,8 +25,6 @@
 #ifndef CRASHDETECT_H
 #define CRASHDETECT_H
 
-#include <map>
-#include <stack>
 #include <string>
 
 #include <amx/amx.h>
@@ -40,7 +38,6 @@ namespace os {
 }
 
 class AMXError;
-class NPCall;
 
 class CrashDetect : public AMXService<CrashDetect> {
  public: 
@@ -59,7 +56,6 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void OnException(const os::Context &context);
   static void OnInterrupt(const os::Context &context);
 
- public:
   static void PrintAmxBacktrace();
   static void PrintAmxBacktrace(std::ostream &stream);
 
@@ -70,20 +66,11 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void PrintNativeRegisters(const os::Context &context);
 
  private:
-  static void Printf(const char *format, ...);
-  static void PrintLines(std::string string);
-
-  static void PrintError(AMXScript amx, const AMXError &error);
-
- private:
   AMXDebugInfo debug_info_;
   std::string amx_path_;
   std::string amx_name_;
   AMX_CALLBACK prev_callback_;
-
- private:
-  static bool block_exec_errors_;
-  static std::stack<NPCall*> np_calls_;
+  bool block_exec_errors_;
 };
 
 #endif // !CRASHDETECT_H
