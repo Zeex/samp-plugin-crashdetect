@@ -103,7 +103,8 @@ const AMX_NATIVE_INFO list[] = {
   {"GetAmxBacktrace",      natives::GetAmxBacktrace},
   {"PrintAmxBacktrace",    natives::PrintAmxBacktrace},
   {"GetNativeBacktrace",   natives::GetNativeBacktrace},
-  {"PrintNativeBacktrace", natives::PrintNativeBacktrace}
+  {"PrintNativeBacktrace", natives::PrintNativeBacktrace},
+  {0,                      0}
 };
 
 } // namespace natives
