@@ -153,6 +153,7 @@ add_subdirectory("plugin")
 add_subdirectory("tests")
 
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ".")
+install(FILES "include/crashdetect.inc" DESTINATION ".")
 
 if(MSVC)
   set(PDB_NAME "${PROJECT_NAME}.pdb")
