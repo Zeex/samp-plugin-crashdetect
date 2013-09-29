@@ -22,7 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE 1 // for dladdr()
+#endif
 
 #include <cassert>
 #include <cstring>
@@ -43,65 +45,61 @@ std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
   return std::string(&name[0]);
 }
 
+typedef void (*SignalHandler)(int signal, siginfo_t *info, void *context);
+
+static void SetSignalHandler(int signal, SignalHandler handler,
+                             struct sigaction *prev_action = 0) {
+  struct sigaction action;
+  sigemptyset(&action.sa_mask);
+  action.sa_sigaction = handler;
+  action.sa_flags = SA_SIGINFO;
+  sigaction(signal, &action, prev_action);
+}
+
+static void CallPreviousSignalHandler(int signal,
+                                      struct sigaction *prev_action = 0) {
+  sigaction(signal, prev_action, 0);
+  raise(signal);
+}
+
 static os::ExceptionHandler except_handler = 0;
 static struct sigaction prev_sigsegv_action;
 static __thread bool this_thread_handles_sigsegv;
 
-static void HandleSIGSEGV(int sig, siginfo_t *info, void *context)
-{
-  if (!::this_thread_handles_sigsegv) {
-    return;
+static void HandleSIGSEGV(int signal, siginfo_t *info, void *context) {
+  assert(signal == SIGSEGV);
+  if (::this_thread_handles_sigsegv) {
+    if (::except_handler != 0) {
+      ::except_handler(context);
+    }
+    CallPreviousSignalHandler(signal, &::prev_sigsegv_action);
   }
-
-  if (::except_handler != 0) {
-    ::except_handler(context);
-  }
-
-  sigaction(sig, &::prev_sigsegv_action, 0);
-  raise(sig);
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
   assert(::except_handler == 0 && "Only one thread may set exception handler");
-
   ::this_thread_handles_sigsegv = true;
   ::except_handler = handler;
-
-  struct sigaction action;
-  sigemptyset(&action.sa_mask);
-  action.sa_sigaction = HandleSIGSEGV;
-  action.sa_flags = SA_SIGINFO;
-
-  sigaction(SIGSEGV, &action, &::prev_sigsegv_action);
+  SetSignalHandler(SIGSEGV, HandleSIGSEGV, &::prev_sigsegv_action);
 }
 
 static os::InterruptHandler interrupt_handler;
 static struct sigaction prev_sigint_action;
 static __thread bool this_thread_handles_sigint;
 
-static void HandleSIGINT(int sig, siginfo_t *info, void *context) {
-  if (!::this_thread_handles_sigint) {
-    return;
+static void HandleSIGINT(int signal, siginfo_t *info, void *context) {
+  assert(signal == SIGINT);
+  if (::this_thread_handles_sigint) {
+    if (::interrupt_handler != 0) {
+      ::interrupt_handler(context);
+    }
+    CallPreviousSignalHandler(signal, &::prev_sigint_action);
   }
-
-  if (::interrupt_handler != 0) {
-    ::interrupt_handler(context);
-  }
-
-  sigaction(sig, &::prev_sigint_action, 0);
-  raise(sig);
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
   assert(::interrupt_handler == 0 && "Only one thread may set interrupt handler");
-
   ::this_thread_handles_sigint = true;
   ::interrupt_handler = handler;
-
-  struct sigaction action;
-  sigemptyset(&action.sa_mask);
-  action.sa_sigaction = HandleSIGINT;
-  action.sa_flags = SA_SIGINFO;
-
-  sigaction(SIGINT, &action, &::prev_sigint_action);
+  SetSignalHandler(SIGINT, HandleSIGINT, &::prev_sigint_action);
 }
