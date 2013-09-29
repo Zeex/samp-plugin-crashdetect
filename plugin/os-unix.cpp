@@ -67,7 +67,7 @@ static struct sigaction prev_sigsegv_action;
 static __thread bool this_thread_handles_sigsegv;
 
 static void HandleSIGSEGV(int signal, siginfo_t *info, void *context) {
-  assert(signal == SIGSEGV);
+  assert(signal == SIGSEGV || signal == SIGABRT);
   if (::this_thread_handles_sigsegv) {
     if (::except_handler != 0) {
       ::except_handler(context);
@@ -81,6 +81,7 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
   ::this_thread_handles_sigsegv = true;
   ::except_handler = handler;
   SetSignalHandler(SIGSEGV, HandleSIGSEGV, &::prev_sigsegv_action);
+  SetSignalHandler(SIGABRT, HandleSIGSEGV);
 }
 
 static os::InterruptHandler interrupt_handler;
