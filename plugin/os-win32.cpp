@@ -30,14 +30,24 @@
 
 #include "os.h"
 
-std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
-  std::vector<char> name(max_length + 1);
+std::string os::GetModulePathFromAddr(void *address) {
+  std::vector<char> filename(MAX_PATH);
   if (address != 0) {
     MEMORY_BASIC_INFORMATION mbi;
-    VirtualQuery(address, &mbi, sizeof(mbi));
-    GetModuleFileName((HMODULE)mbi.AllocationBase, &name[0], max_length);
+    if (VirtualQuery(address, &mbi, sizeof(mbi)) != 0) {
+      DWORD size = filename.size();
+      do {
+        size = GetModuleFileName((HMODULE)mbi.AllocationBase,
+                                 &filename[0], filename.size());
+        if (size < filename.size() ||
+            GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+          break;
+        }
+        filename.resize(size *= 2);
+      } while (true);
+    }
   }
-  return std::string(&name[0]);
+  return std::string(&filename[0]);
 }
 
 static os::ExceptionHandler except_handler = 0;

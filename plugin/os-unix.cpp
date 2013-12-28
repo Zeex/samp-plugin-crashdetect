@@ -31,14 +31,14 @@
 
 #include "os.h"
 
-std::string os::GetModulePathFromAddr(void *address, std::size_t max_length) {
-  std::vector<char> name(max_length + 1);
+std::string os::GetModulePathFromAddr(void *address) {
+  std::string filename;
   if (address != 0) {
     Dl_info info;
     dladdr(address, &info);
-    strncpy(&name[0], info.dli_fname, max_length);
+    filename.assign(info.dli_fname);
   }
-  return std::string(&name[0]);
+  return filename;
 }
 
 typedef void (*SignalHandler)(int signal, siginfo_t *info, void *context);

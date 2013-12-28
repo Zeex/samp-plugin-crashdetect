@@ -25,16 +25,13 @@
 #ifndef OS_H
 #define OS_H
 
-#include <cstddef>
-#include <cstdio>
 #include <string>
 
 namespace os {
 
 // GetModulePathFromAddr finds which module (executable/DLL) a given 
 // address belongs to.
-std::string GetModulePathFromAddr(void *address,
-                                  std::size_t max_length = FILENAME_MAX);
+std::string GetModulePathFromAddr(void *address);
 
 typedef void (*ExceptionHandler)(void *context);
 
