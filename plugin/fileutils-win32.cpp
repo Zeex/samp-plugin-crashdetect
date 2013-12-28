@@ -61,4 +61,11 @@ void GetDirectoryFiles(const std::string &directory, const std::string &pattern,
   FindClose(hFindFile);
 }
 
+std::string GetCurrentWorkingtDirectory() {
+  DWORD size = GetCurrentDirectoryA(0, NULL);
+  std::vector<char> buffer(size);
+  GetCurrentDirectoryA(buffer.size(), &buffer[0]);
+  return std::string(&buffer[0]);
+}
+
 } // namespace fileutils

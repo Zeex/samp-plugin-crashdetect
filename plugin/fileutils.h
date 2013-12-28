@@ -47,6 +47,11 @@ void GetDirectoryFiles(const std::string &directory,
                        const std::string &pattern,
                        std::vector<std::string> &files);
 
+std::string GetRelativePath(std::string path);
+std::string GetRelativePath(std::string path, const std::string &dir);
+
+std::string GetCurrentWorkingtDirectory();
+
 } // namespace fileutils
 
 #endif // !FILEUTILS_H

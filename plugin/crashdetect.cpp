@@ -469,7 +469,7 @@ void CrashDetect::PrintNativeBacktrace(std::ostream &stream, void *context) {
 
     std::string module = os::GetModuleName(frame.return_address());
     if (!module.empty()) {
-      stream << " from " << module;
+      stream << " from " << fileutils::GetRelativePath(module);
     }
 
     stream << std::endl;

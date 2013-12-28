@@ -28,6 +28,8 @@
 
 #include <sys/stat.h>
 
+#include "fileutils.h"
+
 namespace fileutils {
 
 std::string GetFileName(const std::string &path) {
@@ -62,6 +64,23 @@ std::time_t GetModificationTime(const std::string &path) {
     return attrib.st_mtime;
   }
   return 0;
+}
+
+std::string GetRelativePath(std::string path) {
+  return GetRelativePath(path, GetCurrentWorkingtDirectory());
+}
+
+std::string GetRelativePath(std::string path, const std::string &dir) {
+  std::string::size_type pos = path.find(dir);
+  if (pos == 0) {
+    std::string::iterator begin = path.begin();
+    std::string::iterator end = begin + dir.length();
+    while (*end == kNativePathSepChar) {
+      end++;
+    }
+    path.erase(begin, end);
+  }
+  return path;
 }
 
 } // namespace fileutils

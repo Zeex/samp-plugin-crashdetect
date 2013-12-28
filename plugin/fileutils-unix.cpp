@@ -26,7 +26,9 @@
 #include <vector>
 
 #include <dirent.h>
+#include <errno.h>
 #include <fnmatch.h>
+#include <unistd.h>
 
 #include "fileutils.h"
 
@@ -53,5 +55,13 @@ void GetDirectoryFiles(const std::string &directory, const std::string &pattern,
   }
 }
 
-} // namespace fileutils
+std::string GetCurrentWorkingtDirectory() {
+  std::vector<char> buffer(256);
+  while (getcwd(buffer, buffer.size()) == 0 &&
+         errno == ERANGE) {
+    buffer.resize(buffer.size() * 2);
+  }
+  return std::string(&buffer[0]);
+}
 
+} // namespace fileutils
