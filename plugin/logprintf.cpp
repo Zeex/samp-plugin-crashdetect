@@ -39,7 +39,7 @@ void vlogprintf(const char *format, std::va_list va) {
 
   // vlogprintf() doesn't work for arguments that are bigger than 4 bytes
   // in size because it simply counts the number of specifiers, disregarding
-  // their actual meaning. For example, on Windows it works fine oth int
+  // their actual meaning. For example, on Windows it works fine with int
   // and long (because they are 32-bit there) but not for double (and hence
   // any floating-point values, including float).
   for (int i = 0; format[i] != '\0'; i++) {
