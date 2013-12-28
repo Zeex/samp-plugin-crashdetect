@@ -166,27 +166,29 @@ def main(argv):
                           default=False, help='print loaded modules')
   arg_parser.add_argument('-c', '--callstack', action='store_true',
                           default=False, help='print call stack')
+  arg_parser.add_argument('-a', '--all', action='store_true',
+                          default=False, help='print all')
   args = arg_parser.parse_args(argv[1:])
   
   with open(args.file, 'r') as file:
     crashinfo = parse_crashinfo(file)
-    if args.version:
+    if args.all or args.version:
       print('Server version: \n  %s' % crashinfo.get_version())
-    if args.registers:
+    if args.all or args.registers:
       print('Registers:')
       for reg in crashinfo.get_registers():
         print('  %s = %08x' % (reg.name, reg.value))
-    if args.stack:
+    if args.all or args.stack:
       print('Stack:')
       for word in crashinfo.get_stack():
         print('  %08x' % word)
-    if args.modules:
+    if args.all or args.modules:
       print('Modules:')
       for module in crashinfo.get_modules():
         start, end = module.location
         print('  %s [%08x, %08x] (%s)' % (module.filename, start, end,
                                           module.path))
-    if args.callstack:
+    if args.all or args.callstack:
       print 'Call stack:'
       for address, module in crashinfo.get_call_stack():
         print('  %08x in %s' % (address, module.filename))
