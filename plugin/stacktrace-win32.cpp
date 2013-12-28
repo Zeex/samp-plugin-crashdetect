@@ -22,133 +22,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cstddef>
-#include <cstdlib>
-
 #include <Windows.h>
 #include <DbgHelp.h>
 
 #include "stacktrace.h"
 #include "stacktrace-generic.h"
 
-namespace {
-
-const int kMaxSymbolNameLength = 128;
-
-class DbgHelp {
- public:
-  DbgHelp(HANDLE process = NULL)
-   : module_(LoadLibrary("DbgHelp.dll")),
-     process_(process),
-     initialized_(false)
-  {
-    if (process_ == NULL) {
-      process_ = GetCurrentProcess();
-    }
-    if (module_ != NULL) {
-      InitFunctions();
-      if (SymInitialize != 0) {
-        initialized_ = SymInitialize(process_, NULL, TRUE) != FALSE;
-      }
-    }
-  }
-
-  ~DbgHelp() {
-    if (module_ != NULL) {
-      if (initialized_ && SymCleanup != 0) {
-        SymCleanup(process_);
-      }
-      FreeLibrary(module_);
-    }
-  }
-
-  typedef BOOL (WINAPI *SymInitializePtr)(
-    HANDLE hProcess,
-    PCSTR UserSearchPath,
-    BOOL fInvadeProcess
-  );
-  SymInitializePtr SymInitialize;
-
-  typedef BOOL (WINAPI *SymCleanupPtr)(HANDLE hProcess);
-  SymCleanupPtr SymCleanup;
-
-  typedef BOOL (WINAPI *SymFromAddrPtr)(
-    HANDLE hProcess,
-    DWORD64 Address,
-    PDWORD64 Displacement,
-    PSYMBOL_INFO Symbol
-  );
-  SymFromAddrPtr SymFromAddr;
-
-  typedef DWORD (WINAPI *SymGetOptionsPtr)();
-  SymGetOptionsPtr SymGetOptions;
-
-  typedef BOOL (WINAPI *SymSetOptionsPtr)(DWORD SymOptions);
-  SymSetOptionsPtr SymSetOptions;
-
-  typedef BOOL (WINAPI *SymGetModuleInfo64Ptr)(
-    HANDLE hProcess,
-    DWORD64 dwAddr,
-    PIMAGEHLP_MODULE64 ModuleInfo
-  );
-  SymGetModuleInfo64Ptr SymGetModuleInfo64;
-
-  typedef BOOL (WINAPI *StackWalk64Ptr)(
-    DWORD MachineType,
-    HANDLE hProcess,
-    HANDLE hThread,
-    LPSTACKFRAME64 StackFrame,
-    LPVOID ContextRecord,
-    PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine,
-    PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
-    PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
-    PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
-  );
-  StackWalk64Ptr StackWalk64;
-
-  bool is_loaded() const {
-    return module_ != NULL;
-  }
-
-  bool is_initialized() const {
-    return initialized_;
-  }
-
- private:
-  DbgHelp(const DbgHelp &);
-  void operator=(const DbgHelp &);
-
-  void InitFunctions() {
-    #define INIT_FUNC(Name) Name = (Name##Ptr)GetProcAddress(module_, #Name);
-    INIT_FUNC(SymInitialize);
-    INIT_FUNC(SymFromAddr);
-    INIT_FUNC(SymCleanup);
-    INIT_FUNC(SymGetOptions);
-    INIT_FUNC(SymSetOptions);
-    INIT_FUNC(SymGetModuleInfo64);
-    INIT_FUNC(StackWalk64);
-    #undef INIT_FUNC
-  }
-
- private:
-  HMODULE module_;
-  HANDLE process_;
-  bool initialized_;
-};
-
-} // anonymous namespace
+static const int kMaxSymbolNameLength = 128;
 
 StackTrace::StackTrace(void *their_context) {
   PCONTEXT context = reinterpret_cast<PCONTEXT>(their_context);
   CONTEXT current_context;
-  if (their_context == NULL) {
+  if (context == NULL) {
     RtlCaptureContext(&current_context);
     context = &current_context;
   }
-
+  
   HANDLE process = GetCurrentProcess();
-  DbgHelp dbghelp(process);
-  if (!dbghelp.is_loaded()) {
+  if (!SymInitialize(process, NULL, TRUE)) {
     goto fail;
   }
 
@@ -164,67 +55,45 @@ StackTrace::StackTrace(void *their_context) {
   stack_frame.AddrStack.Offset = context->Esp;
   stack_frame.AddrStack.Mode = AddrModeFlat;
 
-  if (!dbghelp.StackWalk64 != 0) {
-    goto fail;
-  }
+  SIZE_T size = sizeof(SYMBOL_INFO) + kMaxSymbolNameLength + 1;
+  DWORD flags = HEAP_ZERO_MEMORY | HEAP_GENERATE_EXCEPTIONS;
+  SYMBOL_INFO *symbol = static_cast<SYMBOL_INFO*>(HeapAlloc(GetProcessHeap(),
+                                                            flags, size));
+  symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+  symbol->MaxNameLen = kMaxSymbolNameLength;
 
-  SYMBOL_INFO *symbol = NULL;
-
-  if (dbghelp.is_initialized()) {
-    std::size_t symbol_size = sizeof(*symbol) + kMaxSymbolNameLength;
-    symbol = static_cast<SYMBOL_INFO*>(std::calloc(1, symbol_size));
-    symbol->SizeOfStruct = sizeof(*symbol);
-    symbol->MaxNameLen = kMaxSymbolNameLength;
-
-    if (dbghelp.SymGetOptions != 0 && dbghelp.SymSetOptions != 0) {
-      DWORD options = dbghelp.SymGetOptions();
-      options |= SYMOPT_FAIL_CRITICAL_ERRORS;
-      dbghelp.SymSetOptions(options);
-    }
-  }
+  DWORD options = SymGetOptions();
+  options |= SYMOPT_FAIL_CRITICAL_ERRORS;
+  SymSetOptions(options);
 
   while (true) {
     DWORD64 address = stack_frame.AddrReturn.Offset;
-
     if (address == 0 || address & 0x80000000) {
       break;
     }
 
-    bool have_symbols = true;
-    if (dbghelp.SymGetModuleInfo64) {
-      IMAGEHLP_MODULE64 module;
-      ZeroMemory(&module, sizeof(IMAGEHLP_MODULE64));
-      module.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
-      if (dbghelp.SymGetModuleInfo64(process, address, &module)) {
-        if (!module.GlobalSymbols) {
-          have_symbols = false;
-        }
-      }
-    }
+    IMAGEHLP_MODULE64 module;
+    ZeroMemory(&module, sizeof(IMAGEHLP_MODULE64));
+    module.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
+    SymGetModuleInfo64(process, address, &module);
 
-    const char *name = "";
-    if (have_symbols) {
-      if (dbghelp.is_initialized() && dbghelp.SymFromAddr != 0
-          && symbol != 0) {
-        if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
-          name = symbol->Name;
-        }
-      }
+    PTSTR name = TEXT("");
+    if (module.GlobalSymbols &&
+        SymFromAddr(process, address, NULL, symbol)) {
+      name = symbol->Name;
     }
 
     frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
 
-    if (!dbghelp.StackWalk64(IMAGE_FILE_MACHINE_I386, process,
-                             GetCurrentThread(), &stack_frame,
-                             (PVOID)context, NULL, NULL, NULL, NULL)) {
+    HANDLE thread = GetCurrentThread();
+    if (!StackWalk64(IMAGE_FILE_MACHINE_I386, process, thread, &stack_frame,
+                     (PVOID)context, NULL, NULL, NULL, NULL)) {
       break;
     }
   }
 
-  if (symbol != NULL) {
-    std::free(symbol);
-  }
-
+  HeapFree(GetProcessHeap(), 0, symbol);
+  SymCleanup(process);
   return;
 
 fail:

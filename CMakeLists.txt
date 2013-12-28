@@ -107,7 +107,7 @@ if(WIN32)
   if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   endif()
-  target_link_libraries(${PROJECT_NAME} Ws2_32)
+  target_link_libraries(${PROJECT_NAME} DbgHelp Ws2_32)
 endif()  
 
 if(UNIX)
