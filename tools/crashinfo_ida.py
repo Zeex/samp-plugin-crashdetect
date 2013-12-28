@@ -29,7 +29,8 @@ import idc
 import sys
 
 def main(argv):
-  filename = idc.AskFile(forsave=False, mask='Text files (*.txt)|*.txt|All files (*.*)|*.*',
+  filename = idc.AskFile(forsave=False,
+                         mask='Text files (*.txt)|*.txt|All files (*.*)|*.*',
                          prompt='Choose an input file')
   if filename is not None:
     with open(filename, 'r') as file:

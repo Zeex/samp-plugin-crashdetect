@@ -85,7 +85,8 @@ class CrashInfo:
     return self._stack
 
   def add_module(self, filename, start_address, end_address, full_path):
-    self._modules.append(Module(filename, int(start_address, 16), int(end_address, 16), full_path))
+    self._modules.append(Module(filename, int(start_address, 16),
+                                int(end_address, 16), full_path))
     
   def get_modules(self):
     return self._modules
@@ -145,19 +146,26 @@ def parse_crashinfo(file):
         for word in line[6:].split():
           crashinfo.add_stack(word)
     elif section is 'modules':
-      match = re.match(r'(?P<name>.+)\tA: (?P<start>0x[0-9A-F]{8}) - (?P<end>0x[0-9A-F]{8})\t\((?P<path>.+)\)', line)
+      match = re.match(r'(?P<name>.+)\tA: (?P<start>0x[0-9A-F]{8}) - '\
+                        '(?P<end>0x[0-9A-F]{8})\t\((?P<path>.+)\)', line)
       if match is not None:
         crashinfo.add_module(*match.groups())
   return crashinfo
 
 def main(argv):
   arg_parser = argparse.ArgumentParser()
-  arg_parser.add_argument('-f', '--file', default='crashinfo.txt', help='set input file')
-  arg_parser.add_argument('-v', '--version', action='store_true', default=False, help='print server version')
-  arg_parser.add_argument('-r', '--registers', action='store_true', default=False, help='print registers')
-  arg_parser.add_argument('-s', '--stack', action='store_true', default=False, help='print raw stack')
-  arg_parser.add_argument('-m', '--modules', action='store_true', default=False, help='print loaded modules')
-  arg_parser.add_argument('-c', '--callstack', action='store_true', default=False, help='print call stack')
+  arg_parser.add_argument('-f', '--file', default='crashinfo.txt',
+                          help='set input file')
+  arg_parser.add_argument('-v', '--version', action='store_true',
+                          default=False, help='print server version')
+  arg_parser.add_argument('-r', '--registers', action='store_true',
+                          default=False, help='print registers')
+  arg_parser.add_argument('-s', '--stack', action='store_true',
+                          default=False, help='print raw stack')
+  arg_parser.add_argument('-m', '--modules', action='store_true',
+                          default=False, help='print loaded modules')
+  arg_parser.add_argument('-c', '--callstack', action='store_true',
+                          default=False, help='print call stack')
   args = arg_parser.parse_args(argv[1:])
   
   with open(args.file, 'r') as file:
@@ -176,7 +184,8 @@ def main(argv):
       print('Modules:')
       for module in crashinfo.get_modules():
         start, end = module.location
-        print('  %s [%08x, %08x] (%s)' % (module.filename, start, end, module.path))
+        print('  %s [%08x, %08x] (%s)' % (module.filename, start, end,
+                                          module.path))
     if args.callstack:
       print 'Call stack:'
       for address, module in crashinfo.get_call_stack():
