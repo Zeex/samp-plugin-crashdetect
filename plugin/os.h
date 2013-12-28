@@ -29,9 +29,9 @@
 
 namespace os {
 
-// GetModulePathFromAddr finds which module (executable/DLL) a given 
-// address belongs to.
-std::string GetModulePathFromAddr(void *address);
+// GetModuleName returns the name of the module (executable/DLL) which
+// a given address belongs to.
+std::string GetModuleName(void *address);
 
 typedef void (*ExceptionHandler)(void *context);
 

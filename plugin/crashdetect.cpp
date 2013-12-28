@@ -380,7 +380,7 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         stream.fill(fill);
 
         void *ptr = reinterpret_cast<void*>(address);
-        std::string path = os::GetModulePathFromAddr(ptr);
+        std::string path = os::GetModuleName(ptr);
         std::string module = fileutils::GetFileName(path);
         if (!module.empty()) {
           stream << " from " << module;
@@ -467,7 +467,7 @@ void CrashDetect::PrintNativeBacktrace(std::ostream &stream, void *context) {
     stream << "#" << level++ << " ";
     frame.Print(stream);
 
-    std::string module = os::GetModulePathFromAddr(frame.return_address());
+    std::string module = os::GetModuleName(frame.return_address());
     if (!module.empty()) {
       stream << " from " << module;
     }

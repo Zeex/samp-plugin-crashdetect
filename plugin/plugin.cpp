@@ -123,7 +123,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   if (amx_Exec_sub == 0) {
     new Hook(amx_Exec_ptr, (void*)AmxExec);
   } else {
-    std::string module = fileutils::GetFileName(os::GetModulePathFromAddr(amx_Exec_sub));
+    std::string module = fileutils::GetFileName(os::GetModuleName(amx_Exec_sub));
     if (!module.empty()) {
       logprintf("  AMX errors won't be tracked because '%s' "
                 "has been loaded before CrashDetect.", module.c_str());

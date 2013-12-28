@@ -31,7 +31,7 @@
 
 #include "os.h"
 
-std::string os::GetModulePathFromAddr(void *address) {
+std::string os::GetModuleName(void *address) {
   std::string filename;
   if (address != 0) {
     Dl_info info;

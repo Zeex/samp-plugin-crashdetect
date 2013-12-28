@@ -30,7 +30,7 @@
 
 #include "os.h"
 
-std::string os::GetModulePathFromAddr(void *address) {
+std::string os::GetModuleName(void *address) {
   std::vector<char> filename(MAX_PATH);
   if (address != 0) {
     MEMORY_BASIC_INFORMATION mbi;
