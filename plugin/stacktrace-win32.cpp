@@ -39,7 +39,7 @@ StackTrace::StackTrace(void *their_context) {
   }
   
   HANDLE process = GetCurrentProcess();
-  if (!SymInitialize(process, "plugins", TRUE)) {
+  if (!SymInitialize(process, NULL, TRUE)) {
     goto fail;
   }
 
