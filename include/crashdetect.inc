@@ -27,3 +27,5 @@ native PrintNativeBacktrace();
 
 native GetAmxBacktrace(string[], size = sizeof(string));
 native GetNativeBacktrace(string[], size = sizeof(string));
+
+public OnRuntimeError(code, &bool:suppress);
