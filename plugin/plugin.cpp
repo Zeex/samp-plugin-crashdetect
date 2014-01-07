@@ -118,7 +118,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   ::logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 
   void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
-  void *amx_Exec_sub = Hook::GetTargetAddress(reinterpret_cast<unsigned char*>(amx_Exec_ptr));
+  void *amx_Exec_sub = Hook::GetTargetAddress(amx_Exec_ptr);
 
   if (amx_Exec_sub == 0) {
     new Hook(amx_Exec_ptr, (void*)AmxExec);
