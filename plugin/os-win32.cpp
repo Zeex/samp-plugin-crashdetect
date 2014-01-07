@@ -22,7 +22,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <cassert>
 #include <vector>
 
 #define WIN32_LEAN_AND_MEAN
@@ -52,24 +51,19 @@ std::string os::GetModuleName(void *address) {
 
 static os::ExceptionHandler except_handler = 0;
 static LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
-static DWORD except_handler_thread_id;
 
 static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
-  if (::except_handler_thread_id == GetCurrentThreadId()) {
-    if (::except_handler != 0) {
-      ::except_handler(exception->ContextRecord);
-    }
-    if (::prev_except_handler != 0) {
-      return ::prev_except_handler(exception);
-    }
+  if (::except_handler != 0) {
+    ::except_handler(exception->ContextRecord);
+  }
+  if (::prev_except_handler != 0) {
+    return ::prev_except_handler(exception);
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
-  assert(::except_handler == 0 && "Only one thread may set exception handler");
   ::except_handler = handler;
-  ::except_handler_thread_id = GetCurrentThreadId();
   if (handler != 0) {
     ::prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
   } else {
@@ -78,13 +72,11 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
 }
 
 static os::InterruptHandler interrupt_handler;
-static DWORD ctrl_handler_thread_id;
 
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
   switch (dwCtrlType) {
   case CTRL_C_EVENT:
-    if (::interrupt_handler != 0 &&
-        ::ctrl_handler_thread_id == GetCurrentThreadId()) {
+    if (::interrupt_handler != 0) {
       ::interrupt_handler(0);
     }
   }
@@ -92,8 +84,6 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
-  assert(::interrupt_handler == 0 && "Only one thread may set interrupt handler");
   ::interrupt_handler = handler;
-  ::ctrl_handler_thread_id = GetCurrentThreadId();
   SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }

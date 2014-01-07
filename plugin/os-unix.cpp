@@ -60,21 +60,16 @@ static void CallPreviousSignalHandler(int signal,
 
 static os::ExceptionHandler except_handler = 0;
 static struct sigaction prev_sigsegv_action;
-static __thread bool this_thread_handles_sigsegv;
 
 static void HandleSIGSEGV(int signal, siginfo_t *info, void *context) {
   assert(signal == SIGSEGV || signal == SIGABRT);
-  if (::this_thread_handles_sigsegv) {
-    if (::except_handler != 0) {
-      ::except_handler(context);
-    }
-    CallPreviousSignalHandler(signal, &::prev_sigsegv_action);
+  if (::except_handler != 0) {
+    ::except_handler(context);
   }
+  CallPreviousSignalHandler(signal, &::prev_sigsegv_action);
 }
 
 void os::SetExceptionHandler(ExceptionHandler handler) {
-  assert(::except_handler == 0 && "Only one thread may set exception handler");
-  ::this_thread_handles_sigsegv = true;
   ::except_handler = handler;
   SetSignalHandler(SIGSEGV, HandleSIGSEGV, &::prev_sigsegv_action);
   SetSignalHandler(SIGABRT, HandleSIGSEGV);
@@ -82,21 +77,16 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
 
 static os::InterruptHandler interrupt_handler;
 static struct sigaction prev_sigint_action;
-static __thread bool this_thread_handles_sigint;
 
 static void HandleSIGINT(int signal, siginfo_t *info, void *context) {
   assert(signal == SIGINT);
-  if (::this_thread_handles_sigint) {
-    if (::interrupt_handler != 0) {
-      ::interrupt_handler(context);
-    }
-    CallPreviousSignalHandler(signal, &::prev_sigint_action);
+  if (::interrupt_handler != 0) {
+    ::interrupt_handler(context);
   }
+  CallPreviousSignalHandler(signal, &::prev_sigint_action);
 }
 
 void os::SetInterruptHandler(InterruptHandler handler) {
-  assert(::interrupt_handler == 0 && "Only one thread may set interrupt handler");
-  ::this_thread_handles_sigint = true;
   ::interrupt_handler = handler;
   SetSignalHandler(SIGINT, HandleSIGINT, &::prev_sigint_action);
 }
