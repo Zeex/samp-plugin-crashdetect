@@ -125,9 +125,9 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   } else {
     std::string module = fileutils::GetFileName(os::GetModuleName(amx_Exec_sub));
     if (!module.empty()) {
-      logprintf("  AMX errors won't be tracked because '%s' "
-                "has been loaded before CrashDetect.", module.c_str());
+      logprintf("  CrashDetect must be loaded before '%s'", module.c_str());
     }
+    return false;
   }
 
   os::SetExceptionHandler(CrashDetect::OnException);
