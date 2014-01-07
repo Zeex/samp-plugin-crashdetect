@@ -22,10 +22,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <algorithm>
+#include <functional>
 #include <vector>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <tlhelp32.h>
 
 #include "os.h"
 
@@ -73,11 +76,97 @@ void os::SetExceptionHandler(ExceptionHandler handler) {
 
 static os::InterruptHandler interrupt_handler;
 
+static HANDLE GetThreadHandle(DWORD thread_id, DWORD desired_access) {
+  return OpenThread(desired_access, FALSE, thread_id);
+}
+
+static DWORD GetMainThreadId() {
+  struct ThreadInfo {
+    DWORD    id;
+    FILETIME creation_time;
+    FILETIME exit_time;
+    FILETIME kernel_time;
+    FILETIME user_time;
+  };
+
+  struct InvalidThread: std::unary_function<ThreadInfo, bool> {
+    bool operator()(const ThreadInfo &thread) {
+      return thread.creation_time.dwHighDateTime == 0 &&
+             thread.creation_time.dwHighDateTime == 0;
+    }
+  };
+
+  struct CompareThreads: std::binary_function<ThreadInfo, ThreadInfo, bool> {
+    bool operator()(const ThreadInfo &lhs, const ThreadInfo &rhs) {
+      return CompareFileTime(&lhs.creation_time, &rhs.creation_time) < 0;
+    }
+  };
+
+  std::vector<ThreadInfo> threads;
+
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+  if (snapshot != INVALID_HANDLE_VALUE) {
+    THREADENTRY32 thread_entry;
+    thread_entry.dwSize = sizeof(thread_entry);
+    if (Thread32First(snapshot, &thread_entry)) {
+      DWORD process_id = GetProcessId(GetCurrentProcess());
+      do {
+        if (thread_entry.dwSize >=
+            FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
+                         sizeof(thread_entry.th32OwnerProcessID)) {
+          if (thread_entry.th32OwnerProcessID == process_id) {
+            ThreadInfo thread = {0};
+            thread.id = thread_entry.th32ThreadID;
+            threads.push_back(thread);
+          }
+        }
+        thread_entry.dwSize = sizeof(thread_entry);
+      } while (Thread32Next(snapshot, &thread_entry));
+    }
+    CloseHandle(snapshot);
+  }
+
+  for (std::vector<ThreadInfo>::iterator it = threads.begin();
+       it != threads.end(); it++) {
+    ThreadInfo &info = *it;
+    HANDLE handle = GetThreadHandle(info.id, THREAD_QUERY_INFORMATION);
+    GetThreadTimes(handle, &info.creation_time, &info.exit_time,
+                           &info.kernel_time,   &info.user_time);
+  }
+
+  threads.erase(std::remove_if(threads.begin(), threads.end(),
+                               InvalidThread()));
+  if (!threads.empty()) {
+    return std::min_element(threads.begin(), threads.end(),
+                            CompareThreads())->id;
+  }
+  return 0;
+}
+
+static BOOL GetMainThreadContext(PCONTEXT context) {
+  DWORD thread_id = GetMainThreadId();
+  if (thread_id != 0) {
+    HANDLE thread_handle = GetThreadHandle(thread_id, THREAD_GET_CONTEXT |
+                                                      THREAD_SUSPEND_RESUME);
+    if (thread_handle != NULL) {
+      if (SuspendThread(thread_handle) != (DWORD)-1) {
+        BOOL ok = GetThreadContext(thread_handle, context) != 0;
+        ResumeThread(thread_handle);
+        return ok;
+      }
+    }
+  }
+  return FALSE;
+}
+
 static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
   switch (dwCtrlType) {
   case CTRL_C_EVENT:
     if (::interrupt_handler != 0) {
-      ::interrupt_handler(0);
+      CONTEXT context = {0};
+      context.ContextFlags = CONTEXT_FULL;
+      GetMainThreadContext(&context);
+      ::interrupt_handler(&context);
     }
   }
   return FALSE;
