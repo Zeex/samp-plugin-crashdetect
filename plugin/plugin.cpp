@@ -160,7 +160,10 @@ PLUGIN_EXPORT void PLUGIN_CALL ProcessTick() {
     Version latest_version = Updater::latest_version();
     Version current_version(PROJECT_VERSION_STRING);
     if (current_version < latest_version) {
-      logprintf("New version of CrashDetect is available for download (%s)",
+      logprintf("CrashDetect %s is released!",
+                latest_version.AsString().c_str());
+      logprintf("Get it here: "
+                "https://github.com/Zeex/samp-plugin-crashdetect/releases/tag/v%s",
                 latest_version.AsString().c_str());
     }
   }
