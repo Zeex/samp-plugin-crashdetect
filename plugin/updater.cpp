@@ -31,12 +31,18 @@
 
 namespace {
 
+const std::string kGitHubUrl = "https://github.com";
+const std::string kGitHubUserName = "zeex";
+const std::string kGitHubProjectName = "samp-plugin-crashdetect";
+const std::string kGitHubProjectUrl = kGitHubUrl + "/" + kGitHubUserName +
+                                                   "/" + kGitHubProjectName;
+
 const std::string kCrLf = "\r\n";
 const std::string kHttpHeaderDelim = kCrLf + kCrLf;
 
-const std::string kHostString = "zeex.github.io";
+const std::string kHostString = kGitHubUserName + ".github.io";
 const std::string kPortString = "80";
-const std::string kRequestUriString = "/samp-plugin-crashdetect/version";
+const std::string kRequestUriString = "/" + kGitHubProjectName + "/version";
 
 const std::string kRequestString =
   "GET " + kRequestUriString + " HTTP/1.1" + kCrLf +
@@ -98,4 +104,14 @@ void Updater::FetchVersion() {
 
   latest_version_ = version;
   version_fetched_ = true;
+}
+
+// static
+std::string Updater::GetDownloadUrl() {
+  return GetDownloadUrl(latest_version_);
+}
+
+// static
+std::string Updater::GetDownloadUrl(const Version &version) {
+  return kGitHubProjectUrl + "/releases/tag/v" + version.AsString();;
 }

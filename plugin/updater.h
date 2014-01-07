@@ -51,6 +51,9 @@ class Updater {
     return latest_version_;
   }
 
+  static std::string GetDownloadUrl();
+  static std::string GetDownloadUrl(const Version &version);
+
  private:
   static Thread fetch_thread_;
   static bool version_fetched_;
