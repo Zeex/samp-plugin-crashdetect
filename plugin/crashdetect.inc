@@ -29,3 +29,10 @@ native GetAmxBacktrace(string[], size = sizeof(string));
 native GetNativeBacktrace(string[], size = sizeof(string));
 
 public OnRuntimeError(code, &bool:suppress);
+
+stock bool:IsCrashDetectPresent() {
+	#emit zero.pri
+	#emit lctrl 0xFF
+	#emit retn
+	return false;
+}
