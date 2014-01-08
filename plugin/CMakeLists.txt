@@ -29,11 +29,8 @@ set(PLUGIN_SOURCES
   compiler.h
   crashdetect.cpp
   crashdetect.h
-  cstdint.h
   fileutils.cpp
   fileutils.h
-  hook.cpp
-  hook.h
   logprintf.cpp
   logprintf.h
   npcall.cpp
@@ -59,14 +56,12 @@ list(APPEND PLUGIN_SOURCES
 if(WIN32)
   list(APPEND PLUGIN_SOURCES
     fileutils-win32.cpp
-    hook-win32.cpp
     os-win32.cpp
     stacktrace-win32.cpp
   )
 elseif(UNIX)
   list(APPEND PLUGIN_SOURCES
     fileutils-unix.cpp
-    hook-unix.cpp
     os-unix.cpp
     stacktrace-unix.cpp
   )
@@ -107,6 +102,6 @@ if(UNIX)
 endif()
 
 add_subdirectory(amx)
-target_link_Libraries(plugin amx)
+target_link_Libraries(plugin amx subhook)
 
 install(TARGETS plugin LIBRARY DESTINATION ".")

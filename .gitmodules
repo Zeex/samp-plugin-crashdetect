@@ -1,0 +1,3 @@
+[submodule "deps/subhook"]
+	path = deps/subhook
+	url = https://github.com/Zeex/subhook.git

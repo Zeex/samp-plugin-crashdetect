@@ -30,6 +30,8 @@ string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc}
 set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
+add_subdirectory(deps)
+
 add_subdirectory(include)
 add_subdirectory(plugin)
 

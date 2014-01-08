@@ -25,15 +25,18 @@
 #include <sstream>
 #include <string>
 
+#include <subhook.h>
+
 #include "amxerror.h"
 #include "compiler.h"
 #include "crashdetect.h"
 #include "fileutils.h"
-#include "hook.h"
 #include "logprintf.h"
 #include "os.h"
 #include "plugincommon.h"
 #include "pluginversion.h"
+
+static SubHook exec_hook;
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
   return CrashDetect::GetInstance(amx)->DoAmxCallback(index, result, params);
@@ -115,10 +118,10 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   ::logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 
   void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
-  void *amx_Exec_sub = Hook::GetTargetAddress(amx_Exec_ptr);
+  void *amx_Exec_sub = SubHook::ReadDst(amx_Exec_ptr);
 
   if (amx_Exec_sub == 0) {
-    new Hook(amx_Exec_ptr, (void*)AmxExec);
+    exec_hook.Install(amx_Exec_ptr, (void*)AmxExec);
   } else {
     std::string module = fileutils::GetFileName(os::GetModuleName(amx_Exec_sub));
     if (!module.empty()) {
