@@ -34,9 +34,6 @@
 #include "os.h"
 #include "plugincommon.h"
 #include "pluginversion.h"
-#include "thread.h"
-#include "updater.h"
-#include "version.h"
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
   return CrashDetect::GetInstance(amx)->DoAmxCallback(index, result, params);
@@ -110,7 +107,7 @@ const AMX_NATIVE_INFO list[] = {
 } // namespace natives
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
-  return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES | SUPPORTS_PROCESS_TICK;
+  return SUPPORTS_VERSION | SUPPORTS_AMX_NATIVES;
 }
 
 PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
@@ -133,8 +130,6 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   os::SetExceptionHandler(CrashDetect::OnException);
   os::SetInterruptHandler(CrashDetect::OnInterrupt);
 
-  Updater::InitiateVersionFetch();
-
   logprintf("  CrashDetect v"PROJECT_VERSION_STRING" is OK.");
   return true;
 }
@@ -153,16 +148,4 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
   int error = CrashDetect::GetInstance(amx)->Unload();
   CrashDetect::DestroyInstance(amx);
   return error;
-}
-
-PLUGIN_EXPORT void PLUGIN_CALL ProcessTick() {
-  if (Updater::version_fetched()) {
-    Version latest_version = Updater::latest_version();
-    Version current_version(PROJECT_VERSION_STRING);
-    if (current_version < latest_version) {
-      std::string version = latest_version.AsString();
-      logprintf("CrashDetect %s is released!", version.c_str());
-      logprintf("Get it here: %s", Updater::GetDownloadUrl().c_str());
-    }
-  }
 }

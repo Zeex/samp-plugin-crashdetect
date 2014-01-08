@@ -57,12 +57,6 @@ set(SOURCES
   "plugin/stacktrace.h"
   "plugin/stacktrace-generic.cpp"
   "plugin/stacktrace-generic.h"
-  "plugin/tcpsocket.h"
-  "plugin/thread.h"
-  "plugin/updater.cpp"
-  "plugin/updater.h"
-  "plugin/version.cpp"
-  "plugin/version.h"
   "${CMAKE_CURRENT_BINARY_DIR}/plugin/plugin.rc"
   "${CMAKE_CURRENT_BINARY_DIR}/plugin/pluginversion.h"
 )
@@ -73,8 +67,6 @@ if(WIN32)
     "plugin/hook-win32.cpp"
     "plugin/os-win32.cpp"
     "plugin/stacktrace-win32.cpp"
-    "plugin/tcpsocket-win32.cpp"
-    "plugin/thread-win32.cpp"
   )
 elseif(UNIX)
   list(APPEND SOURCES
@@ -82,8 +74,6 @@ elseif(UNIX)
     "plugin/hook-unix.cpp"
     "plugin/os-unix.cpp"
     "plugin/stacktrace-unix.cpp"
-    "plugin/tcpsocket-unix.cpp"
-    "plugin/thread-unix.cpp"
   )
 else()
   message(FATAL_ERROR "Unsupported operating system.")
