@@ -2,6 +2,8 @@ include(AmxConfig)
 include(CheckFunctionExists)
 include(SampPlugin)
 
+install(FILES crashdetect.inc DESTINATION ".")
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/amx)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -33,6 +35,8 @@ set(PLUGIN_SOURCES
   fileutils.h
   logprintf.cpp
   logprintf.h
+  natives.cpp
+  natives.h
   npcall.cpp
   npcall.h
   os.h

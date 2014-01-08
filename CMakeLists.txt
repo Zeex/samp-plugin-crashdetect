@@ -31,8 +31,6 @@ set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
 
 add_subdirectory(deps)
-
-add_subdirectory(include)
 add_subdirectory(plugin)
 
 set_target_properties(plugin PROPERTIES

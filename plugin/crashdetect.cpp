@@ -164,9 +164,9 @@ CrashDetect::CrashDetect(AMX *amx)
 }
 
 int CrashDetect::Load() {
-  AMXPathFinder pathFinder;
-  pathFinder.AddSearchPath("gamemodes");
-  pathFinder.AddSearchPath("filterscripts");
+  AMXPathFinder amx_finder;
+  amx_finder.AddSearchPath("gamemodes");
+  amx_finder.AddSearchPath("filterscripts");
 
   // Read a list of additional search paths from AMX_PATH.
   const char *AMX_PATH = getenv("AMX_PATH");
@@ -182,13 +182,13 @@ int CrashDetect::Load() {
       }
       path.assign(var.begin() + begin, var.begin() + end);
       if (!path.empty()) {
-        pathFinder.AddSearchPath(path);
+        amx_finder.AddSearchPath(path);
       }
       begin = end + 1;
     }
   }
 
-  amx_path_ = pathFinder.FindAmx(amx());
+  amx_path_ = amx_finder.FindAmx(amx());
   amx_name_ = fileutils::GetFileName(amx_path_);
 
   if (!amx_path_.empty() && AMXDebugInfo::IsPresent(amx())) {
