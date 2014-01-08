@@ -33,15 +33,15 @@ set(PROJECT_VERSION_RC ${version_rc})
 add_subdirectory(include)
 add_subdirectory(plugin)
 
-if(BUILD_TESTING)
-  add_subdirectory(tests)
-endif()
-
 set_target_properties(plugin PROPERTIES
   OUTPUT_NAME ${PROJECT_NAME}
   PDB_NAME    ${PROJECT_NAME}
   PDB_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
 
 if(MSVC_IDE AND MSVC_VERSION GREATER 1200)
   set(config \${CMAKE_INSTALL_CONFIG_NAME})
