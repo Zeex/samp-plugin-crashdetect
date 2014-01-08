@@ -274,12 +274,14 @@ void CrashDetect::HandleExecError(int index, cell *retval,
   cell suppress = 0;
 
   if (callback_index >= 0) {
-    cell suppress_addr, *suppress_ptr;
-    amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
-    amx_Push(amx(), error.code());
-    amx_Exec(amx(), retval, callback_index);
-    amx_Release(amx(), suppress_addr);
-    suppress = *suppress_ptr;
+    if (amx().IsStackOK()) {
+      cell suppress_addr, *suppress_ptr;
+      amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
+      amx_Push(amx(), error.code());
+      amx_Exec(amx(), retval, callback_index);
+      amx_Release(amx(), suppress_addr);
+      suppress = *suppress_ptr;
+    }
   }
 
   if (suppress == 0) {
@@ -396,9 +398,11 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
       const std::string &amx_name = cd->amx_name_;
       const AMXDebugInfo &debug_info = cd->debug_info_;
 
-      amx.PushStack(cip);
-      amx.PushStack(frm);
-      amx.SetFrm(amx.GetStk());
+      if (amx.IsStackOK()) {
+        amx.PushStack(cip);
+        amx.PushStack(frm);
+        amx.SetFrm(amx.GetStk());
+      }
 
       AMXStackTrace trace(amx, amx.GetFrm());
       std::deque<AMXStackFrame> frames;
@@ -415,9 +419,11 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         frames.push_front(AMXStackFrame(amx, amx.GetFrm(), 0, 0, entry_point));
       }
 
-      frm = amx.PopStack();
-      cip = amx.PopStack();
-      amx.SetFrm(frm);
+      if (amx.IsStackOK()) {
+        frm = amx.PopStack();
+        cip = amx.PopStack();
+        amx.SetFrm(frm);
+      }
 
       for (std::deque<AMXStackFrame>::const_iterator it = frames.begin();
            it != frames.end(); it++) {

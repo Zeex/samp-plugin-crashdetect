@@ -160,6 +160,10 @@ const char *AMXScript::GetName(uint32_t offset) const {
   return reinterpret_cast<char*>(amx_->base + offset);
 }
 
+bool AMXScript::IsStackOK() const {
+  return GetStk() >= GetHlw() && GetStk() < GetStp();
+}
+
 void AMXScript::PushStack(cell value) {
   amx_->stk -= sizeof(cell);
   *reinterpret_cast<cell*>(GetData() + amx_->stk) = value;
