@@ -22,6 +22,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#if defined CRASHDETECT_INC
+	#endinput
+#endif
+#define CRASHDETECT_INC
+
 native PrintAmxBacktrace();
 native PrintNativeBacktrace();
 
