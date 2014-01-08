@@ -24,11 +24,12 @@
 /* Differences from the original file:
  * - ABORT() calls an external error handler via amx_RaiseExecError()
  * - ABORT() syncs registers with local variables before return
- * - CHKSTACK(), CHKMARGIN() and CHKHEAP() now use ABORT() instead of plain return
+ * - CHKSTACK(), CHKMARGIN() and CHKHEAP() now use ABORT() instead return
  * - amx->cip is updated after each instruction
  * - CALL.pri and JUMP.pri instructions have been removed
  * - LREF.S.* and SREF.S.* instructions sync STK and FRM before dereferencing
  *   the pointer (because of possible crash)
+ * - LCTRL 0xFF always sets PRI to 1
  */
 
 #if BUILD_PLATFORM == WINDOWS && BUILD_TYPE == RELEASE && BUILD_COMPILER == MSVC && PAWN_CELL_SIZE == 64
@@ -3023,6 +3024,9 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         break;
       case 6:
         pri=(cell)((unsigned char *)cip - code);
+        break;
+      case 0xFF:
+        pri=1;
         break;
       } /* switch */
       break;
