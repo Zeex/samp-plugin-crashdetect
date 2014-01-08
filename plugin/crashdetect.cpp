@@ -191,6 +191,10 @@ int CrashDetect::Load() {
   amx_path_ = amx_finder.FindAmx(amx());
   amx_name_ = fileutils::GetFileName(amx_path_);
 
+  if (amx_name_.empty()) {
+    amx_name_ = amx_path_.empty()? "<unknown>": amx_path_;
+  }
+
   if (!amx_path_.empty() && AMXDebugInfo::IsPresent(amx())) {
     debug_info_.Load(amx_path_);
   }
