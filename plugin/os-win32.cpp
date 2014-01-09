@@ -112,7 +112,7 @@ static DWORD GetMainThreadId() {
       DWORD process_id = GetProcessId(GetCurrentProcess());
       do {
         if (thread_entry.dwSize >=
-            FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
+            FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID)
                          sizeof(thread_entry.th32OwnerProcessID)) {
           if (thread_entry.th32OwnerProcessID == process_id) {
             ThreadInfo thread = {0};

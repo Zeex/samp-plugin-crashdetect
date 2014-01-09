@@ -13,6 +13,8 @@ if(UNIX)
 endif()
 
 set(PLUGIN_SOURCES
+  amxcallstack.cpp
+  amxcallstack.h
   amxdebuginfo.cpp
   amxdebuginfo.h
   amxerror.cpp
@@ -37,8 +39,6 @@ set(PLUGIN_SOURCES
   logprintf.h
   natives.cpp
   natives.h
-  npcall.cpp
-  npcall.h
   os.h
   plugin.cpp
   plugin.def

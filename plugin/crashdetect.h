@@ -27,8 +27,7 @@
 
 #include <string>
 
-#include <amx/amx.h>
-
+#include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 #include "amxservice.h"
@@ -36,9 +35,9 @@
 class AMXError;
 
 class CrashDetect : public AMXService<CrashDetect> {
- public: 
+ public:
   explicit CrashDetect(AMX *amx);
- 
+
   int Load();
   int Unload();
 
@@ -49,8 +48,15 @@ class CrashDetect : public AMXService<CrashDetect> {
   void HandleInterrupt();
   void HandleExecError(int index, cell *retval, const AMXError &error);
 
+  static bool IsInsideAmx();
+
   static void OnException(void *context);
   static void OnInterrupt(void *context);
+
+  static void Printf(const char *format, ...) ;
+  static void PrintLines(std::string string);
+
+  static void PrintRuntimeError(AMXScript amx, const AMXError &error);
 
   static void PrintAmxBacktrace();
   static void PrintAmxBacktrace(std::ostream &stream);
@@ -60,10 +66,15 @@ class CrashDetect : public AMXService<CrashDetect> {
 
  private:
   AMXDebugInfo debug_info_;
+  AMX_CALLBACK prev_callback_;
+
   std::string amx_path_;
   std::string amx_name_;
-  AMX_CALLBACK prev_callback_;
+
   bool block_exec_errors_;
+
+ private:
+  static AMXCallStack call_stack_;
 };
 
 #endif // !CRASHDETECT_H

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2013 Zeex
+// Copyright (c) 2013 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,60 +22,56 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXPATHFINDER_H
-#define AMXPATHFINDER_H
+#ifndef AMXCALLSTACK_H
+#define AMXCALLSTACK_H
 
-#include <ctime>
-#include <list>
-#include <map>
-#include <string>
+#include <stack>
 
 #include "amxscript.h"
 
-class AMXPathFinder {
+class AMXCall {
  public:
-  ~AMXPathFinder();
-
-  void AddSearchPath(std::string path);
-
-  std::string FindAmx(AMXScript amx);
-
- private:
-  std::list<std::string> search_paths_;
-
-  class AMXFile {
-   public:
-    explicit AMXFile(const std::string &name);
-    ~AMXFile();
-
-    bool IsLoaded() const { return amx_ != 0; }
-
-    const AMX *amx() const {
-      return amx_;
-    }
-    const std::string &name() const {
-      return name_;
-    }
-    std::time_t mtime() const {
-      return mtime_;
-    }
-
-   private:
-    AMXFile(const AMXFile &other);
-    AMXFile &operator=(const AMXFile &other);
-
-   private:
-    AMX *amx_;
-    std::string name_;
-    std::time_t mtime_;
+  enum Type {
+    NATIVE,
+    PUBLIC
   };
 
- private:
-  typedef std::map<std::string, AMXFile*> StringToAMXFileMap;
-  StringToAMXFileMap string_to_amx_file_;
+  AMXCall(Type type, AMXScript amx, cell index);
+  AMXCall(Type type, AMXScript amx, cell index, cell frm, cell cip);
 
-  typedef std::map<AMX*, std::string> AMXToStringMap;
-  AMXToStringMap amx_to_string_;
+  static AMXCall Public(AMXScript amx, cell index);
+  static AMXCall Native(AMXScript amx, cell index);
+
+  AMXScript amx() const { return amx_; }
+
+  Type type()  const { return type_;  }
+  cell index() const { return index_; }
+  cell frm()   const { return frm_;   }
+  cell cip()   const { return cip_;   }
+
+  bool IsPublic() const { return type_ == PUBLIC; }
+  bool IsNative() const { return type_ == NATIVE; }
+
+ private:
+  AMXScript amx_;
+  Type type_;
+  cell frm_;
+  cell cip_;
+  cell index_;
 };
 
-#endif // AMXPATHFINDER_H
+class AMXCallStack {
+ public:
+  bool IsEmpty() const;
+
+  AMXCall &Top();
+  const AMXCall &Top() const;
+
+  void Push(AMXCall call);
+  AMXCall Pop();
+
+ private:
+  std::stack<AMXCall> call_stack_;
+};
+
+#endif // !AMXCALLSTACK_H

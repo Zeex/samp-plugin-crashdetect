@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Zeex
+// Copyright (c) 2014 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,39 +22,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef NPCALL_H
-#define NPCALL_H
+namespace utils {
 
-#include "amxscript.h"
+template<typename UnaryFunction>
+void SplitString(const std::string &s, char delim, UnaryFunction func) {
+  std::string::size_type begin = 0;
+  while (begin < s.length()) {
+    std::string::size_type end = s.find(delim, begin);
+    if (end != std::string::npos) {
+      func(std::string(s.begin() + begin, s.begin() + end));
+      begin = end + 1;
+    } else {
+      func(std::string(s.begin() + begin, s.end()));
+      break;
+    }
+  }
+}
 
-class NPCall {
- public:
-  enum Type {
-    NATIVE,
-    PUBLIC
-  };
-
-  NPCall(Type type, AMXScript amx, cell index);
-  NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip);
-
-  static NPCall Public(AMXScript amx, cell index);
-  static NPCall Native(AMXScript amx, cell index);
-
-  AMXScript amx() const { return amx_; }
-  Type type() const { return type_; }
-  cell index() const { return index_; }
-  cell frm() const { return frm_; }
-  cell cip() const { return cip_; }
-
-  bool IsPublic() const { return type_ == PUBLIC; }
-  bool IsNative() const { return type_ == NATIVE; }
-
- private:
-  AMXScript amx_;
-  Type type_;
-  cell frm_;
-  cell cip_;
-  cell index_;
-};
-
-#endif // !NPCALL_H
+} // namespace utils

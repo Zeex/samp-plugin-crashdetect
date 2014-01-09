@@ -26,11 +26,12 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <deque>
+#include <functional>
 #include <iomanip>
 #include <sstream>
-#include <stack>
 #include <string>
 
+#include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxerror.h"
 #include "amxopcode.h"
@@ -41,34 +42,184 @@
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"
-#include "npcall.h"
 #include "os.h"
 #include "stacktrace.h"
+#include "utils.h"
 
 #define AMX_EXEC_GDK (-10)
 
-namespace {
+AMXCallStack CrashDetect::call_stack_;
 
-std::stack<NPCall*> np_calls;
+CrashDetect::CrashDetect(AMX *amx)
+ : AMXService<CrashDetect>(amx),
+   prev_callback_(0),
+   block_exec_errors_(false)
+{
+}
 
-// Helper class for priting 32-bit integers in hex (e.g. memory addresses).
-class HexDword {
- public:
-  static const int kWidth = 8;
-  HexDword(uint32_t value): value_(value) {}
-  HexDword(void *value): value_(reinterpret_cast<uint32_t>(value)) {}
-  friend std::ostream &operator<<(std::ostream &stream, const HexDword &x) {
-    char fill = stream.fill();
-    stream << std::setw(kWidth) << std::setfill('0') << std::hex
-           << x.value_ << std::dec;
-    stream.fill(fill);
-    return stream;
+int CrashDetect::Load() {
+  AMXPathFinder amx_finder;
+  amx_finder.AddSearchPath("gamemodes");
+  amx_finder.AddSearchPath("filterscripts");
+
+  const char *var = getenv("AMX_PATH");
+  if (var != 0) {
+    utils::SplitString(var, fileutils::kNativePathListSepChar,
+        std::bind1st(std::mem_fun(&AMXPathFinder::AddSearchPath), &amx_finder));
   }
- private:
-  uint32_t value_;
-};
 
-void Printf(const char *format, ...) {
+  amx_path_ = amx_finder.FindAmx(amx());
+  if (!amx_path_.empty()) {
+    if (AMXDebugInfo::IsPresent(amx())) {
+      debug_info_.Load(amx_path_);
+    }
+  }
+
+  amx_name_ = fileutils::GetFileName(amx_path_);
+  if (amx_name_.empty()) {
+    assert(amx_path_.empty());
+    amx_name_ = "<unknown>";
+  }
+
+  amx().DisableSysreqD();
+  prev_callback_ = amx().GetCallback();
+
+  return AMX_ERR_NONE;
+}
+
+int CrashDetect::Unload() {
+  return AMX_ERR_NONE;
+}
+
+int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
+  AMXCall call = AMXCall::Native(amx(), index);
+  call_stack_.Push(call);
+  int error = prev_callback_(amx(), index, result, params);
+  call_stack_.Pop();
+  return error;
+}
+
+int CrashDetect::DoAmxExec(cell *retval, int index) {
+  AMXCall call = AMXCall::Public(amx(), index);
+  call_stack_.Push(call);
+
+  int error = ::amx_Exec(amx(), retval, index);
+  if (error == AMX_ERR_CALLBACK ||
+      error == AMX_ERR_NOTFOUND ||
+      error == AMX_ERR_INIT     ||
+      error == AMX_ERR_INDEX    ||
+      error == AMX_ERR_SLEEP)
+  {
+    // For these types of errors amx_Error() is not called because of
+    // early return from amx_Exec().
+    HandleExecError(index, retval, error);
+  }
+
+  call_stack_.Pop();
+  return error;
+}
+
+void CrashDetect::HandleExecError(int index, cell *retval,
+                                  const AMXError &error) {
+  if (block_exec_errors_) {
+    return;
+  }
+
+  // The following error codes should not be treated as errors:
+  //
+  // 1. AMX_ERR_NONE is always returned when a public function returns
+  //    normally as it jumps to return address 0 where it performs "halt 0".
+  //
+  // 2. AMX_ERR_SLEEP is returned when the VM is put into sleep mode. The
+  //    execution can be later continued using AMX_EXEC_CONT.
+  if (error.code() == AMX_ERR_NONE || error.code() == AMX_ERR_SLEEP) {
+    return;
+  }
+
+  // For compatibility with sampgdk.
+  if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
+    return;
+  }
+
+  // Block errors while calling OnRuntimeError as it may result in yet
+  // another error (and for certain errors it in fact always does, e.g.
+  // stack/heap collision due to insufficient stack space for making
+  // the public call).
+  block_exec_errors_ = true;
+
+  // Capture backtrace before continuing as OnRuntimError will modify the
+  // state of the AMX thus we'll end up with a different stack and possibly
+  // other things too. This also should protect from cases where something
+  // hooks logprintf (like fixes2).
+  std::stringstream bt_stream;
+  PrintAmxBacktrace(bt_stream);
+
+  // public OnRuntimeError(code, &bool:suppress);
+  cell callback_index = amx().GetPublicIndex("OnRuntimeError");
+  cell suppress = 0;
+
+  if (callback_index >= 0) {
+    if (amx().IsStackOK()) {
+      cell suppress_addr, *suppress_ptr;
+      amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
+      amx_Push(amx(), error.code());
+      amx_Exec(amx(), retval, callback_index);
+      amx_Release(amx(), suppress_addr);
+      suppress = *suppress_ptr;
+    }
+  }
+
+  if (suppress == 0) {
+    PrintRuntimeError(amx(), error);
+    if (error.code() != AMX_ERR_NOTFOUND &&
+        error.code() != AMX_ERR_INDEX    &&
+        error.code() != AMX_ERR_CALLBACK &&
+        error.code() != AMX_ERR_INIT) {
+      PrintLines(bt_stream.str());
+    }
+  }
+
+  block_exec_errors_ = false;
+}
+
+void CrashDetect::HandleException() {
+  Printf("Server crashed while executing %s", amx_name_.c_str());
+  PrintAmxBacktrace();
+}
+
+void CrashDetect::HandleInterrupt() {
+  Printf("Server received interrupt signal while executing %s",
+         amx_name_.c_str());
+  PrintAmxBacktrace();
+}
+
+// static
+bool CrashDetect::IsInsideAmx() {
+  return !call_stack_.IsEmpty();
+}
+
+// static
+void CrashDetect::OnException(void *context) {
+  if (IsInsideAmx()) {
+    CrashDetect::GetInstance(call_stack_.Top().amx())->HandleException();
+  } else {
+    Printf("Server crashed due to an unknown error");
+  }
+  PrintNativeBacktrace(context);
+}
+
+// static
+void CrashDetect::OnInterrupt(void *context) {
+  if (IsInsideAmx()) {
+    CrashDetect::GetInstance(call_stack_.Top().amx())->HandleInterrupt();
+  } else {
+    Printf("Server received interrupt signal");
+  }
+  PrintNativeBacktrace(context);
+}
+
+// static
+void CrashDetect::Printf(const char *format, ...) {
   std::va_list va;
   va_start(va, format);
 
@@ -80,7 +231,8 @@ void Printf(const char *format, ...) {
   va_end(va);
 }
 
-void PrintLines(std::string string) {
+// static
+void CrashDetect::PrintLines(std::string string) {
   std::string::iterator current = string.begin();
   for (std::string::iterator it = string.begin(); it != string.end(); it++) {
     if (*it == '\n') {
@@ -91,16 +243,13 @@ void PrintLines(std::string string) {
   }
 }
 
-cell *GetCurrentCodePtr(AMXScript amx) {
-  return reinterpret_cast<cell*>(amx.GetCode() + amx.GetCip());
-}
-
-void PrintError(AMXScript amx, const AMXError &error) {
-  Printf("Run time error %d: \"%s\"", error.code(), error.GetString());
-
+// static
+void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
+  Printf("Run time error %d: \"%s\"", error.code(),
+                                      error.GetString());
+  cell *ip = reinterpret_cast<cell*>(amx.GetCode() + amx.GetCip());
   switch (error.code()) {
     case AMX_ERR_BOUNDS: {
-      cell *ip = GetCurrentCodePtr(amx);
       cell opcode = *ip;
       if (opcode == RelocateAmxOpcode(AMX_OP_BOUNDS)) {
         cell bound = *(ip + 1);
@@ -137,13 +286,12 @@ void PrintError(AMXScript amx, const AMXError &error) {
              amx.GetHea(), amx.GetHlw());
       break;
     case AMX_ERR_INVINSTR: {
-      cell opcode = *GetCurrentCodePtr(amx);
+      cell opcode = *ip;
       Printf(" Unknown opcode 0x%x at address 0x%08X",
              opcode , amx.GetCip());
       break;
     }
     case AMX_ERR_NATIVE: {
-      const cell *ip = GetCurrentCodePtr(amx);
       cell opcode = *(ip - 2);
       if (opcode == RelocateAmxOpcode(AMX_OP_SYSREQ_C)) {
         cell index = *(ip - 1);
@@ -154,184 +302,6 @@ void PrintError(AMXScript amx, const AMXError &error) {
   }
 }
 
-} // anonymous namespace
-
-CrashDetect::CrashDetect(AMX *amx)
- : AMXService<CrashDetect>(amx),
-   prev_callback_(0),
-   block_exec_errors_(false)
-{
-}
-
-int CrashDetect::Load() {
-  AMXPathFinder amx_finder;
-  amx_finder.AddSearchPath("gamemodes");
-  amx_finder.AddSearchPath("filterscripts");
-
-  // Read a list of additional search paths from AMX_PATH.
-  const char *AMX_PATH = getenv("AMX_PATH");
-  if (AMX_PATH != 0) {
-    std::string var(AMX_PATH);
-    std::string path;
-    std::string::size_type begin = 0;
-    while (begin < var.length()) {
-      std::string::size_type end = var.find(fileutils::kNativePathListSepChar,
-                                            begin);
-      if (end == std::string::npos) {
-        end = var.length();
-      }
-      path.assign(var.begin() + begin, var.begin() + end);
-      if (!path.empty()) {
-        amx_finder.AddSearchPath(path);
-      }
-      begin = end + 1;
-    }
-  }
-
-  amx_path_ = amx_finder.FindAmx(amx());
-  amx_name_ = fileutils::GetFileName(amx_path_);
-
-  if (amx_name_.empty()) {
-    amx_name_ = amx_path_.empty()? "<unknown>": amx_path_;
-  }
-
-  if (!amx_path_.empty() && AMXDebugInfo::IsPresent(amx())) {
-    debug_info_.Load(amx_path_);
-  }
-
-  amx().DisableSysreqD();
-  prev_callback_ = amx().GetCallback();
-
-  return AMX_ERR_NONE;
-}
-
-int CrashDetect::Unload() {
-  return AMX_ERR_NONE;
-}
-
-int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
-  NPCall call = NPCall::Native(amx(), index);
-  np_calls.push(&call);
-  int error = prev_callback_(amx(), index, result, params);
-  np_calls.pop();
-  return error;
-}
-
-int CrashDetect::DoAmxExec(cell *retval, int index) {  
-  NPCall call = NPCall::Public(amx(), index);
-  np_calls.push(&call);
-
-  int error = ::amx_Exec(amx(), retval, index);
-  if (error == AMX_ERR_CALLBACK ||
-      error == AMX_ERR_NOTFOUND ||
-      error == AMX_ERR_INIT     ||
-      error == AMX_ERR_INDEX    ||
-      error == AMX_ERR_SLEEP)
-  {
-    // For these types of errors amx_Error() is not called because of
-    // early return from amx_Exec().
-    HandleExecError(index, retval, error);
-  }
-
-  np_calls.pop();
-  return error;
-}
-
-void CrashDetect::HandleExecError(int index, cell *retval,
-                                  const AMXError &error) {
-  if (block_exec_errors_) {
-    return;
-  }
-
-  // The following error codes should not be treated as errors:
-  //
-  // 1. AMX_ERR_NONE is always returned when a public function returns
-  //    normally as it jumps to return address 0 where it performs "halt 0".
-  //
-  // 2. AMX_ERR_SLEEP is returned when the VM is put into sleep mode. The
-  //    execution can be later continued using AMX_EXEC_CONT.
-  if (error.code() == AMX_ERR_NONE || error.code() == AMX_ERR_SLEEP) {
-    return;
-  }
-
-  // For compatibility with sampgdk.
-  if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
-    return;
-  }
-
-  // Block errors while calling OnRuntimeError as it may result in yet
-  // another error (and for certain errors it in fact always does, e.g.
-  // stack/heap collision due to insufficient stack space for making
-  // the public call).
-  block_exec_errors_ = true;
-
-  // Capture backtrace before proceeding as OnRuntimError will modify the
-  // state of the AMX thus we'll end up with a different stack and possibly
-  // other things too. This also should protect from cases where something
-  // hooks fixes2 hooks into logprintf() calling to AMX code before we
-  // issue PrintAmxBacktrace().
-  std::stringstream bt_stream;
-  PrintAmxBacktrace(bt_stream);
-
-  // public OnRuntimeError(code, &bool:suppress);
-  cell callback_index = amx().GetPublicIndex("OnRuntimeError");
-  cell suppress = 0;
-
-  if (callback_index >= 0) {
-    if (amx().IsStackOK()) {
-      cell suppress_addr, *suppress_ptr;
-      amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
-      amx_Push(amx(), error.code());
-      amx_Exec(amx(), retval, callback_index);
-      amx_Release(amx(), suppress_addr);
-      suppress = *suppress_ptr;
-    }
-  }
-
-  if (suppress == 0) {
-    PrintError(amx(), error);
-    if (error.code() != AMX_ERR_NOTFOUND &&
-        error.code() != AMX_ERR_INDEX    &&
-        error.code() != AMX_ERR_CALLBACK &&
-        error.code() != AMX_ERR_INIT) {
-      PrintLines(bt_stream.str());
-    }
-  }
-
-  block_exec_errors_ = false;
-}
-
-void CrashDetect::HandleException() {
-  Printf("Server crashed while executing %s", amx_name_.c_str());
-  PrintAmxBacktrace();
-}
-
-void CrashDetect::HandleInterrupt() {
-  Printf("Server received interrupt signal while executing %s",
-         amx_name_.c_str());
-  PrintAmxBacktrace();
-}
-
-// static
-void CrashDetect::OnException(void *context) {
-  if (!np_calls.empty()) {
-    CrashDetect::GetInstance(np_calls.top()->amx())->HandleException();
-  } else {
-    Printf("Server crashed due to an unknown error");
-  }
-  PrintNativeBacktrace(context);
-}
-
-// static
-void CrashDetect::OnInterrupt(void *context) {
-  if (!np_calls.empty()) {
-    CrashDetect::GetInstance(np_calls.top()->amx())->HandleInterrupt();
-  } else {
-    Printf("Server received interrupt signal");
-  }
-  PrintNativeBacktrace(context);
-}
-
 // static
 void CrashDetect::PrintAmxBacktrace() {
   std::stringstream stream;
@@ -339,13 +309,33 @@ void CrashDetect::PrintAmxBacktrace() {
   PrintLines(stream.str());
 }
 
+namespace {
+
+class HexDword {
+ public:
+  static const int kWidth = 8;
+  HexDword(uint32_t value): value_(value) {}
+  HexDword(void *value): value_(reinterpret_cast<uint32_t>(value)) {}
+  friend std::ostream &operator<<(std::ostream &stream, const HexDword &x) {
+    char fill = stream.fill();
+    stream << std::setw(kWidth) << std::setfill('0') << std::hex
+           << x.value_ << std::dec;
+    stream.fill(fill);
+    return stream;
+  }
+ private:
+  uint32_t value_;
+};
+
+} // anonymous namespace
+
 // static
 void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
-  if (np_calls.empty()) {
+  if (!IsInsideAmx()) {
     return;
   }
 
-  AMXScript top_amx = np_calls.top()->amx();
+  AMXScript top_amx = call_stack_.Top().amx();
 
   if (top_amx.GetCip() == 0) {
     return;
@@ -353,15 +343,15 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 
   stream << "AMX backtrace:\n";
 
-  std::stack<NPCall*> calls = np_calls;
+  AMXCallStack calls = call_stack_;
 
   cell cip = top_amx.GetCip();
   cell frm = top_amx.GetFrm();
   int level = 0;
 
-  while (!calls.empty() && cip != 0) {
-    const NPCall *call = calls.top();
-    AMXScript amx = call->amx();
+  while (!calls.IsEmpty() && cip != 0) {
+    AMXCall call = calls.Pop();
+    AMXScript amx = call.amx();
 
     if (amx != top_amx) {
       assert(level != 0);
@@ -369,12 +359,12 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
     }
 
     // native function
-    if (call->IsNative()) {
-      cell address = amx.GetNativeAddress(call->index());
+    if (call.IsNative()) {
+      cell address = amx.GetNativeAddress(call.index());
       if (address != 0) {
         stream << "#" << level++ << " native ";
 
-        const char *name = amx.GetNativeName(call->index());
+        const char *name = amx.GetNativeName(call.index());
         if (name != 0) {
           stream << name;
         } else {
@@ -397,7 +387,7 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
     }
 
     // public function
-    else if (call->IsPublic()) {
+    else if (call.IsPublic()) {
       CrashDetect *cd = CrashDetect::GetInstance(amx);
       const std::string &amx_name = cd->amx_name_;
       const AMXDebugInfo &debug_info = cd->debug_info_;
@@ -417,9 +407,9 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
           frames.push_back(frame);
         }
         while (trace.Next());
-        frames.back().set_caller_address(amx.GetPublicAddress(call->index()));
+        frames.back().set_caller_address(amx.GetPublicAddress(call.index()));
       } else {
-        cell entry_point = amx.GetPublicAddress(call->index());
+        cell entry_point = amx.GetPublicAddress(call.index());
         frames.push_front(AMXStackFrame(amx, amx.GetFrm(), 0, 0, entry_point));
       }
 
@@ -443,11 +433,9 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         stream << std::endl;
       }
 
-      frm = call->frm();
-      cip = call->cip();
+      frm = call.frm();
+      cip = call.cip();
     }
-
-    calls.pop();
   }
 }
 

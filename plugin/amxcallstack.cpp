@@ -22,9 +22,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "npcall.h"
+#include <cassert>
 
-NPCall::NPCall(Type type, AMXScript amx, cell index)
+#include "amxcallstack.h"
+
+AMXCall::AMXCall(Type type, AMXScript amx, cell index)
  : amx_(amx),
    type_(type),
    frm_(amx.GetFrm()),
@@ -33,7 +35,7 @@ NPCall::NPCall(Type type, AMXScript amx, cell index)
 {
 }
 
-NPCall::NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
+AMXCall::AMXCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
  : amx_(amx),
    type_(type),
    frm_(frm),
@@ -43,11 +45,36 @@ NPCall::NPCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
 }
 
 // static
-NPCall NPCall::Public(AMXScript amx, cell index) {
-  return NPCall(PUBLIC, amx, index);
+AMXCall AMXCall::Public(AMXScript amx, cell index) {
+  return AMXCall(PUBLIC, amx, index);
 }
 
 // static
-NPCall NPCall::Native(AMXScript amx, cell index) {
-  return NPCall(NATIVE, amx, index);
+AMXCall AMXCall::Native(AMXScript amx, cell index) {
+  return AMXCall(NATIVE, amx, index);
+}
+
+bool AMXCallStack::IsEmpty() const {
+  return call_stack_.empty();
+}
+
+AMXCall &AMXCallStack::Top() {
+  assert(!IsEmpty());
+  return call_stack_.top();
+}
+
+const AMXCall &AMXCallStack::Top() const {
+  assert(!IsEmpty());
+  return call_stack_.top();
+}
+
+void AMXCallStack::Push(AMXCall call) {
+  call_stack_.push(call);
+}
+
+AMXCall AMXCallStack::Pop() {
+  assert(!IsEmpty());
+  AMXCall result = call_stack_.top();
+  call_stack_.pop();
+  return result;
 }
