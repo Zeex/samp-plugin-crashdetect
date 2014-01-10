@@ -12,6 +12,10 @@ if(UNIX)
   add_definitions(-DLINUX)
 endif()
 
+if(WIN32)
+  add_definitions(-D_WIN32_WINNT=_WIN32_WINNT_WINXP)
+endif()
+
 set(PLUGIN_SOURCES
   amxcallstack.cpp
   amxcallstack.h
