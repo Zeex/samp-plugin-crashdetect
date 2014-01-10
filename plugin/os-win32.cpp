@@ -80,28 +80,30 @@ static HANDLE GetThreadHandle(DWORD thread_id, DWORD desired_access) {
   return OpenThread(desired_access, FALSE, thread_id);
 }
 
+struct ThreadInfo {
+  DWORD    id;
+  FILETIME creation_time;
+  FILETIME exit_time;
+  FILETIME kernel_time;
+  FILETIME user_time;
+};
+
+class InvalidThread: std::unary_function<ThreadInfo, bool> {
+ public:
+  bool operator()(const ThreadInfo &thread) {
+    return thread.creation_time.dwHighDateTime == 0 &&
+            thread.creation_time.dwHighDateTime == 0;
+  }
+};
+
+class CompareThreads: std::binary_function<ThreadInfo, ThreadInfo, bool> {
+ public:
+  bool operator()(const ThreadInfo &lhs, const ThreadInfo &rhs) {
+    return CompareFileTime(&lhs.creation_time, &rhs.creation_time) < 0;
+  }
+};
+
 static DWORD GetMainThreadId() {
-  struct ThreadInfo {
-    DWORD    id;
-    FILETIME creation_time;
-    FILETIME exit_time;
-    FILETIME kernel_time;
-    FILETIME user_time;
-  };
-
-  struct InvalidThread: std::unary_function<ThreadInfo, bool> {
-    bool operator()(const ThreadInfo &thread) {
-      return thread.creation_time.dwHighDateTime == 0 &&
-             thread.creation_time.dwHighDateTime == 0;
-    }
-  };
-
-  struct CompareThreads: std::binary_function<ThreadInfo, ThreadInfo, bool> {
-    bool operator()(const ThreadInfo &lhs, const ThreadInfo &rhs) {
-      return CompareFileTime(&lhs.creation_time, &rhs.creation_time) < 0;
-    }
-  };
-
   std::vector<ThreadInfo> threads;
 
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
@@ -112,7 +114,7 @@ static DWORD GetMainThreadId() {
       DWORD process_id = GetProcessId(GetCurrentProcess());
       do {
         if (thread_entry.dwSize >=
-            FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID)
+            FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) +
                          sizeof(thread_entry.th32OwnerProcessID)) {
           if (thread_entry.th32OwnerProcessID == process_id) {
             ThreadInfo thread = {0};
