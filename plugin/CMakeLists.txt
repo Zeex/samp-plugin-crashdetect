@@ -13,7 +13,8 @@ if(UNIX)
 endif()
 
 if(WIN32)
-  add_definitions(-D_WIN32_WINNT=_WIN32_WINNT_WINXP)
+  add_definitions(-D_WIN32_WINNT=_WIN32_WINNT_WINXP
+                  -D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 set(PLUGIN_SOURCES
@@ -34,7 +35,6 @@ set(PLUGIN_SOURCES
   amxstacktrace.h
   configreader.cpp
   configreader.h
-  compiler.h
   crashdetect.cpp
   crashdetect.h
   fileutils.cpp
@@ -49,8 +49,6 @@ set(PLUGIN_SOURCES
   plugincommon.h
   stacktrace.cpp
   stacktrace.h
-  stacktrace-generic.cpp
-  stacktrace-generic.h
 )
 
 configure_file(plugin.rc.in plugin.rc @ONLY)
@@ -67,22 +65,12 @@ if(WIN32)
     os-win32.cpp
     stacktrace-win32.cpp
   )
-elseif(UNIX)
+else()
   list(APPEND PLUGIN_SOURCES
     fileutils-unix.cpp
     os-unix.cpp
     stacktrace-unix.cpp
   )
-else()
-  message(FATAL_ERROR "Unsupported operating system")
-endif()
-
-if(MSVC)
-  list(APPEND PLUGIN_SOURCES compiler-msvc.cpp)
-elseif(CMAKE_COMPILER_IS_GNUCXX)
-  list(APPEND PLUGIN_SOURCES compiler-gcc.cpp)
-else()
-  message(FATAL_ERROR "Unsupported compiler")
 endif()
 
 add_samp_plugin(plugin ${PLUGIN_SOURCES})
@@ -92,24 +80,11 @@ if(UNIX OR MINGW)
 endif()
 
 if(WIN32)
-  if(MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-  endif()
   target_link_libraries(plugin DbgHelp Ws2_32)
-endif()  
-
-if(UNIX)
-  check_function_exists(backtrace HAVE_BACKTRACE)
-  if(HAVE_BACKTRACE)
-    add_definitions(-DHAVE_BACKTRACE)
-  endif()
-  check_function_exists(backtrace_symbols HAVE_BACKTRACE_SYMBOLS)
-  if(HAVE_BACKTRACE_SYMBOLS)
-    add_definitions(-DHAVE_BACKTRACE_SYMBOLS)
-  endif()
 endif()
 
 add_subdirectory(amx)
+
 target_link_Libraries(plugin amx subhook)
 
 install(TARGETS plugin LIBRARY DESTINATION ".")

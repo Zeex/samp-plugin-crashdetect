@@ -23,28 +23,21 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstdarg>
-#include <vector>
+#include <cstdio>
 
-#include "compiler.h"
 #include "logprintf.h"
+
+#define LOGPRINTF_BUFFER_SIZE 1024
+
+#ifdef _MSC_VER
+  #define vsnprintf vsprintf_s
+#endif
 
 logprintf_t logprintf;
 
-void vlogprintf(const char *format, std::va_list va) {
-  std::vector<const void*> args;
-  args.push_back(format);
-
-  // vlogprintf() doesn't work for arguments that are bigger than 4 bytes
-  // in size because it simply counts the number of specifiers, disregarding
-  // their actual meaning. For example, on Windows it works fine with int
-  // and long (because they are 32-bit there) but not for double (and hence
-  // any floating-point values, including float).
-  for (int i = 0; format[i] != '\0'; i++) {
-    if (format[i] == '%' && format[i + 1] != '%') {
-      args.push_back(va_arg(va, void*));
-    }
-  }
-
-  std::size_t size = args.size() * sizeof(void*);
-  compiler::CallFunctionCdecl((void*)::logprintf, &args[0], size);
+void vlogprintf(const char *format, va_list va) {
+  char buffer[LOGPRINTF_BUFFER_SIZE];
+  vsnprintf(buffer, sizeof(buffer), format, va);
+  buffer[sizeof(buffer) - 1] = '\0';
+  logprintf("%s", buffer);
 }

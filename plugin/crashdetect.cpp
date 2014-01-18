@@ -38,7 +38,6 @@
 #include "amxpathfinder.h"
 #include "amxscript.h"
 #include "amxstacktrace.h"
-#include "compiler.h"
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"

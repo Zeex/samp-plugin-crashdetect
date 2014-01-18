@@ -26,7 +26,6 @@
 #include <DbgHelp.h>
 
 #include "stacktrace.h"
-#include "stacktrace-generic.h"
 
 static const int kMaxSymbolNameLength = 128;
 
@@ -40,7 +39,7 @@ StackTrace::StackTrace(void *their_context) {
   
   HANDLE process = GetCurrentProcess();
   if (!SymInitialize(process, NULL, TRUE)) {
-    goto fail;
+    return;
   }
 
   STACKFRAME64 stack_frame;
@@ -94,10 +93,4 @@ StackTrace::StackTrace(void *their_context) {
 
   HeapFree(GetProcessHeap(), 0, symbol);
   SymCleanup(process);
-  return;
-
-fail:
-  frames_ = StackTraceGeneric(
-    reinterpret_cast<void*>(context->Ebp),
-    reinterpret_cast<void*>(context->Eip)).GetFrames();
 }

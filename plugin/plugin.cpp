@@ -28,7 +28,6 @@
 #include <subhook.h>
 
 #include "amxerror.h"
-#include "compiler.h"
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"
