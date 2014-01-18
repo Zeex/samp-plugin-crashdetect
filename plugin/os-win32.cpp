@@ -137,7 +137,7 @@ static DWORD GetMainThreadId() {
   }
 
   threads.erase(std::remove_if(threads.begin(), threads.end(),
-                               InvalidThread()));
+                               InvalidThread()), threads.end());
   if (!threads.empty()) {
     return std::min_element(threads.begin(), threads.end(),
                             CompareThreads())->id;
