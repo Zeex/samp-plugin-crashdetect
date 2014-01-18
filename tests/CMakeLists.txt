@@ -1,4 +1,4 @@
-include(SampPluginTest)
+include(PluginTest)
 
 macro(prepare_test name)
   file(READ ${name}/output.txt TEST_OUTPUT)
@@ -11,11 +11,10 @@ endmacro()
 
 macro(test name)
   prepare_test(${name})
-  add_samp_plugin_test(${name}
+  add_plugin_test(${name}
     TARGET   plugin
     SCRIPT   ${CMAKE_CURRENT_SOURCE_DIR}/${name}/test
     OUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${name}/full_output.txt
-    EXEC     ${CMAKE_CURRENT_SOURCE_DIR}/server.cfg
     TIMEOUT  0.5
   )
 endmacro()

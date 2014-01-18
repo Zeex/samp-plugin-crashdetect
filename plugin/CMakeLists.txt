@@ -1,6 +1,6 @@
 include(AmxConfig)
 include(CheckFunctionExists)
-include(SampPlugin)
+include(Plugin)
 
 install(FILES crashdetect.inc DESTINATION ".")
 
@@ -73,7 +73,7 @@ else()
   )
 endif()
 
-add_samp_plugin(plugin ${PLUGIN_SOURCES})
+add_plugin(plugin ${PLUGIN_SOURCES})
 
 if(UNIX OR MINGW)
   set_property(TARGET plugin PROPERTY PREFIX "")
