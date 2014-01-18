@@ -2045,6 +2045,9 @@ static const void * const amx_opcodelist[] = {
     case 6:
       pri=(cell)((unsigned char *)cip - code);
       break;
+    case 0xFF:
+      pri=1;
+      break;
     } /* switch */
     NEXT(cip);
   op_sctrl:
