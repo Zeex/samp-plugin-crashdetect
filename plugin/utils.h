@@ -22,6 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef UTILS_H
+#define UTILS_H
+
 namespace utils {
 
 template<typename UnaryFunction>
@@ -40,3 +43,5 @@ void SplitString(const std::string &s, char delim, UnaryFunction func) {
 }
 
 } // namespace utils
+
+#endif // !UTILS_H
