@@ -33,7 +33,7 @@ native PrintNativeBacktrace();
 native GetAmxBacktrace(string[], size = sizeof(string));
 native GetNativeBacktrace(string[], size = sizeof(string));
 
-public OnRuntimeError(code, &bool:suppress);
+forward OnRuntimeError(code, &bool:suppress);
 
 stock bool:IsCrashDetectPresent() {
 	#emit zero.pri
