@@ -35,9 +35,9 @@
 class AMXError;
 
 class CrashDetect : public AMXService<CrashDetect> {
- public:
-  explicit CrashDetect(AMX *amx);
+ friend class AMXService<CrashDetect>;
 
+ public:
   int Load();
   int Unload();
 
@@ -63,6 +63,9 @@ class CrashDetect : public AMXService<CrashDetect> {
 
   static void PrintNativeBacktrace(void *context);
   static void PrintNativeBacktrace(std::ostream &stream, void *context);
+
+ private:
+  explicit CrashDetect(AMX *amx);
 
  private:
   AMXDebugInfo debug_info_;
