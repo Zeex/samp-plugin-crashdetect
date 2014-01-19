@@ -6,10 +6,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 include(GetGitRevisionDescription)
 include(CTest)
 
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  include(cmake/GlobalBuildConfig.cmake)
-endif()
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 git_describe(description --match v[0-9]*.[0-9]**)
