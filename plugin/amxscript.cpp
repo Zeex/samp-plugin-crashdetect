@@ -161,7 +161,7 @@ const char *AMXScript::GetName(uint32_t offset) const {
 }
 
 bool AMXScript::IsStackOK() const {
-  return GetStk() >= GetHlw() && GetStk() < GetStp();
+  return GetStk() >= GetHlw() && GetStk() <= GetStp();
 }
 
 void AMXScript::PushStack(cell value) {
