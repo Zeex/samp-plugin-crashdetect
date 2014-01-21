@@ -1,4 +1,0 @@
-\[debug\] Run time error 1: "Forced exit"
-\[debug\] AMX backtrace:
-\[debug\] #0 00000088 in main \(\) at .*test\.pwn:6
-Script\[.*test\.amx\]: Run time error 1: "Forced exit"
