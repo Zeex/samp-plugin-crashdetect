@@ -330,15 +330,8 @@ class HexDword {
 
 // static
 void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
-  if (!IsInsideAmx()) {
-    return;
-  }
-
-  AMXScript top_amx = call_stack_.Top().amx();
-
-  if (top_amx.GetCip() == 0) {
-    return;
-  }
+  AMXScript amx = call_stack_.Top().amx();
+  AMXScript top_amx = amx;
 
   stream << "AMX backtrace:\n";
 
@@ -348,14 +341,8 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
   cell frm = top_amx.GetFrm();
   int level = 0;
 
-  while (!calls.IsEmpty() && cip != 0) {
+  while (!calls.IsEmpty() && cip != 0 && amx == top_amx) {
     AMXCall call = calls.Pop();
-    AMXScript amx = call.amx();
-
-    if (amx != top_amx) {
-      assert(level != 0);
-      break;
-    }
 
     // native function
     if (call.IsNative()) {
@@ -388,8 +375,6 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
     // public function
     else if (call.IsPublic()) {
       CrashDetect *cd = CrashDetect::GetInstance(amx);
-      const std::string &amx_name = cd->amx_name_;
-      const AMXDebugInfo &debug_info = cd->debug_info_;
 
       if (amx.IsStackOK()) {
         amx.PushStack(cip);
@@ -400,16 +385,18 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
       AMXStackTrace trace(amx, amx.GetFrm());
       std::deque<AMXStackFrame> frames;
 
-      if (trace.current_frame()) {
-        do {
-          AMXStackFrame frame = trace.current_frame();
-          frames.push_back(frame);
-        }
-        while (trace.Next());
-        frames.back().set_caller_address(amx.GetPublicAddress(call.index()));
+      while (trace.current_frame().return_address() != 0) {
+        AMXStackFrame frame = trace.current_frame();
+        frames.push_back(frame);
+        trace.Next();
+      }
+
+      cell entry_point = amx.GetPublicAddress(call.index());
+      if (frames.empty()) {
+        AMXStackFrame fake_frame(amx, amx.GetFrm(), 0, 0, entry_point);
+        frames.push_front(fake_frame);
       } else {
-        cell entry_point = amx.GetPublicAddress(call.index());
-        frames.push_front(AMXStackFrame(amx, amx.GetFrm(), 0, 0, entry_point));
+        frames.back().set_caller_address(entry_point);
       }
 
       if (amx.IsStackOK()) {
@@ -423,10 +410,15 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         const AMXStackFrame &frame = *it;
 
         stream << "#" << level++ << " ";
-        frame.Print(stream, &debug_info);
 
-        if (!debug_info.IsLoaded() && !amx_name.empty()) {
-          stream << " from " << amx_name;
+        const AMXDebugInfo &debug_info = cd->debug_info_;
+        frame.Print(stream, &debug_info);
+        
+        if (!debug_info.IsLoaded()) {
+          const std::string &amx_name = cd->amx_name_;
+          if (!amx_name.empty()) {
+            stream << " from " << amx_name;
+          }
         }
 
         stream << std::endl;

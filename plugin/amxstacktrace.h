@@ -87,9 +87,11 @@ class AMXStackTrace {
   AMXStackTrace(AMXScript amx);
   AMXStackTrace(AMXScript amx, cell frame);
 
-  bool Next();
+  void Next();
 
-  AMXStackFrame current_frame() const { return current_frame_; }
+  const AMXStackFrame &current_frame() const {
+    return current_frame_;
+  }
 
  private:
   AMXStackFrame current_frame_;

@@ -176,15 +176,8 @@ AMXStackTrace::AMXStackTrace(AMXScript amx, cell frame)
 {
 }
 
-bool AMXStackTrace::Next() {
-  if (current_frame_) {
-    current_frame_ = current_frame_.GetPrevious();
-    if (current_frame_.return_address() == 0) {
-      return false;
-    }
-    return true;
-  }
-  return false;
+void AMXStackTrace::Next() {
+  current_frame_ = current_frame_.GetPrevious();
 }
 
 namespace {

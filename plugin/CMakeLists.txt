@@ -1,5 +1,4 @@
 include(AmxConfig)
-include(CheckFunctionExists)
 include(Plugin)
 
 install(FILES crashdetect.inc DESTINATION ".")
@@ -16,6 +15,8 @@ if(WIN32)
   add_definitions(-D_WIN32_WINNT=_WIN32_WINNT_WINXP
                   -D_CRT_SECURE_NO_WARNINGS)
 endif()
+
+add_subdirectory(amx)
 
 set(PLUGIN_SOURCES
   amxcallstack.cpp
@@ -75,16 +76,9 @@ endif()
 
 add_plugin(plugin ${PLUGIN_SOURCES})
 
-if(UNIX OR MINGW)
-  set_property(TARGET plugin PROPERTY PREFIX "")
-endif()
-
-if(WIN32)
-  target_link_libraries(plugin DbgHelp Ws2_32)
-endif()
-
-add_subdirectory(amx)
-
 target_link_Libraries(plugin amx subhook)
+if(WIN32)
+  target_link_libraries(plugin DbgHelp)
+endif()
 
 install(TARGETS plugin LIBRARY DESTINATION ".")
