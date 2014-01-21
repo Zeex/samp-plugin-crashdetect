@@ -62,4 +62,5 @@ then
   flags="$flags -i$include"
 fi
 
-pawncc $flags "$test_name/test.pwn" -o"$test_name/test.amx"
+cd $test_name
+pawncc $flags -c test.pwn
