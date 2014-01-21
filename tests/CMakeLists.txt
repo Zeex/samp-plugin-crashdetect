@@ -19,6 +19,8 @@ macro(test name)
   )
 endmacro()
 
+test(bug/empty_stack)
+
 test(misc/args)
 #test(misc/bad_frame)
 #test(misc/crash)
