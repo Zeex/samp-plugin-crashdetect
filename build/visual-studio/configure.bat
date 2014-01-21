@@ -12,6 +12,6 @@ goto :exit
 :cmake_found:
 echo Found CMake: %CMAKE_HOME:"=%
 
-call "%CMAKE_HOME:"=%\bin\cmake.exe" ..\..\ -DBUILD_TESTING=OFF
+call "%CMAKE_HOME:"=%\bin\cmake.exe" ..\..\
 
 :exit:
