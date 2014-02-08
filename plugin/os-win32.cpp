@@ -42,7 +42,7 @@ std::string os::GetModuleName(void *address) {
         size = GetModuleFileName((HMODULE)mbi.AllocationBase,
                                  &filename[0], filename.size());
         if (size < filename.size() ||
-            GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+            GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
           break;
         }
         filename.resize(size *= 2);
