@@ -382,13 +382,14 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         amx.SetFrm(amx.GetStk());
       }
 
-      AMXStackTrace trace(amx, amx.GetFrm());
+      AMXStackTrace trace(amx, amx.GetFrm(), 100);
       std::deque<AMXStackFrame> frames;
 
       while (trace.current_frame().return_address() != 0) {
-        AMXStackFrame frame = trace.current_frame();
-        frames.push_back(frame);
-        trace.Next();
+        frames.push_back(trace.current_frame());
+        if (!trace.MoveNext()) {
+          break;
+        }
       }
 
       cell entry_point = amx.GetPublicAddress(call.index());

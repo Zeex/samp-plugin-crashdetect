@@ -84,10 +84,9 @@ class AMXStackFrame {
 
 class AMXStackTrace {
  public:
-  AMXStackTrace(AMXScript amx);
-  AMXStackTrace(AMXScript amx, cell frame);
+  AMXStackTrace(AMXScript amx, cell frame, int max_depth = 0);
 
-  void Next();
+  bool MoveNext();
 
   const AMXStackFrame &current_frame() const {
     return current_frame_;
@@ -95,6 +94,8 @@ class AMXStackTrace {
 
  private:
   AMXStackFrame current_frame_;
+  int max_depth_;
+  int frame_index_;
 };
 
 class AMXStackFramePrinter {

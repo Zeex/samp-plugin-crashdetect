@@ -155,7 +155,7 @@ AMXStackFrame::AMXStackFrame(AMXScript amx,
 }
 
 AMXStackFrame AMXStackFrame::GetPrevious() const {
-  return AMXStackFrame(amx_, GetPreviousFrame(amx_, address_));
+  return AMXStackFrame(amx_, GetPreviousFrameSafe(amx_, address_));
 }
 
 void AMXStackFrame::Print(std::ostream &stream,
@@ -166,18 +166,20 @@ void AMXStackFrame::Print(std::ostream &stream,
   printer.Print(*this);
 }
 
-AMXStackTrace::AMXStackTrace(AMXScript amx)
- : current_frame_(amx, amx.GetFrm())
+AMXStackTrace::AMXStackTrace(AMXScript amx, cell frame, int max_depth)
+ : current_frame_(amx, frame),
+   max_depth_(max_depth),
+   frame_index_(0)
 {
 }
 
-AMXStackTrace::AMXStackTrace(AMXScript amx, cell frame)
- : current_frame_(amx, frame)
-{
-}
-
-void AMXStackTrace::Next() {
-  current_frame_ = current_frame_.GetPrevious();
+bool AMXStackTrace::MoveNext() {
+  if (frame_index_ < max_depth_ || max_depth_ == 0) {
+    current_frame_ = current_frame_.GetPrevious();
+    frame_index_++;
+    return true;
+  }
+  return false;
 }
 
 namespace {
