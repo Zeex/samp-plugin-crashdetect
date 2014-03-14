@@ -162,7 +162,7 @@ void CrashDetect::HandleExecError(int index, cell *retval,
       cell suppress_addr, *suppress_ptr;
       amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
       amx_Push(amx(), error.code());
-      amx_Exec(amx(), retval, callback_index);
+      DoAmxExec(retval, callback_index);
       amx_Release(amx(), suppress_addr);
       suppress = *suppress_ptr;
     }
