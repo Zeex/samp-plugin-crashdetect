@@ -25,9 +25,9 @@ test(misc/args)
 test(misc/presence)
 test(misc/states)
 
-test(error/bounds)
-#test(error/invinstr)
-#test(error/notfound)
-#test(error/stacklow)
+test(errors/bounds)
+#test(errors/invinstr)
+#test(errors/notfound)
+#test(errors/stacklow)
 
 test(bugs/orte_backtrace)
