@@ -29,3 +29,5 @@ test(error/bounds)
 #test(error/invinstr)
 #test(error/notfound)
 #test(error/stacklow)
+
+test(bugs/orte_backtrace)
