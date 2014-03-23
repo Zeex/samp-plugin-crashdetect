@@ -1,14 +1,10 @@
 language: cpp
 compiler:
   - gcc
-env:
-  - PATH=$TRAVIS_BUILD_DIR/cli/bin:$PATH
 install:
-  - sudo apt-get install gcc-multilib g++-multilib cmake python
-  - git clone --depth=1 https://github.com/Zeex/samp-server-cli.git cli
+  - sudo apt-get install gcc-multilib g++-multilib cmake
 before_script:
   - cmake . -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
 script:
   - make
-  - make test
   - make package
