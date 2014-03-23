@@ -19,7 +19,7 @@ Get latest binaries for Windows and Linux [here][download].
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [donate]: http://pledgie.com/campaigns/19750
 [donate_button]: http://www.pledgie.com/campaigns/19750.png
-[build]: https://travis-ci.org/Zeex/sampgdk
-[build_status]: https://travis-ci.org/Zeex/sampgdk.png?branch=master
+[build]: https://travis-ci.org/Zeex/samp-plugin-crashdetect
+[build_status]: https://travis-ci.org/Zeex/samp-plugin-crashdetect.png?branch=master
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [download]: https://github.com/Zeex/samp-plugin-crashdetect/releases 
