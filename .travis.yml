@@ -2,9 +2,12 @@ language: cpp
 compiler:
   - gcc
 install:
-  - sudo apt-get install gcc-multilib g++-multilib cmake
+  - sudo apt-get install gcc-multilib g++-multilib cmake python
+  - git clone --depth=1 https://github.com/Zeex/samp-server-cli.git cli
 before_script:
   - cmake . -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
+env:
+  - PATH=cli/bin:$PATH
 script:
   - make
   - make test
