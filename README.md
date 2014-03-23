@@ -2,6 +2,7 @@
 =====================
 
 [![Donate][donate_button]][donate]
+[![Build Status][build_status]][build]
 
 This plugin helps you debug runtime errors and server crashes. When something
 goes wrong you see a more or less detailed error message that contains a
@@ -16,7 +17,9 @@ Download
 Get latest binaries for Windows and Linux [here][download].
 
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
-[forum]: http://forum.sa-mp.com/showthread.php?t=262796
-[download]: https://github.com/Zeex/samp-plugin-crashdetect/releases 
 [donate]: http://pledgie.com/campaigns/19750
 [donate_button]: http://www.pledgie.com/campaigns/19750.png
+[build]: https://travis-ci.org/Zeex/sampgdk
+[build_status]: https://travis-ci.org/Zeex/sampgdk.png?branch=master
+[forum]: http://forum.sa-mp.com/showthread.php?t=262796
+[download]: https://github.com/Zeex/samp-plugin-crashdetect/releases 
