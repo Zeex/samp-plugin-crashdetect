@@ -41,6 +41,7 @@ class CrashDetect : public AMXService<CrashDetect> {
   int Load();
   int Unload();
 
+  int DoAmxDebug();
   int DoAmxCallback(cell index, cell *result, cell *params);
   int DoAmxExec(cell *retval, int index);
 
@@ -53,8 +54,8 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void OnException(void *context);
   static void OnInterrupt(void *context);
 
-  static void Printf(const char *format, ...) ;
-  static void PrintLines(std::string string);
+  static void TracePrint(const char *format, ...);
+  static void DebugPrint(const char *format, ...);
 
   static void PrintRuntimeError(AMXScript amx, const AMXError &error);
 
@@ -69,12 +70,24 @@ class CrashDetect : public AMXService<CrashDetect> {
 
  private:
   AMXDebugInfo debug_info_;
+  AMX_DEBUG    prev_debug_;
   AMX_CALLBACK prev_callback_;
+
+  cell last_frame_;
 
   std::string amx_path_;
   std::string amx_name_;
 
   bool block_exec_errors_;
+
+  enum TraceFlag {
+    TRACE_NONE      = 0x00,
+    TRACE_NATIVES   = 0x01,
+    TRACE_PUBLICS   = 0x02,
+    TRACE_FUNCTIONS = 0x04
+  };
+
+  int trace_flags_;
 
  private:
   static AMXCallStack call_stack_;

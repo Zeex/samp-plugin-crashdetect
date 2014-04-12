@@ -27,8 +27,8 @@
 
 namespace utils {
 
-template<typename UnaryFunction>
-void SplitString(const std::string &s, char delim, UnaryFunction func) {
+template<typename Func>
+void SplitString(const std::string &s, char delim, Func func) {
   std::string::size_type begin = 0;
   while (begin < s.length()) {
     std::string::size_type end = s.find(delim, begin);

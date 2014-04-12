@@ -38,6 +38,10 @@
 
 static SubHook exec_hook;
 
+static int AMXAPI AmxDebug(AMX *amx) {
+  return CrashDetect::GetInstance(amx)->DoAmxDebug();
+}
+
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
   return CrashDetect::GetInstance(amx)->DoAmxCallback(index, result, params);
 }
@@ -83,6 +87,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
   CrashDetect::CreateInstance(amx)->Load();
+  amx_SetDebugHook(amx, AmxDebug);
   amx_SetCallback(amx, AmxCallback);
   amx_SetExecErrorHandler(amx, AmxExecError);
   return RegisterNatives(amx);

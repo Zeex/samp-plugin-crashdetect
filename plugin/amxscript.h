@@ -56,7 +56,10 @@ class AMXScript {
   void SetFlags(uint16_t flags) { amx_->flags = flags; }
 
   AMX_DEBUG GetDebugHook() { return amx_->debug; }
+  void SetDebugHook(AMX_DEBUG debug) { amx_SetDebugHook(amx_, debug); }
+
   AMX_CALLBACK GetCallback() { return amx_->callback; }
+  void SetCallback(AMX_CALLBACK callback) { amx_SetCallback(amx_, callback); }
 
   cell GetCip() const { return amx_->cip; }
   cell GetFrm() const { return amx_->frm; }
