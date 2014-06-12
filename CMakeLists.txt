@@ -8,19 +8,20 @@ include(CTest)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-git_describe(description --match v[0-9]*.[0-9]**)
-if(description)
-  string(REGEX REPLACE "\\-g[0-9a-f]+$" "" description ${description})
-  string(REGEX REPLACE "^v(.*)" "\\1" version ${description})
+git_describe(version --match v[0-9]*.[0-9]**)
+if(version)
+  string(REGEX REPLACE "^v(.*)$" "\\1" version ${version})
 else()
   message(STATUS "Failed to get version from Git, will read VERSION.txt")
   file(READ ${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt version)
   string(STRIP ${version} version)
 endif()
 
-string(REGEX REPLACE "[.-]" "," version_rc ${version})
+string(REGEX REPLACE "([0-9]+(\\.[0-9]+)+).*" "\\1" version_rc ${version})
+string(REGEX REPLACE "\\." "," version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
-string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc ${version_rc})
+string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc 
+      ${version_rc})
 
 set(PROJECT_VERSION    ${version})
 set(PROJECT_VERSION_RC ${version_rc})
