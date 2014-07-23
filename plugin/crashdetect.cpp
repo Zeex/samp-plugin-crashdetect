@@ -25,6 +25,7 @@
 #include <cassert>
 #include <cstdarg>
 #include <cstdlib>
+#include <cstring>
 #include <deque>
 #include <functional>
 #include <iomanip>
@@ -269,8 +270,8 @@ void CrashDetect::OnInterrupt(void *context) {
 namespace {
 
 void Replace(const char *s, char c, const char *r, std::string& result) {
-  size_t len = strlen(s);
-  for (size_t i = 0; i < len; i++) {
+  std::size_t len = std::strlen(s);
+  for (std::size_t i = 0; i < len; i++) {
     result += s[i];
     if (s[i] == c) {
       result.append(r);
