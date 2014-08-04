@@ -86,28 +86,26 @@ void AMXDebugInfo::Free() {
 AMXDebugLine AMXDebugInfo::GetLine(cell address) const {
   Line line;
   LineTable lines = GetLines();
-  LineTable::const_iterator it = lines.begin();
-  LineTable::const_iterator last = lines.begin();
-  while (it != lines.end() && it->GetAddress() <= address) {
-    last = it;
-    ++it;
-    continue;
+  for (LineTable::const_reverse_iterator it = lines.crbegin();
+       it != lines.crend(); ++it) {
+    if  (it->GetAddress() <= address) {
+      line = *it;
+      break;
+    }
   }
-  line = *last;
   return line;
 }
 
 AMXDebugFile AMXDebugInfo::GetFile(cell address) const {
   File file;
   FileTable files = GetFiles();
-  FileTable::const_iterator it = files.begin();
-  FileTable::const_iterator last = files.begin();
-  while (it != files.end() && it->GetAddress() <= address) {
-    last = it;
-    ++it;
-    continue;
+  for (FileTable::const_reverse_iterator it = files.crbegin();
+       it != files.crend(); ++it) {
+    if  (it->GetAddress() <= address) {
+      file = *it;
+      break;
+    }
   }
-  file = *last;
   return file;
 }
 
@@ -155,13 +153,12 @@ AMXDebugSymbol AMXDebugInfo::GetExactFunction(cell address) const {
 AMXDebugTag AMXDebugInfo::GetTag(int32_t tag_id) const {
   Tag tag;
   TagTable tags = GetTags();
-  TagTable::const_iterator it = tags.begin();
-  while (it != tags.end() && it->GetID() != tag_id) {
-    ++it;
-    continue;
-  }
-  if (it != tags.end()) {
-    tag = *it;
+  for (TagTable::const_iterator it = tags.begin();
+       it != tags.end(); ++it) {
+    if (it->GetID() == tag_id) {
+      tag = *it;
+      break;
+    }
   }
   return tag;
 }

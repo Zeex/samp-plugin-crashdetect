@@ -35,47 +35,30 @@
 
 class AMXDebugInfo {
  public:
-  template<typename EntryT, typename EntryClassT> class Table {
+  template<typename EntryT, typename EntryWrapperT> class Table {
    public:
-    Table() 
-     : entries_(0),
-       size_(0)
+    Table(EntryT *table, size_t size)
+      : entries_(reinterpret_cast<EntryWrapperT*>(table)), size_(size)
     {}
 
-    Table(EntryT *table, size_t size) 
-     : entries_(table),
-       size_(size) 
-    {}
-
-    class iterator;
-
-    typedef const iterator const_iterator;
-
-    class iterator : public std::iterator<std::forward_iterator_tag, EntryT> {
+    class iterator : public std::iterator<std::bidirectional_iterator_tag, EntryWrapperT> {
      public:
-      iterator(EntryT *entries) : cur_(entries), curw_(*cur_) {}
+      iterator(EntryWrapperT *entries) : cur_(entries) {}
 
-      const EntryClassT &operator*() const { return curw_; }
-      EntryClassT       &operator*()       { return curw_; }
+      EntryWrapperT &operator*() const { return *cur_; }
+      EntryWrapperT &operator*()       { return *cur_; }
 
-      const EntryClassT *operator->() const { return &curw_; }
-      EntryClassT       *operator->()       { return &curw_; }
+      EntryWrapperT *operator->() const { return cur_; }
+      EntryWrapperT *operator->()       { return cur_; }
 
-      const_iterator &operator++() const {
-        ++cur_;
-        curw_ = EntryClassT(*cur_);
-        return *this;
-      }
+      iterator       &operator++()       { ++cur_; return *this; }
+      const iterator &operator++() const { ++cur_; return *this; }
 
-      iterator &operator++() { 
-        ++cur_; 
-        curw_ = EntryClassT(*cur_); 
-        return *this; 
-      }
-      
-      const_iterator &operator=(const iterator &rhs) const { 
+      iterator       &operator--()       { --cur_; return *this; }
+      const iterator &operator--() const { --cur_; return *this; }
+
+      const iterator &operator=(const iterator &rhs) const { 
         cur_ = rhs.cur_;
-        curw_ = rhs.curw_;
         return *this;
       }
 
@@ -83,25 +66,36 @@ class AMXDebugInfo {
       bool operator!=(const iterator &rhs) const { return rhs.cur_ != cur_;}
 
      private:
-      mutable EntryT      *cur_;
-      mutable EntryClassT  curw_;
+      mutable EntryWrapperT *cur_;
     };
 
-    iterator begin() { return entries_; } 
+    typedef const iterator const_iterator;
+
+    typedef std::reverse_iterator<iterator>       reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+    iterator       begin()       { return entries_; } 
     const_iterator begin() const { return entries_; }
+
+    iterator       end()       { return entries_ + size_; }
     const_iterator end() const { return entries_ + size_; }
-    iterator end() { return entries_ + size_; }
+
+    reverse_iterator       rbegin()        { return reverse_iterator(end()); }
+    const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+
+    reverse_iterator       rend()        { return reverse_iterator(begin()); }
+    const_reverse_iterator crend() const { return const_reverse_iterator(begin()); }
 
     size_t size() const { return size_; }
 
-    EntryClassT operator[](size_t index) const { 
+    EntryWrapperT operator[](size_t index) const { 
       assert(index >= 0 && index < size_);
       return entries_[index]; 
     }
 
    private:
-    EntryT *entries_;
-    size_t  size_;
+    EntryWrapperT *entries_;
+    size_t         size_;
   };
 
   class File {
@@ -263,45 +257,31 @@ class AMXDebugInfo {
   std::string GetFileName(cell address) const;
   std::string GetFunctionName(cell address) const;
   std::string GetTagName(int32_t tag_id) const;
-  
+
   cell GetFunctionAddress(const std::string &func, const std::string &file) const;
   cell GetLineAddress(long line, const std::string &file) const;
 
-  typedef Table<AMX_DBG_FILE*, File> FileTable;
+  #define AMXDEBUGINFO_TABLE_TYPEDEF(type, name) \
+    typedef Table<type, name> name##Table
 
-  FileTable GetFiles() const { 
-    return FileTable(amxdbg_->filetbl, amxdbg_->hdr->files); 
-  }
+  AMXDEBUGINFO_TABLE_TYPEDEF(AMX_DBG_FILE*, File);
+  AMXDEBUGINFO_TABLE_TYPEDEF(AMX_DBG_LINE, Line);
+  AMXDEBUGINFO_TABLE_TYPEDEF(AMX_DBG_TAG*, Tag);
+  AMXDEBUGINFO_TABLE_TYPEDEF(AMX_DBG_SYMBOL*, Symbol);
+  AMXDEBUGINFO_TABLE_TYPEDEF(AMX_DBG_MACHINE*, Automaton);
+  AMXDEBUGINFO_TABLE_TYPEDEF(AMX_DBG_STATE*, State);
 
-  typedef Table<AMX_DBG_LINE, Line> LineTable;
+  #define AMXDEBUGINFO_TABLE_GETTER(table_name, class_name, ptr, size) \
+    class_name##Table Get##table_name() const { \
+      return class_name##Table(amxdbg_->ptr, amxdbg_->hdr->size); \
+    }
 
-  LineTable GetLines() const { 
-    return LineTable(amxdbg_->linetbl, amxdbg_->hdr->lines);
-  }
-
-  typedef Table<AMX_DBG_TAG*, Tag> TagTable;
-
-  TagTable GetTags() const {
-    return TagTable(amxdbg_->tagtbl, amxdbg_->hdr->tags);
-  }
-
-  typedef Table<AMX_DBG_SYMBOL*, Symbol> SymbolTable;
-
-  SymbolTable GetSymbols() const {
-    return SymbolTable(amxdbg_->symboltbl, amxdbg_->hdr->symbols);
-  }
-
-  typedef Table<AMX_DBG_MACHINE*, Automaton> AutomatonTable;
-
-  AutomatonTable GetAutomata() const {
-    return AutomatonTable(amxdbg_->automatontbl, amxdbg_->hdr->automatons);
-  }
-
-  typedef Table<AMX_DBG_STATE*, State> StateTable;
-
-  StateTable GetStates() const {
-    return StateTable(amxdbg_->statetbl, amxdbg_->hdr->states);
-  }
+  AMXDEBUGINFO_TABLE_GETTER(Files, File, filetbl, files);
+  AMXDEBUGINFO_TABLE_GETTER(Lines, Line, linetbl, lines);
+  AMXDEBUGINFO_TABLE_GETTER(Tags, Tag, tagtbl, tags);
+  AMXDEBUGINFO_TABLE_GETTER(Symbols, Symbol, symboltbl, symbols);
+  AMXDEBUGINFO_TABLE_GETTER(Automata, Automaton, automatontbl, automatons);
+  AMXDEBUGINFO_TABLE_GETTER(States, State, statetbl, states);
 
   static bool IsPresent(AMX *amx);
 
