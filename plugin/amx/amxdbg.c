@@ -51,7 +51,7 @@ int AMXAPI dbg_FreeInfo(AMX_DBG *amxdbg)
   return AMX_ERR_NONE;
 }
 
-int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp, size_t codesize)
+int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp)
 {
   AMX_HEADER amxhdr;
   AMX_DBG_HDR dbghdr;
@@ -150,8 +150,7 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp, size_t codesize)
   ptr += dbghdr.lines * sizeof(AMX_DBG_LINE);
 
   /* detect dbghdr.lines overflow */
-  while (((AMX_DBG_LINE *)ptr)->address < codesize &&
-         ((AMX_DBG_LINE *)ptr)->address > (((AMX_DBG_LINE *)ptr) - 1)->address) {
+  while (((AMX_DBG_LINE *)ptr)->address > (((AMX_DBG_LINE *)ptr) - 1)->address) {
     dbghdr.lines = -1;
     #if BYTE_ORDER==BIG_ENDIAN
       linetbl = (AMX_DBG_LINE *)ptr;

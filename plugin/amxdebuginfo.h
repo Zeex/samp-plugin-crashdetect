@@ -237,8 +237,8 @@ class AMXDebugInfo {
     const AMX_DBG_SYMDIM *symdim_;
   };
 
-  AMXDebugInfo(AMX *amx);
-  AMXDebugInfo(AMX *amx, const std::string &filename);
+  AMXDebugInfo();
+  explicit AMXDebugInfo(const std::string &filename);
   ~AMXDebugInfo();
 
   void Load(const std::string &filename);
@@ -298,7 +298,6 @@ class AMXDebugInfo {
   AMXDebugInfo &operator=(const AMXDebugInfo &);
 
  private:
-  AMX     *amx_;
   AMX_DBG *amxdbg_;
 };
 
