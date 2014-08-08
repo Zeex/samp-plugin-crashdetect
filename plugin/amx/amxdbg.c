@@ -51,7 +51,7 @@ int AMXAPI dbg_FreeInfo(AMX_DBG *amxdbg)
   return AMX_ERR_NONE;
 }
 
-int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp)
+int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp, size_t codesize)
 {
   AMX_HEADER amxhdr;
   AMX_DBG_HDR dbghdr;
@@ -145,6 +145,12 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp)
     } /* for */
   #endif
   ptr += dbghdr.lines * sizeof(AMX_DBG_LINE);
+
+  /* detect dbghdr.lines overflow */
+  while (((AMX_DBG_LINE *)ptr)->address < codesize &&
+         ((AMX_DBG_LINE *)ptr)->address > (((AMX_DBG_LINE *)ptr) - 1)->address) {
+    ptr += (1 << (sizeof(dbghdr.lines) * CHAR_BIT)) * sizeof(AMX_DBG_LINE);
+  } /* while */
 
   /* symbol table (plus index tags) */
   for (index = 0; index < dbghdr.symbols; index++) {

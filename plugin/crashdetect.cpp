@@ -53,6 +53,7 @@ AMXCallStack CrashDetect::call_stack_;
 
 CrashDetect::CrashDetect(AMX *amx)
  : AMXService<CrashDetect>(amx),
+   debug_info_(amx),
    prev_debug_(0),
    prev_callback_(0),
    last_frame_(amx->stp),

@@ -142,7 +142,7 @@ typedef struct tagAMX_DBG {
 
 
 int AMXAPI dbg_FreeInfo(AMX_DBG *amxdbg);
-int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp);
+int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp, size_t codesize);
 
 int AMXAPI dbg_LookupFile(AMX_DBG *amxdbg, ucell address, const char **filename);
 int AMXAPI dbg_LookupFunction(AMX_DBG *amxdbg, ucell address, const char **funcname);

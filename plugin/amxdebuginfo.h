@@ -237,8 +237,8 @@ class AMXDebugInfo {
     const AMX_DBG_SYMDIM *symdim_;
   };
 
-  AMXDebugInfo();
-  explicit AMXDebugInfo(const std::string &filename);
+  AMXDebugInfo(AMX *amx);
+  AMXDebugInfo(AMX *amx, const std::string &filename);
   ~AMXDebugInfo();
 
   void Load(const std::string &filename);
@@ -277,11 +277,19 @@ class AMXDebugInfo {
     }
 
   AMXDEBUGINFO_TABLE_GETTER(Files, File, filetbl, files);
-  AMXDEBUGINFO_TABLE_GETTER(Lines, Line, linetbl, lines);
   AMXDEBUGINFO_TABLE_GETTER(Tags, Tag, tagtbl, tags);
   AMXDEBUGINFO_TABLE_GETTER(Symbols, Symbol, symboltbl, symbols);
   AMXDEBUGINFO_TABLE_GETTER(Automata, Automaton, automatontbl, automatons);
   AMXDEBUGINFO_TABLE_GETTER(States, State, statetbl, states);
+
+  LineTable GetLines() const {
+    // Work around possible overflow of amxdbg_->hdr->lines.
+    int num_lines = (
+      reinterpret_cast<unsigned char*>(amxdbg_->symboltbl[0]) -
+      reinterpret_cast<unsigned char*>(amxdbg_->linetbl)
+    ) / sizeof(AMX_DBG_LINE);
+    return LineTable(amxdbg_->linetbl, num_lines);
+  }
 
   static bool IsPresent(AMX *amx);
 
@@ -292,6 +300,7 @@ class AMXDebugInfo {
   static bool HasDebugInfo(AMX *amx);
 
  private:
+  AMX     *amx_;
   AMX_DBG *amxdbg_;
 };
 
