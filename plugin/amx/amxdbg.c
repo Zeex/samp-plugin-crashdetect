@@ -57,10 +57,8 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp)
   AMX_DBG_HDR dbghdr;
   unsigned char *ptr;
   int index, dim;
+  AMX_DBG_LINE *line;
   AMX_DBG_SYMDIM *symdim;
-  #if BYTE_ORDER==BIG_ENDIAN
-    AMX_DBG_LINE *linetbl;
-  #endif
 
   assert(fp != NULL);
   assert(amxdbg != NULL);
@@ -150,13 +148,14 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp)
   ptr += dbghdr.lines * sizeof(AMX_DBG_LINE);
 
   /* detect dbghdr.lines overflow */
-  while (((AMX_DBG_LINE *)ptr)->address > (((AMX_DBG_LINE *)ptr) - 1)->address) {
+  while ((line = (AMX_DBG_LINE *)ptr)
+         && (cell)line->address > (cell)(line - 1)->address) {
     dbghdr.lines = -1;
     #if BYTE_ORDER==BIG_ENDIAN
-      linetbl = (AMX_DBG_LINE *)ptr;
       for (index = 0; index <= dbghdr.lines; index++) {
         amx_AlignCell(&linetbl[index].address);
         amx_Align32((uint32_t*)&linetbl[index].line);
+        line++;
       } /* for */
     #endif
     ptr += ((uint32_t)dbghdr.lines + 1) * sizeof(AMX_DBG_LINE);
