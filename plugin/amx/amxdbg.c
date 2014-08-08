@@ -58,6 +58,9 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp, size_t codesize)
   unsigned char *ptr;
   int index, dim;
   AMX_DBG_SYMDIM *symdim;
+  #if BYTE_ORDER==BIG_ENDIAN
+    AMX_DBG_LINE *linetbl;
+  #endif
 
   assert(fp != NULL);
   assert(amxdbg != NULL);
@@ -149,7 +152,15 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp, size_t codesize)
   /* detect dbghdr.lines overflow */
   while (((AMX_DBG_LINE *)ptr)->address < codesize &&
          ((AMX_DBG_LINE *)ptr)->address > (((AMX_DBG_LINE *)ptr) - 1)->address) {
-    ptr += (1 << (sizeof(dbghdr.lines) * CHAR_BIT)) * sizeof(AMX_DBG_LINE);
+    dbghdr.lines = -1;
+    #if BYTE_ORDER==BIG_ENDIAN
+      linetbl = (AMX_DBG_LINE *)ptr;
+      for (index = 0; index <= dbghdr.lines; index++) {
+        amx_AlignCell(&linetbl[index].address);
+        amx_Align32((uint32_t*)&linetbl[index].line);
+      } /* for */
+    #endif
+    ptr += ((uint32_t)dbghdr.lines + 1) * sizeof(AMX_DBG_LINE);
   } /* while */
 
   /* symbol table (plus index tags) */
