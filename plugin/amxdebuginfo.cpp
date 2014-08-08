@@ -57,12 +57,6 @@ AMXDebugInfo::~AMXDebugInfo() {
   Free();
 }
 
-bool AMXDebugInfo::HasDebugInfo(AMX *amx) {
-  uint16_t flags;
-  amx_Flags(amx, &flags);
-  return ((flags & AMX_FLAG_DEBUG) != 0);
-}
-
 bool AMXDebugInfo::IsLoaded() const {
   return (amxdbg_ != 0);
 }

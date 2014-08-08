@@ -297,8 +297,6 @@ class AMXDebugInfo {
   AMXDebugInfo(const AMXDebugInfo &);
   AMXDebugInfo &operator=(const AMXDebugInfo &);
 
-  static bool HasDebugInfo(AMX *amx);
-
  private:
   AMX     *amx_;
   AMX_DBG *amxdbg_;
