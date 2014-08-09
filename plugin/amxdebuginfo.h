@@ -106,7 +106,7 @@ class AMXDebugInfo {
     std::string GetName() const    { return file_->name; }
     cell        GetAddress() const { return file_->address; }
 
-    operator bool() { return file_ != 0; }
+    operator bool() const { return file_ != 0; }
 
    private:
     const AMX_DBG_FILE *file_;
@@ -120,7 +120,7 @@ class AMXDebugInfo {
     int32_t GetNumber() const  { return line_.line; }
     cell    GetAddress() const { return line_.address; }
 
-    operator bool() { return line_.address != 0; }
+    operator bool() const { return line_.address != 0; }
 
    private:
     AMX_DBG_LINE line_;
@@ -134,7 +134,7 @@ class AMXDebugInfo {
     int32_t     GetID() const   { return tag_->tag; }
     std::string GetName() const { return tag_->name; }    
 
-    operator bool() { return tag_ != 0; }
+    operator bool() const { return tag_ != 0; }
 
    private:
     const AMX_DBG_TAG *tag_;
@@ -149,7 +149,7 @@ class AMXDebugInfo {
      cell        GetAddress() const   { return automaton_->address; }
      std::string GetName() const      { return automaton_->name; }
 
-     operator bool() { return automaton_ != 0; }
+     operator bool() const { return automaton_ != 0; }
 
    private:
     const AMX_DBG_MACHINE *automaton_;
@@ -164,7 +164,7 @@ class AMXDebugInfo {
      int16_t     GetAutomaton() const { return state_->automaton; }
      std::string GetName() const      { return state_->name; }
 
-     operator bool() { return state_ != 0; }
+     operator bool() const { return state_ != 0; }
 
    private:
      const AMX_DBG_STATE *state_;
@@ -217,7 +217,7 @@ class AMXDebugInfo {
 
     std::vector<SymbolDim> GetDims() const;
 
-    operator bool() { return symbol_ != 0; }
+    operator bool() const { return symbol_ != 0; }
 
    private:
     const AMX_DBG_SYMBOL *symbol_;
@@ -231,7 +231,7 @@ class AMXDebugInfo {
     int16_t GetTag() const  { return symdim_->tag; }
     cell    GetSize() const { return symdim_->size; }
 
-    operator bool() { return symdim_ != 0; }
+    operator bool() const { return symdim_ != 0; }
 
    private:
     const AMX_DBG_SYMDIM *symdim_;
