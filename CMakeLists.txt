@@ -8,6 +8,17 @@ include(CTest)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+if(CMAKE_COMPILER_IS_GNUCC)
+  if(NOT CMAKE_C_COMPILER_VERSION VERSION_LESS 4.0)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-attributes")
+  endif()
+endif()
+if(CMAKE_COMPILER_IS_GNUCXX)
+  if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.0)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes")
+  endif()
+endif()
+
 add_subdirectory(deps)
 
 git_describe(version --match v[0-9]*.[0-9]**)
