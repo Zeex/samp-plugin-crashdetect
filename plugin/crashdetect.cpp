@@ -132,7 +132,7 @@ int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
   call_stack_.Push(AMXCall::Native(amx(), index));
 
   if (trace_flags_ & TRACE_NATIVES) {
-    TracePrint(amx().GetNativeName(index));
+    TracePrint("native %s ()", amx().GetNativeName(index));
   }
 
   int error = prev_callback_(amx(), index, result, params);
