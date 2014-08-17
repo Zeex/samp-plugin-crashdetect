@@ -2479,13 +2479,14 @@ static const void * const amx_opcodelist[] = {
     amx->frm=frm;
     amx->pri=pri;
     amx->alt=alt;
-    amx->cip=(cell)((unsigned char*)cip-code);
-    if (offs==AMX_ERR_SLEEP) {
+    if (offs!=AMX_ERR_SLEEP) {
+      ABORT(amx,(int)offs);
+    } else {
+      amx->cip=(cell)((unsigned char*)cip-code);
       amx->reset_stk=reset_stk;
       amx->reset_hea=reset_hea;
       return (int)offs;
     } /* if */
-    ABORT(amx,(int)offs);
   op_bounds:
     GETPARAM(offs);
     if ((ucell)pri>(ucell)offs)
@@ -3459,13 +3460,14 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->frm=frm;
       amx->pri=pri;
       amx->alt=alt;
-      amx->cip=(cell)((unsigned char*)cip-code);
-      if (offs==AMX_ERR_SLEEP) {
+      if (offs!=AMX_ERR_SLEEP) {
+        ABORT(amx,(int)offs);
+      } else {
+        amx->cip=(cell)((unsigned char*)cip-code);
         amx->reset_stk=reset_stk;
         amx->reset_hea=reset_hea;
         return (int)offs;
       } /* if */
-      ABORT(amx,(int)offs);
     case OP_BOUNDS:
       GETPARAM(offs);
       if ((ucell)pri>(ucell)offs)
