@@ -6,6 +6,7 @@ env:
     - PATH=$PATH:$TRAVIS_BUILD_DIR/samp-server-cli/bin
     - SAMP_SERVER_ROOT=$TRAVIS_BUILD_DIR/samp03
     - SAMP_SERVER=$TRAVIS_BUILD_DIR/samp03/samp03svr
+    - CTEST_OUTPUT_ON_FAILURE=TRUE
 install:
   - sudo apt-get update -qq
   - sudo apt-get install -y gcc-multilib g++-multilib cmake python
