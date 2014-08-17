@@ -426,27 +426,14 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 
     // native function
     if (call.IsNative()) {
-      cell address = amx.GetNativeAddress(call.index());
-      if (address != 0) {
-        stream << "\n#" << level++ << " native ";
-
-        const char *name = amx.GetNativeName(call.index());
-        if (name != 0) {
-          stream << name;
-        } else {
-          stream << "<unknown>";
-        }
-
-        char fill = stream.fill();
-        stream << " () [" << HexDword(address) << "]";
-        stream.fill(fill);
-
-        void *ptr = reinterpret_cast<void*>(address);
-        std::string path = os::GetModuleName(ptr);
-        std::string module = fileutils::GetFileName(path);
-        if (!module.empty()) {
-          stream << " from " << module;
-        }
+      const char *name = amx.GetNativeName(call.index());
+      stream << "\n#" << level++
+             << " native "
+             << (name != 0 ? name : "<unknown>") << " ()";
+      std::string module = os::GetModuleName(
+        reinterpret_cast<void*>(amx.GetNativeAddress(call.index())));
+      if (!module.empty()) {
+        stream << " from " << fileutils::GetFileName(module);
       }
     }
 
@@ -481,11 +468,8 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         const AMXDebugInfo &debug_info = cd->debug_info_;
         frame.Print(stream, debug_info);
 
-        if (!debug_info.IsLoaded()) {
-          const std::string &amx_name = cd->amx_name_;
-          if (!amx_name.empty()) {
-            stream << " from " << amx_name;
-          }
+        if (!debug_info.IsLoaded() && !cd->amx_name_.empty()) {
+          stream << " from " << cd->amx_name_;
         }
       }
 
