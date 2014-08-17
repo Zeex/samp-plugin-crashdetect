@@ -84,7 +84,7 @@ class AMXStackFrame {
 
 class AMXStackTrace {
  public:
-  AMXStackTrace(AMXScript amx, cell frame, int max_depth = 0);
+  AMXStackTrace(AMXScript amx, cell frame, int max_depth);
 
   bool MoveNext();
 
@@ -97,6 +97,11 @@ class AMXStackTrace {
   int max_depth_;
   int frame_index_;
 };
+
+AMXStackTrace GetAMXStackTrace(AMXScript amx,
+                               cell frm,
+                               cell cip,
+                               int max_depth);
 
 class AMXStackFramePrinter {
  public:

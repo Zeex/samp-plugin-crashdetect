@@ -120,7 +120,9 @@ class AMXScript {
   const char *GetNativeName(int index) const;
   const char *GetPublicName(int index) const;
 
+  cell GetStackSpaceLeft() const;
   bool IsStackOK() const;
+
   void PushStack(cell value);
   cell PopStack();
   void PopStack(int ncells);

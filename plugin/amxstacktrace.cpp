@@ -174,12 +174,33 @@ AMXStackTrace::AMXStackTrace(AMXScript amx, cell frame, int max_depth)
 }
 
 bool AMXStackTrace::MoveNext() {
-  if (frame_index_ < max_depth_ || max_depth_ == 0) {
+  if (frame_index_ < max_depth_) {
     current_frame_ = current_frame_.GetPrevious();
     frame_index_++;
     return true;
   }
   return false;
+}
+
+AMXStackTrace GetAMXStackTrace(AMXScript amx,
+                               cell frm,
+                               cell cip,
+                               int max_depth) {
+  if (amx.IsStackOK() && amx.GetStackSpaceLeft() >= 8) {
+    amx.PushStack(cip);
+    amx.PushStack(frm);
+    amx.SetFrm(amx.GetStk());
+  }
+
+  AMXStackTrace trace(amx, amx.GetFrm(), max_depth);
+
+  if (amx.IsStackOK()) {
+    amx.PopStack();
+    amx.PopStack();
+    amx.SetFrm(frm);
+  }
+
+  return trace;
 }
 
 namespace {

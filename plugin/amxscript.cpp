@@ -160,6 +160,10 @@ const char *AMXScript::GetName(uint32_t offset) const {
   return reinterpret_cast<char*>(amx_->base + offset);
 }
 
+cell AMXScript::GetStackSpaceLeft() const {
+  return GetStk() - GetHlw();
+}
+
 bool AMXScript::IsStackOK() const {
   return GetStk() >= GetHlw() && GetStk() <= GetStp();
 }

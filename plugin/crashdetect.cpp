@@ -434,13 +434,7 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
     else if (call.IsPublic()) {
       CrashDetect *cd = CrashDetect::GetInstance(amx);
 
-      if (amx.IsStackOK()) {
-        amx.PushStack(cip);
-        amx.PushStack(frm);
-        amx.SetFrm(amx.GetStk());
-      }
-
-      AMXStackTrace trace(amx, amx.GetFrm(), 100);
+      AMXStackTrace trace = GetAMXStackTrace(amx, frm, cip, 100);
       std::deque<AMXStackFrame> frames;
 
       while (trace.current_frame().return_address() != 0) {
@@ -452,16 +446,10 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 
       cell entry_point = amx.GetPublicAddress(call.index());
       if (frames.empty()) {
-        AMXStackFrame fake_frame(amx, amx.GetFrm(), 0, 0, entry_point);
+        AMXStackFrame fake_frame(amx, frm, 0, 0, entry_point);
         frames.push_front(fake_frame);
       } else {
         frames.back().set_caller_address(entry_point);
-      }
-
-      if (amx.IsStackOK()) {
-        frm = amx.PopStack();
-        cip = amx.PopStack();
-        amx.SetFrm(frm);
       }
 
       for (std::deque<AMXStackFrame>::const_iterator it = frames.begin();
