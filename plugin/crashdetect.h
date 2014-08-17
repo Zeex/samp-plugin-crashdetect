@@ -33,6 +33,7 @@
 #include "amxservice.h"
 
 class AMXError;
+class AMXStackFrame;
 
 class CrashDetect : public AMXService<CrashDetect> {
  friend class AMXService<CrashDetect>;
@@ -56,6 +57,9 @@ class CrashDetect : public AMXService<CrashDetect> {
 
   static void TracePrint(const char *format, ...);
   static void DebugPrint(const char *format, ...);
+
+  static void PrintTraceFrame(const AMXStackFrame &frame,
+                              const AMXDebugInfo &debug_info);
 
   static void PrintRuntimeError(AMXScript amx, const AMXError &error);
 

@@ -116,19 +116,16 @@ int CrashDetect::Unload() {
 }
 
 int CrashDetect::DoAmxDebug() {
-  bool entered_function = amx().GetFrm() < last_frame_;
-  last_frame_ = amx().GetFrm();
-  if (entered_function && (trace_flags_ & TRACE_FUNCTIONS)
+  if (amx().GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
-    std::string name = debug_info_.GetFunctionName(amx().GetCip());
-    if (!name.empty()) {
-      TracePrint(name.c_str());
+    AMXStackTrace trace =
+      GetAMXStackTrace(amx(), amx().GetFrm(), amx().GetCip(), 1);
+    if (trace.current_frame().return_address() != 0) {
+      PrintTraceFrame(trace.current_frame(), debug_info_);
     }
   }
-  if (prev_debug_ != 0) {
-    return prev_debug_(amx());
-  }
-  return AMX_ERR_NONE;
+  last_frame_ = amx().GetFrm();
+  return prev_debug_ != 0 ? prev_debug_(amx()) : AMX_ERR_NONE;
 }
 
 int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
@@ -147,8 +144,22 @@ int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
 int CrashDetect::DoAmxExec(cell *retval, int index) {
   call_stack_.Push(AMXCall::Public(amx(), index));
 
+  if (trace_flags_ & TRACE_FUNCTIONS) {
+    last_frame_ = 0;
+  }
   if (trace_flags_ & TRACE_PUBLICS) {
-    TracePrint(amx().GetPublicName(index));
+    if (cell address = amx().GetPublicAddress(index)) {
+      AMXStackTrace trace =
+        GetAMXStackTrace(amx(), amx().GetFrm(), amx().GetCip(), 1);
+      AMXStackFrame frame = trace.current_frame();
+      if (frame.return_address() != 0) {
+        frame.set_caller_address(address);
+        PrintTraceFrame(frame, debug_info_);
+      } else {
+        AMXStackFrame fake_frame(amx(), amx().GetFrm(), 0, 0, address);
+        PrintTraceFrame(fake_frame, debug_info_);
+      }
+    }
   }
 
   int error = ::amx_Exec(amx(), retval, index);
@@ -301,6 +312,15 @@ void CrashDetect::DebugPrint(const char *format, ...) {
   va_start(va, format);
   Print("[debug] ", format, va);
   va_end(va);
+}
+
+// static
+void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
+                                  const AMXDebugInfo &debug_info) {
+  std::stringstream stream;
+  AMXStackFramePrinter printer(stream, debug_info);
+  printer.PrintCallerNameAndArguments(frame);
+  TracePrint(stream.str().c_str());
 }
 
 // static
@@ -459,8 +479,8 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         stream << "\n#" << level++ << " ";
 
         const AMXDebugInfo &debug_info = cd->debug_info_;
-        frame.Print(stream, &debug_info);
-        
+        frame.Print(stream, debug_info);
+
         if (!debug_info.IsLoaded()) {
           const std::string &amx_name = cd->amx_name_;
           if (!amx_name.empty()) {

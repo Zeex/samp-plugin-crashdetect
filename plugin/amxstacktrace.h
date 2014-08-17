@@ -69,10 +69,7 @@ class AMXStackFrame {
 
   AMXStackFrame GetPrevious() const;
 
-  void Print(std::ostream &stream,
-             const AMXDebugInfo *debug_info = 0) const;
-
-  operator bool() const { return address_ != 0; }
+  void Print(std::ostream &stream, const AMXDebugInfo &debug_info) const;
 
  private:
   AMXScript amx_;
@@ -106,16 +103,9 @@ AMXStackTrace GetAMXStackTrace(AMXScript amx,
 class AMXStackFramePrinter {
  public:
   static const int kCellWidthChars = sizeof(cell) * 2;
- 
-  AMXStackFramePrinter();
 
-  void set_stream(std::ostream *stream) {
-    stream_ = stream;
-  }
-
-  void set_debug_info(const AMXDebugInfo *debug_info) {
-    debug_info_ = debug_info;
-  }
+  AMXStackFramePrinter(std::ostream &stream,
+                       const AMXDebugInfo &debug_info);
 
   void Print(const AMXStackFrame &frame);
 
@@ -124,17 +114,14 @@ class AMXStackFramePrinter {
   void PrintReturnAddress(const AMXStackFrame &frame);
 
   void PrintCallerName(const AMXStackFrame &frame);
-  void PrintCallerName(const AMXStackFrame &frame,
-                       const AMXDebugSymbol &caller);
+  void PrintCallerNameAndArguments(const AMXStackFrame &frame);
 
-  void PrintArgument(const AMXStackFrame &frame,
-                     int index);
+  void PrintArgument(const AMXStackFrame &frame, int index);
   void PrintArgument(const AMXStackFrame &frame,
                      const AMXDebugSymbol &arg,
                      int index);
 
-  void PrintArgumentValue(const AMXStackFrame &frame,
-                          int index);
+  void PrintArgumentValue(const AMXStackFrame &frame, int index);
   void PrintArgumentValue(const AMXStackFrame &frame,
                           const AMXDebugSymbol &arg,
                           int index);
@@ -148,14 +135,8 @@ class AMXStackFramePrinter {
   void PrintSourceLocation(cell address);
 
  private:
-  bool HaveDebugInfo() const;
-  bool UsesAutomata(const AMXStackFrame &frame) const;
-
-  AMXDebugSymbol GetCallerSymbol(const AMXStackFrame &frame) const;
-
- private:
-  std::ostream *stream_;
-  const AMXDebugInfo *debug_info_;
+  std::ostream &stream_;
+  const AMXDebugInfo &debug_info_;
 };
 
 #endif // !AMXSTACKTRACE_H
