@@ -464,11 +464,9 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
         const AMXStackFrame &frame = *it;
 
         stream << "\n#" << level++ << " ";
+        frame.Print(stream, cd->debug_info_);
 
-        const AMXDebugInfo &debug_info = cd->debug_info_;
-        frame.Print(stream, debug_info);
-
-        if (!debug_info.IsLoaded() && !cd->amx_name_.empty()) {
+        if (!cd->debug_info_.IsLoaded()) {
           stream << " from " << cd->amx_name_;
         }
       }
