@@ -48,6 +48,8 @@ set(PLUGIN_SOURCES
   plugin.cpp
   plugin.def
   plugincommon.h
+  regexp.cpp
+  regexp.h
   stacktrace.cpp
   stacktrace.h
 )
@@ -76,7 +78,7 @@ endif()
 
 add_plugin(plugin ${PLUGIN_SOURCES})
 
-target_link_Libraries(plugin amx subhook)
+target_link_Libraries(plugin amx pcre subhook)
 if(WIN32)
   target_link_libraries(plugin DbgHelp)
 endif()

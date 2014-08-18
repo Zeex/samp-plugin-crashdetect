@@ -31,6 +31,8 @@
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 #include "amxservice.h"
+#include "configreader.h"
+#include "regexp.h"
 
 class AMXError;
 class AMXStackFrame;
@@ -39,6 +41,13 @@ class CrashDetect : public AMXService<CrashDetect> {
  friend class AMXService<CrashDetect>;
 
  public:
+  enum TraceFlags {
+    TRACE_NONE = 0x00,
+    TRACE_NATIVES = 0x01,
+    TRACE_PUBLICS = 0x02,
+    TRACE_FUNCTIONS = 0x04
+  };
+
   int Load();
   int Unload();
 
@@ -70,11 +79,12 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void PrintNativeBacktrace(std::ostream &stream, void *context);
 
  private:
-  explicit CrashDetect(AMX *amx);
+  CrashDetect(AMX *amx);
 
  private:
   AMXDebugInfo debug_info_;
-  AMX_DEBUG    prev_debug_;
+
+  AMX_DEBUG prev_debug_;
   AMX_CALLBACK prev_callback_;
 
   cell last_frame_;
@@ -84,16 +94,13 @@ class CrashDetect : public AMXService<CrashDetect> {
 
   bool block_exec_errors_;
 
-  enum TraceFlag {
-    TRACE_NONE      = 0x00,
-    TRACE_NATIVES   = 0x01,
-    TRACE_PUBLICS   = 0x02,
-    TRACE_FUNCTIONS = 0x04
-  };
-
-  int trace_flags_;
-
  private:
+  static ConfigReader server_cfg_;
+
+  // server.cfg options
+  static int trace_flags_;
+  static RegExp trace_regexp_;
+
   static AMXCallStack call_stack_;
 };
 

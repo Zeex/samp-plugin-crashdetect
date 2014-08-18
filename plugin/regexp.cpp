@@ -22,26 +22,34 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef UTILS_H
-#define UTILS_H
+#include <cstring>
 
-namespace utils {
+#include "regexp.h"
 
-template<typename Func>
-void SplitString(const std::string &s, char delim, Func func) {
-  std::string::size_type begin = 0;
-  while (begin < s.length()) {
-    std::string::size_type end = s.find(delim, begin);
-    if (end != std::string::npos) {
-      func(std::string(s.begin() + begin, s.begin() + end));
-      begin = end + 1;
-    } else {
-      func(std::string(s.begin() + begin, s.end()));
-      break;
-    }
-  }
+RegExp::RegExp(const std::string &pattern)
+  : pcre_(NULL)
+{
+  const char *errorptr;
+  int erroroffset = 0;
+  pcre_ = pcre_compile(pattern.c_str(),
+                       0,
+                       &errorptr,
+                       &erroroffset,
+                       NULL);
 }
 
-} // namespace utils
+RegExp::~RegExp() {
+  pcre_free(pcre_);
+}
 
-#endif // !UTILS_H
+bool RegExp::Test(const std::string &string) const {
+  int result = pcre_exec(pcre_,
+                         NULL,
+                         string.c_str(),
+                         string.length(),
+                         0,
+                         0,
+                         NULL,
+                         0);
+  return result >= 0;
+}

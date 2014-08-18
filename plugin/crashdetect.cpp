@@ -39,15 +39,90 @@
 #include "amxpathfinder.h"
 #include "amxscript.h"
 #include "amxstacktrace.h"
-#include "configreader.h"
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"
 #include "os.h"
 #include "stacktrace.h"
-#include "utils.h"
 
 #define AMX_EXEC_GDK (-10)
+
+namespace {
+
+class HexDword {
+ public:
+  static const int kWidth = 8;
+  HexDword(uint32_t value): value_(value) {}
+  HexDword(void *value): value_(reinterpret_cast<uint32_t>(value)) {}
+  friend std::ostream &operator<<(std::ostream &stream, const HexDword &x) {
+    char fill = stream.fill();
+    stream << std::setw(kWidth) << std::setfill('0') << std::hex
+           << x.value_ << std::dec;
+    stream.fill(fill);
+    return stream;
+  }
+ private:
+  uint32_t value_;
+};
+
+int CharToTraceFlag(char c) {
+  switch (c) {
+    case 'n':
+      return CrashDetect::TRACE_NATIVES;
+    case 'p':
+      return CrashDetect::TRACE_PUBLICS;
+    case 'f':
+      return CrashDetect::TRACE_FUNCTIONS;
+  }
+  return 0;
+}
+
+int StringToTraceFlags(const std::string &string) {
+  int flags = 0;
+  for (std::size_t i = 0; i < string.length(); i++) {
+    flags |= CharToTraceFlag(string[i]);
+  }
+  return flags;
+}
+
+template<typename Func>
+void SplitString(const std::string &s, char delim, Func func) {
+  std::string::size_type begin = 0;
+  std::string::size_type end;
+
+  while (begin < s.length()) {
+    end = s.find(delim, begin);
+    end = (end == std::string::npos) ? s.length() : end;
+    func(std::string(s.begin() + begin,
+                     s.begin() + end));
+    begin = end + 1;
+  }
+}
+
+void Replace(const char *s, char c, const char *r, std::string& result) {
+  std::size_t len = std::strlen(s);
+  for (std::size_t i = 0; i < len; i++) {
+    result += s[i];
+    if (s[i] == c) {
+      result.append(r);
+    }
+  }
+}
+
+void Print(const char *prefix, const char *format, std::va_list va) {
+  std::string new_format(prefix);
+  Replace(format, '\n', prefix, new_format);
+  vlogprintf(new_format.c_str(), va);
+}
+
+} // anonymous namespace
+
+ConfigReader CrashDetect::server_cfg_("server.cfg");
+
+int CrashDetect::trace_flags_(StringToTraceFlags(
+  server_cfg_.GetOptionDefault<std::string>("trace")));
+RegExp CrashDetect::trace_regexp_(
+  server_cfg_.GetOptionDefault<std::string>("trace_filter", ".*"));
 
 AMXCallStack CrashDetect::call_stack_;
 
@@ -56,8 +131,7 @@ CrashDetect::CrashDetect(AMX *amx)
    prev_debug_(0),
    prev_callback_(0),
    last_frame_(amx->stp),
-   block_exec_errors_(false),
-   trace_flags_(TRACE_NONE)
+   block_exec_errors_(false)
 {
 }
 
@@ -68,7 +142,7 @@ int CrashDetect::Load() {
 
   const char *var = getenv("AMX_PATH");
   if (var != 0) {
-    utils::SplitString(var, fileutils::kNativePathListSepChar,
+    SplitString(var, fileutils::kNativePathListSepChar,
         std::bind1st(std::mem_fun(&AMXPathFinder::AddSearchPath), &amx_finder));
   }
 
@@ -88,25 +162,6 @@ int CrashDetect::Load() {
   amx().DisableSysreqD();
   prev_debug_ = amx().GetDebugHook();
   prev_callback_ = amx().GetCallback();
-
-  ConfigReader server_cfg("server.cfg");
-
-  std::string trace;
-  server_cfg.GetOption("trace", trace);
-
-  for (std::size_t i = 0; i < trace.length(); i++) {
-    switch (trace[i]) {
-      case 'n':
-        trace_flags_ |= TRACE_NATIVES;
-        break;
-      case 'p':
-        trace_flags_ |= TRACE_PUBLICS;
-        break;
-      case 'f':
-        trace_flags_ |= TRACE_FUNCTIONS;
-        break;
-    }
-  }
 
   return AMX_ERR_NONE;
 }
@@ -132,7 +187,12 @@ int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
   call_stack_.Push(AMXCall::Native(amx(), index));
 
   if (trace_flags_ & TRACE_NATIVES) {
-    TracePrint("native %s ()", amx().GetNativeName(index));
+    std::stringstream stream;
+    const char *name = amx().GetNativeName(index);
+    stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
+    if (trace_regexp_.Test(stream.str())) {
+      TracePrint(stream.str().c_str());
+    }
   }
 
   int error = prev_callback_(amx(), index, result, params);
@@ -278,26 +338,6 @@ void CrashDetect::OnInterrupt(void *context) {
   PrintNativeBacktrace(context);
 }
 
-namespace {
-
-void Replace(const char *s, char c, const char *r, std::string& result) {
-  std::size_t len = std::strlen(s);
-  for (std::size_t i = 0; i < len; i++) {
-    result += s[i];
-    if (s[i] == c) {
-      result.append(r);
-    }
-  }
-}
-
-void Print(const char *prefix, const char *format, va_list va) {
-  std::string new_format(prefix);
-  Replace(format, '\n', prefix, new_format);
-  vlogprintf(new_format.c_str(), va);
-}
-
-} // anonymous namespace
-
 // static
 void CrashDetect::TracePrint(const char *format, ...) {
   std::va_list va;
@@ -320,7 +360,9 @@ void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
   std::stringstream stream;
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
-  TracePrint(stream.str().c_str());
+  if (trace_regexp_.Test(stream.str())) {
+    TracePrint(stream.str().c_str());
+  }
 }
 
 // static
@@ -387,26 +429,6 @@ void CrashDetect::PrintAmxBacktrace() {
   PrintAmxBacktrace(stream);
   DebugPrint(stream.str().c_str());
 }
-
-namespace {
-
-class HexDword {
- public:
-  static const int kWidth = 8;
-  HexDword(uint32_t value): value_(value) {}
-  HexDword(void *value): value_(reinterpret_cast<uint32_t>(value)) {}
-  friend std::ostream &operator<<(std::ostream &stream, const HexDword &x) {
-    char fill = stream.fill();
-    stream << std::setw(kWidth) << std::setfill('0') << std::hex
-           << x.value_ << std::dec;
-    stream.fill(fill);
-    return stream;
-  }
- private:
-  uint32_t value_;
-};
-
-} // anonymous namespace
 
 // static
 void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
