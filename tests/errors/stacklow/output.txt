@@ -3,7 +3,7 @@ Don't remove this message
 \[debug\]  Stack pointer \(STK\) is 0x102D, stack top \(STP\) is 0x102C
 \[debug\] AMX backtrace:
 \[debug\] #0 000000cc in public test \(\.\.\. <4 variable arguments>\) at .*test\.pwn:17
-\[debug\] #1 native CallLocalFunction \(\) \[[0-9a-f]+\] from (samp03svr|samp-server.exe)
+\[debug\] #1 native CallLocalFunction \(\) from (samp03svr|samp-server.exe)
 \[debug\] #2 00000064 in main \(\.\.\. <6400 variable arguments>\) at .*test\.pwn:8
 \[debug\] Run time error 5: "Invalid memory access"
 \[debug\] AMX backtrace:

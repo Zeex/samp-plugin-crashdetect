@@ -3,5 +3,5 @@ Foo:on
 \[debug\] AMX backtrace:
 \[debug\] #0 000001f8 in foo \(x=2\) <Foo:on, undefined> at .*test\.pwn:23
 \[debug\] #1 0000013c in public test \(\) at .*test\.pwn:14
-\[debug\] #2 native CallLocalFunction \(\) \[[0-9a-f]+\] from (samp03svr|samp-server\.exe)
+\[debug\] #2 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
 \[debug\] #3 000000dc in main \(\) at .*test\.pwn:7

@@ -2,11 +2,11 @@
 \[debug\]  Accessing element at index 100 past array upper bound 0
 \[debug\] AMX backtrace:
 \[debug\] #0 00000124 in public out_of_bounds_pos \(\) at .*test\.pwn:17
-\[debug\] #1 native CallLocalFunction \(\) \[[0-9a-f]+\] from (samp03svr|samp-server\.exe)
+\[debug\] #1 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
 \[debug\] #2 00000070 in main \(\) at .*test\.pwn:8
 \[debug\] Run time error 4: "Array index out of bounds"
 \[debug\]  Accessing element at negative index -100
 \[debug\] AMX backtrace:
 \[debug\] #0 000001a8 in public out_of_bounds_neg \(\) at .*test\.pwn:24
-\[debug\] #1 native CallLocalFunction \(\) \[[0-9a-f]+\] from (samp03svr|samp-server\.exe)
+\[debug\] #1 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
 \[debug\] #2 000000a4 in main \(\) at .*test\.pwn:9
