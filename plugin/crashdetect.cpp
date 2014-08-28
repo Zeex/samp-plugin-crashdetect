@@ -99,20 +99,27 @@ void SplitString(const std::string &s, char delim, Func func) {
   }
 }
 
-void Replace(const char *s, char c, const char *r, std::string& result) {
-  std::size_t len = std::strlen(s);
-  for (std::size_t i = 0; i < len; i++) {
-    result += s[i];
-    if (s[i] == c) {
-      result.append(r);
-    }
-  }
+void Print(const char *prefix, const char *format, std::va_list va) {
+  std::string new_format;
+  new_format.append(prefix);
+  new_format.append(format);
+  vlogprintf(new_format.c_str(), va);
 }
 
-void Print(const char *prefix, const char *format, std::va_list va) {
-  std::string new_format(prefix);
-  Replace(format, '\n', prefix, new_format);
-  vlogprintf(new_format.c_str(), va);
+template<typename FormattedPrinter>
+class PrintLine : public std::unary_function<const std::string &, void> {
+ public:
+  PrintLine(FormattedPrinter printer) : printer_(printer) {}
+  void operator()(const std::string &line) {
+    printer_("%s", line.c_str());
+  }
+ private:
+  FormattedPrinter printer_;
+};
+
+template<typename FormattedPrinter>
+void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
+  SplitString(stream.str(), '\n', PrintLine<FormattedPrinter>(printer));
 }
 
 } // anonymous namespace
@@ -191,7 +198,7 @@ int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
     const char *name = amx().GetNativeName(index);
     stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
     if (trace_regexp_.Test(stream.str())) {
-      TracePrint(stream.str().c_str());
+      PrintStream(TracePrint, stream);
     }
   }
 
@@ -295,7 +302,7 @@ void CrashDetect::HandleExecError(int index,
         error.code() != AMX_ERR_INDEX    &&
         error.code() != AMX_ERR_CALLBACK &&
         error.code() != AMX_ERR_INIT) {
-      DebugPrint(bt_stream.str().c_str());
+      PrintStream(DebugPrint, bt_stream);
     }
   }
 
@@ -361,7 +368,7 @@ void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
   if (trace_regexp_.Test(stream.str())) {
-    TracePrint(stream.str().c_str());
+    PrintStream(TracePrint, stream);
   }
 }
 
@@ -427,7 +434,7 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
 void CrashDetect::PrintAmxBacktrace() {
   std::stringstream stream;
   PrintAmxBacktrace(stream);
-  DebugPrint(stream.str().c_str());
+  PrintStream(DebugPrint, stream);
 }
 
 // static
@@ -503,7 +510,7 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 void CrashDetect::PrintNativeBacktrace(void *context) {
   std::stringstream stream;
   PrintNativeBacktrace(stream, context);
-  DebugPrint(stream.str().c_str());
+  PrintStream(DebugPrint, stream);
 }
 
 // static
