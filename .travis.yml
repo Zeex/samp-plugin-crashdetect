@@ -11,8 +11,8 @@ install:
   - sudo apt-get update -qq
   - sudo apt-get install -y gcc-multilib g++-multilib cmake python
   - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git
-  - wget http://files.sa-mp.com/samp03zsvr_R3.tar.gz
-  - tar xvf samp03zsvr_R3.tar.gz
+  - wget http://files.sa-mp.com/samp03zsvr_R4.tar.gz
+  - tar xvf samp03zsvr_R4.tar.gz
 before_script:
   - cmake . -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
 script:
