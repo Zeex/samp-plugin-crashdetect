@@ -1,7 +1,7 @@
 project(crashdetect)
 
 cmake_minimum_required(VERSION 2.8.6)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(GetGitRevisionDescription)
 include(CTest)
@@ -33,7 +33,7 @@ endif()
 string(REGEX REPLACE "([0-9]+(\\.[0-9]+)+).*" "\\1" version_rc ${version})
 string(REGEX REPLACE "\\." "," version_rc ${version_rc})
 string(REGEX REPLACE "^([0-9]+,[0-9]+)$" "\\1,0,0" version_rc ${version_rc})
-string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc 
+string(REGEX REPLACE "^([0-9]+,[0-9]+,[0-9]+)$" "\\1,0" version_rc
       ${version_rc})
 
 set(PROJECT_VERSION    ${version})
