@@ -16,6 +16,11 @@ Download
 
 Get latest binaries for Windows and Linux [here][download].
 
+License
+-------
+
+Licensed under the 2-clause BSD license. See the LICENSE.txt file.
+
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [donate]: http://pledgie.com/campaigns/19750
 [donate_button]: http://www.pledgie.com/campaigns/19750.png
