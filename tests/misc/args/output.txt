@@ -2,10 +2,10 @@
 \[debug\] AMX backtrace:
 \[debug\] #0 00000390 in end \(\) at .*test\.pwn:68
 \[debug\] #1 00000378 in f8 \(UknownTag:n=999\) at .*test\.pwn:65
-\[debug\] #2 00000348 in f7 \(e\[struct:1\]=@0x00003f84\) at .*test\.pwn:60
-\[debug\] #3 000002f4 in f6 \(aa\[3\]\[4\]=@0x00003f98\) at .*test\.pwn:55
-\[debug\] #4 0000028c in f5 \(a\[3\]=@0x00003fe4 ""\) at .*test\.pwn:45
-\[debug\] #5 00000210 in f4 \(s\[\]=@0x0000002c "hi there"\) at .*test\.pwn:35
+\[debug\] #2 00000348 in f7 \(e\[struct:1\]=@00003f84\) at .*test\.pwn:60
+\[debug\] #3 000002f4 in f6 \(aa\[3\]\[4\]=@00003f98\) at .*test\.pwn:55
+\[debug\] #4 0000028c in f5 \(a\[3\]=@00003fe4 ""\) at .*test\.pwn:45
+\[debug\] #5 00000210 in f4 \(s\[\]=@0000002c "hi there"\) at .*test\.pwn:35
 \[debug\] #6 000001b4 in f3 \(Float:f=1\.50000\) at .*test\.pwn:29
 \[debug\] #7 00000150 in f2 \(bool:b1=true, bool:b2=false\) at .*test\.pwn:24
 \[debug\] #8 00000118 in f1 \(x=123\) at .*test\.pwn:19

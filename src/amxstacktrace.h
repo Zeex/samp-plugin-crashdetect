@@ -102,8 +102,6 @@ AMXStackTrace GetAMXStackTrace(AMXScript amx,
 
 class AMXStackFramePrinter {
  public:
-  static const int kCellWidthChars = sizeof(cell) * 2;
-
   AMXStackFramePrinter(std::ostream &stream,
                        const AMXDebugInfo &debug_info);
 
@@ -111,6 +109,7 @@ class AMXStackFramePrinter {
 
   void PrintTag(const AMXDebugSymbol &symbol);
 
+  void PrintAddress(cell address);
   void PrintReturnAddress(const AMXStackFrame &frame);
 
   void PrintCallerName(const AMXStackFrame &frame);
@@ -121,6 +120,7 @@ class AMXStackFramePrinter {
                      const AMXDebugSymbol &arg,
                      int index);
 
+  void PrintValue(const std::string &tag_name, cell value);
   void PrintArgumentValue(const AMXStackFrame &frame, int index);
   void PrintArgumentValue(const AMXStackFrame &frame,
                           const AMXDebugSymbol &arg,

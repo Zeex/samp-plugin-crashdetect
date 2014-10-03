@@ -219,6 +219,10 @@ cell GetArgumentValue(AMXScript amx, cell frame_address, int index) {
   return *reinterpret_cast<cell*>(arg_offset);
 }
 
+cell GetArgumentValue(const AMXStackFrame &frame, int index) {
+  return GetArgumentValue(frame.amx(), frame.address(), index);
+}
+
 cell GetNumArgs(AMXScript amx, cell frame_address) {
   cell data = reinterpret_cast<cell>(amx.GetData());
   cell num_args_offset = data + frame_address + 2 * sizeof(cell);
@@ -233,7 +237,7 @@ char IsPrintableChar(cell c) {
   return IsPrintableChar(static_cast<char>(c & 0xFF));
 }
 
-cell *GetStringPtr(AMXScript amx, cell address) {
+cell *GetDataPtr(AMXScript amx, cell address) {
   if (IsDataAddress(amx, address)) {
     return reinterpret_cast<cell*>(amx.GetData() + address);
   }
@@ -259,7 +263,6 @@ std::string GetPackedString(const cell *string, std::size_t size) {
     }
     s.push_back(cu);
   }
-
   return s;
 }
 
@@ -278,7 +281,7 @@ std::string GetUnpackedString(const cell *string, std::size_t size) {
 void GetStringContents(AMXScript amx, cell address, std::size_t size,
                        std::string &string, bool &packed) {
 
-  cell *ptr = GetStringPtr(amx, address);
+  cell *ptr = GetDataPtr(amx, address);
   if (ptr != 0) {
     packed = IsPackedString(ptr);
     if (size == 0) {
@@ -431,16 +434,14 @@ void AMXStackFramePrinter::PrintTag(const AMXDebugSymbol &symbol) {
   }
 }
 
+void AMXStackFramePrinter::PrintAddress(cell address) {
+  char old_fill = stream_.fill('0');
+  stream_ << std::hex << std::setw(sizeof(cell) * 2) << address << std::dec;
+  stream_.fill(old_fill);
+}
+
 void AMXStackFramePrinter::PrintReturnAddress(const AMXStackFrame &frame) {
-  if (frame.return_address() == 0) {
-    stream_ << "????????";
-  } else {
-    char old_fill = stream_.fill('0');
-    stream_ << std::hex << std::setw(kCellWidthChars)
-             << frame.return_address()
-             << std::dec;
-    stream_.fill(old_fill);
-  }
+  PrintAddress(frame.return_address());
 }
 
 void AMXStackFramePrinter::PrintCallerName(const AMXStackFrame &frame) {
@@ -515,50 +516,63 @@ void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame,
   PrintArgumentValue(frame, arg, index);
 }
 
+void AMXStackFramePrinter::PrintValue(const std::string &tag_name, cell value) {
+  if (tag_name == "bool") {
+    stream_ << (value ? "true" : "false");
+  } else if (tag_name == "Float") {
+    stream_ << std::fixed << std::setprecision(5) << amx_ctof(value);
+  } else {
+    stream_ << value;
+  }
+}
+
 void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
                                               int index) {
-  stream_ << GetArgumentValue(frame.amx(), frame.address(), index);
+  stream_ << GetArgumentValue(frame, index);
 }
 
 void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
                                               const AMXDebugSymbol &arg,
                                               int index) {
   std::string tag_name = debug_info_.GetTagName(arg.GetTag());
-  cell value = GetArgumentValue(frame.amx(), frame.address(), index);
+  cell value = GetArgumentValue(frame, index);
 
   if (arg.IsVariable()) {
-    if (tag_name == "bool") {
-      stream_ << (value ? "true" : "false");
-    } else if (tag_name == "Float") {
-      stream_ << std::fixed << std::setprecision(5) << amx_ctof(value);
-    } else {
-      stream_ << value;
+    PrintValue(tag_name, value);
+    return;
+  }
+
+  stream_ << "@";
+  PrintAddress(value);
+
+  if (arg.IsReference()) {
+    if (cell *ptr = GetDataPtr(frame.amx(), value)) {
+      stream_ << " ";
+      PrintValue(tag_name, *ptr);
     }
-  } else {
+    return;
+  }
+
+  if (arg.IsArray() || arg.IsArrayRef()) {
     std::vector<AMXDebugSymbolDim> dims = arg.GetDims();
 
-    // For arrays/references we just output their AMX address.
-    char old_fill = stream_.fill('0');
-    stream_ << "@0x" << std::hex << std::setw(kCellWidthChars)
-             << value << std::dec;
-    stream_.fill(old_fill);
-
-    if ((arg.IsArray() || arg.IsArrayRef())
-        && dims.size() == 1
+    // Try to filter out non-printable arrays (e.g. non-strings).
+    // This doesn't work 100% of the time, but it's better than nothing.
+    if (dims.size() == 1
         && tag_name == "_"
         && debug_info_.GetTagName(dims[0].GetTag()) == "_")
     {
       std::string string;
       bool packed;
-      
+
       GetStringContents(frame.amx(), value, dims[0].GetSize(), string, packed);
       stream_ << (packed ? " !" : " ");
-      
+
       static const std::size_t kMaxString = 80;
       if (string.length() > kMaxString) {
         string.replace(kMaxString, string.length() - kMaxString, "...");
       }
-      
+
       stream_ << "\"" << string << "\"";
     }
   }

@@ -23,6 +23,7 @@ test(misc/args)
 #test(misc/bad_frame)
 #test(misc/crash)
 test(misc/presence)
+test(misc/ref_args)
 test(misc/states)
 
 test(errors/bounds)

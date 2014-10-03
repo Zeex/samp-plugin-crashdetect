@@ -1,0 +1,10 @@
+\[debug\] Run time error 27: "General error \(unknown or unspecific error\)"
+\[debug\] AMX backtrace:
+\[debug\] #0 00000248 in end \(\) at .*test\.pwn:38
+\[debug\] #1 00000230 in f3 \(&Float:f=@00003fc4 1\.50000\) at .*test\.pwn:35
+\[debug\] #2 000001d0 in f2 \(&bool:b1=@00003fe0 true, &bool:b2=@00003fdc false\) at .*test\.pwn:30
+\[debug\] #3 00000174 in f1 \(&x=@00003ff4 123\) at .*test\.pwn:24
+\[debug\] #4 000000fc in begin \(\) at .*test\.pwn:17
+\[debug\] #5 000000b0 in public test \(\) at .*test\.pwn:12
+\[debug\] #6 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
+\[debug\] #7 00000070 in main \(\) at .*test\.pwn:7
