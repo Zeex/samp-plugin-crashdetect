@@ -558,7 +558,7 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
       GetStringContents(frame.amx(), value, dims[0].GetSize(), string, packed);
       stream_ << (packed ? " !" : " ");
       
-      static const std::size_t kMaxString = 30;
+      static const std::size_t kMaxString = 80;
       if (string.length() > kMaxString) {
         string.replace(kMaxString, string.length() - kMaxString, "...");
       }
