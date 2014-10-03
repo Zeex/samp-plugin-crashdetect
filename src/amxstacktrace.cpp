@@ -517,11 +517,7 @@ void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame,
 
 void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
                                               int index) {
-  cell value = GetArgumentValue(frame.amx(), frame.address(), index);
-  char old_fill = stream_.fill('0');
-  stream_ << std::hex << "0x" << std::setw(kCellWidthChars)
-           << value << std::dec;
-  stream_.fill(old_fill);
+  stream_ << GetArgumentValue(frame.amx(), frame.address(), index);
 }
 
 void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
