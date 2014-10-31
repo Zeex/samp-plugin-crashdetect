@@ -1,8 +1,6 @@
 include(AmxConfig)
 include(Plugin)
 
-install(FILES crashdetect.inc DESTINATION ".")
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/amx)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
