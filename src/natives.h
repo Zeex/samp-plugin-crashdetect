@@ -25,6 +25,8 @@
 #ifndef NATIVES_H
 #define NATIVES_H
 
+#include <amx/amx.h>
+
 int RegisterNatives(AMX *amx);
 
 #endif // !NATIVES_H

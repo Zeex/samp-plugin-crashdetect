@@ -25,6 +25,7 @@
 #include <sstream>
 
 #include "crashdetect.h"
+#include "natives.h"
 
 namespace {
 
