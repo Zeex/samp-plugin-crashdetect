@@ -1,5 +1,5 @@
-[CrashDetect][github]
-=====================
+[CrashDetect plugin][github]
+============================
 
 [![Build Status][build_status]][build]
 
