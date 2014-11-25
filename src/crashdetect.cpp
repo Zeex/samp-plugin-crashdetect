@@ -45,7 +45,8 @@
 #include "os.h"
 #include "stacktrace.h"
 
-#define AMX_EXEC_GDK (-10)
+#define AMX_EXEC_GDK    (-10)
+#define AMX_EXEC_GDK_42 (-10000)
 
 namespace {
 
@@ -264,7 +265,8 @@ void CrashDetect::HandleExecError(int index,
   }
 
   // For compatibility with sampgdk.
-  if (error.code() == AMX_ERR_INDEX && index == AMX_EXEC_GDK) {
+  if (error.code() == AMX_ERR_INDEX && (index == AMX_EXEC_GDK ||
+                                        index <= AMX_EXEC_GDK_42)) {
     return;
   }
 
