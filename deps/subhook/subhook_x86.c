@@ -31,12 +31,16 @@
 #include "subhook.h"
 #include "subhook_private.h"
 
-typedef unsigned char uint8_t;
-typedef int int32_t;
-#if SUBHOOK_BITS == 64
-	typedef long long intptr_t;
+#ifdef SUBHOOK_WINDOWS
+	typedef unsigned __int8 uint8_t;
+	typedef __int32 int32_t;
+	#if SUBHOOK_BITS == 64
+		typedef __int64 intptr_t;
+	#elif SUBHOOK_BITS == 32
+		typedef __int32 intptr_t;
+	#endif
 #else
-	typedef int intptr_t;
+	#include <stdint.h>
 #endif
 
 #define JMP_INSN_OPCODE 0xE9
@@ -148,22 +152,24 @@ static size_t subhook_disasm(uint8_t *code, int *reloc) {
 		return 0;
 
 	if (reloc != NULL && opcodes[i].flags & RELOC)
-		*reloc = len;
+		*reloc = len; /* relative call or jump */
 
 	if (opcodes[i].flags & MODRM) {
 		int modrm = code[len++];
+		int mod = modrm >> 6;
+		int rm = modrm & 7;
 
-		if ((modrm & 0xC0) != 0xC0 && (modrm & 0x07) == 0x04)
+		if (mod != 3 && rm == 4)
 			len++; /* for SIB */
 
 #ifdef SUBHOOK_X86_64
-		if (reloc != NULL && (modrm & 0x07) == 0x05)
-			*reloc = len;
+		if (reloc != NULL && rm == 5)
+			*reloc = len; /* RIP-relative addressing */
 #endif
 
-		if ((modrm & 0xC0) == 0x40)
+		if (mod == 1)
 			len += 1; /* for disp8 */
-		if ((modrm & 0xC0) == 0x80 || (modrm & 0x07) == 0x05)
+		if (mod == 2 || (mod == 0 && rm == 5))
 			len += 4; /* for disp32 */
 	}
 
@@ -198,7 +204,7 @@ static size_t subhook_make_trampoline(uint8_t *trampoline, uint8_t *src) {
 		if (insn_len == 0)
 			return 0;
 
-		memcpy(trampoline + orig_size, src, insn_len);
+		memcpy(trampoline + orig_size, src + orig_size, insn_len);
 
 		if (reloc > 0)
 			*(int32_t *)(trampoline + orig_size + reloc) -=
