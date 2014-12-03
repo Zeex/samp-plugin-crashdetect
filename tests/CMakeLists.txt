@@ -12,7 +12,7 @@ endmacro()
 macro(test name)
   prepare_test(${name})
   add_plugin_test(${name}
-    TARGET   plugin
+    TARGET   crashdetect
     SCRIPT   ${CMAKE_CURRENT_SOURCE_DIR}/${name}/test
     OUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${name}/full_output.txt
     TIMEOUT  0.5
