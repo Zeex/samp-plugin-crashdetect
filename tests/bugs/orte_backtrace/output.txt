@@ -1,7 +1,7 @@
 \[debug\] AMX backtrace:
 \[debug\] #0 native PrintAmxBacktrace \(\) from crashdetect\.(dll|so)
 \[debug\] #1 000000b8 in public OnRuntimeError \(code=1, &bool:suppress=@00000014 false\) at .*test\.pwn:17
-\[debug\] #2 0000008c in error \(\) at .*test\.pwn:13
+\[debug\] #2 0000008c in error \(\) at .*test\.pwn:12
 \[debug\] #3 0000007c in f \(\) at .*test\.pwn:9
 \[debug\] #4 00000058 in main \(\) at .*test\.pwn:5
 Script\[.*test.amx\]: Run time error 1: "Forced exit"

@@ -1,7 +1,7 @@
 Foo:on
 \[debug\] Run time error 2: "Assertion failed"
 \[debug\] AMX backtrace:
-\[debug\] #0 000001f8 in foo \(x=2\) <Foo:on, undefined> at .*test\.pwn:24
+\[debug\] #0 000001f8 in foo \(x=2\) <Foo:on, undefined> at .*test\.pwn:23
 \[debug\] #1 0000013c in public test \(\) at .*test\.pwn:14
 \[debug\] #2 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
 \[debug\] #3 000000dc in main \(\) at .*test\.pwn:7

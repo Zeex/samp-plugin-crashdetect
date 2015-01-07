@@ -16,7 +16,7 @@ install:
   - wget http://www.cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.sh
   - sudo sh cmake-2.8.12.2-Linux-i386.sh --exclude-subdir --prefix=/usr
 
-  - wget https://github.com/Zeex/pawn/releases/download/pawncc-20141116/pawncc-linux.tar.gz
+  - wget https://github.com/Zeex/pawn/releases/download/pawncc-20140831/pawncc-linux.tar.gz
   - sudo tar xvf pawncc-linux.tar.gz -C /usr/local/bin pawncc
   - sudo tar xvf pawncc-linux.tar.gz -C /usr/local/lib libpawnc.so
   - sudo ldconfig
