@@ -23,6 +23,7 @@ macro(test target name)
     "-(+"
     -i${SAMPServer_INCLUDE_DIR}
     -i${CMAKE_CURRENT_SOURCE_DIR}/include
+    -i${PROJECT_SOURCE_DIR}/include
     -o${CMAKE_CURRENT_BINARY_DIR}/${name}/test
   )
 
