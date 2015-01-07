@@ -1,6 +1,6 @@
 \[debug\] Run time error 27: "General error \(unknown or unspecific error\)"
 \[debug\] AMX backtrace:
-\[debug\] #0 00000248 in end \(\) at .*test\.pwn:38
+\[debug\] #0 00000248 in end \(\) at .*test\.pwn:39
 \[debug\] #1 00000230 in f3 \(&Float:f=@00003fc4 1\.50000\) at .*test\.pwn:35
 \[debug\] #2 000001d0 in f2 \(&bool:b1=@00003fe0 true, &bool:b2=@00003fdc false\) at .*test\.pwn:30
 \[debug\] #3 00000174 in f1 \(&x=@00003ff4 123\) at .*test\.pwn:24

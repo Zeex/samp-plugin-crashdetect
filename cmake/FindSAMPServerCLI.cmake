@@ -1,0 +1,22 @@
+include(FindPackageHandleStandardArgs)
+
+if(WIN32)
+  set(_SAMPServerCLI_EXECUTABLE_NAME samp-server-cli.bat)
+else()
+  set(_SAMPServerCLI_EXECUTABLE_NAME samp-server-cli)
+endif()
+
+find_file(SAMPServerCLI_EXECUTABLE
+          NAMES ${_SAMPServerCLI_EXECUTABLE_NAME}
+          HINTS ENV SAMP_SERVER_ROOT
+)
+find_path(SAMPServerCLI_DIR
+          NAMES ${_SAMPServerCLI_EXECUTABLE_NAME}
+          HINTS ENV SAMP_SERVER_ROOT
+)
+
+find_package_handle_standard_args(SAMPServerCLI
+          FOUND_VAR SAMPServerCLI_FOUND
+          REQUIRED_VARS SAMPServerCLI_EXECUTABLE
+                         SAMPServerCLI_DIR
+)
