@@ -34,6 +34,7 @@ macro(test target name)
     "-\;+"
     "-(+"
     -i${SAMPServer_INCLUDE_DIR}
+    -i${PROJECT_SOURCE_DIR}/include
     -i${CMAKE_CURRENT_SOURCE_DIR}
     -o${CMAKE_CURRENT_BINARY_DIR}/${name}
   )
