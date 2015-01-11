@@ -1,5 +1,0 @@
-\[debug\] Run time error 19: "File or function is not found"
-\[debug\]  NonexistentNative1
-\[debug\]  NonexistentNative3
-\[debug\]  NonexistentNative2
-Script\[.*test.amx\]: Run time error 19: "File or function is not found"

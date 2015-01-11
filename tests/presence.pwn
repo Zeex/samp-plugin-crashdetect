@@ -1,3 +1,5 @@
+// OUTPUT: CrashDetect is running: yes
+
 #include <test>
 
 Test() {
