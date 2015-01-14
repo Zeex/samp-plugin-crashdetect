@@ -13,7 +13,7 @@
 // OUTPUT: \[debug\] #2 000000a4 in main \(\) at .*bounds\.pwn:23
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 public out_of_bounds_pos();
 public out_of_bounds_neg();

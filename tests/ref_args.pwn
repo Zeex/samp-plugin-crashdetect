@@ -11,7 +11,7 @@
 // OUTPUT: \[debug\] #7 00000070 in main \(\) at .*ref_args\.pwn:19
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 forward test();
 

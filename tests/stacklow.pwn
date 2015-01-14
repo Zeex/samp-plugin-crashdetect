@@ -10,7 +10,7 @@
 // OUTPUT: \[debug\] #0 00000084 in main \(\) at .*test\.pwn:9
 // OUTPUT: Script\[.*test\.amx\]: Run time error 5: "Invalid memory access"
 
-#include <test>
+#include "test"
 
 #pragma dynamic 1000
 

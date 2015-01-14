@@ -16,7 +16,7 @@
 // OUTPUT: \[debug\] #12 00000070 in main \(\) at .*args\.pwn:22
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 main() {
 	CallLocalFunction("test", "");

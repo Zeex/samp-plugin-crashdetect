@@ -8,7 +8,7 @@
 // OUTPUT: Script\[.*orte_backtrace.amx\]: Run time error 1: "Forced exit"
 
 #include <crashdetect>
-#include <test>
+#include "test"
 
 main() {
 	f();

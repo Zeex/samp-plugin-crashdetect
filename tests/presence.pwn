@@ -1,6 +1,6 @@
 // OUTPUT: CrashDetect is running: yes
 
-#include <test>
+#include "test"
 
 Test() {
 	new cd;

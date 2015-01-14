@@ -1,5 +1,5 @@
 #include <a_samp>
-#include <test>
+#include "test"
 
 main() {
 	f();

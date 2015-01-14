@@ -5,7 +5,7 @@
 // OUTPUT: \[debug\] #1 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
 // OUTPUT: \[debug\] #2 00000070 in main \(\) at .*test\.pwn:6
 
-#include <test>
+#include "test"
 
 public test();
 

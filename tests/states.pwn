@@ -8,7 +8,7 @@
 // OUTPUT: \[debug\] #3 000000dc in main \(\) at .*states\.pwn:16
 
 #include <a_samp>
-#include <test>
+#include "test"
 
 public test();
 
