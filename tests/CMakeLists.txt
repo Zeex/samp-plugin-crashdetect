@@ -44,10 +44,11 @@ macro(test target name)
   endif()
 
   add_custom_command(
-    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${name}.amx
-    COMMAND ${PawnCompiler_EXECUTABLE} ${_compile_flags}
-    COMMENT "Compiling test ${name}"
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${name}.pwn
+    OUTPUT            ${CMAKE_CURRENT_BINARY_DIR}/${name}.amx
+    COMMAND           ${PawnCompiler_EXECUTABLE} ${_compile_flags}
+    COMMENT           "Compiling test ${name}"
+    DEPENDS           ${CMAKE_CURRENT_SOURCE_DIR}/${name}.pwn
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
   add_plugin_test(${name}
