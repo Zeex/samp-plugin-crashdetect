@@ -56,6 +56,6 @@ Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 [version]: http://badge.fury.io/gh/Zeex%2Fsamp-plugin-crashdetect
 [version_badge]: https://badge.fury.io/gh/Zeex%2Fsamp-plugin-crashdetect.svg
 [build]: https://travis-ci.org/Zeex/samp-plugin-crashdetect
-[build_status]: https://travis-ci.org/Zeex/samp-plugin-crashdetect.png?branch=master
+[build_status]: https://travis-ci.org/Zeex/samp-plugin-crashdetect.svg?branch=master
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [download]: https://github.com/Zeex/samp-plugin-crashdetect/releases
