@@ -47,7 +47,7 @@ macro(test target name)
     OUTPUT            ${CMAKE_CURRENT_BINARY_DIR}/${name}.amx
     COMMAND           ${PawnCompiler_EXECUTABLE} ${_compile_flags}
     COMMENT           "Compiling test ${name}"
-    DEPENDS           ${CMAKE_CURRENT_SOURCE_DIR}/${name}.pwn
+    DEPENDS           ${name}.pwn test.inc
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
