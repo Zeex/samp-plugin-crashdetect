@@ -1,5 +1,5 @@
-include(AmxConfig)
-include(Plugin)
+include(AMXConfig)
+include(AddSAMPPlugin)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -70,7 +70,7 @@ else()
   )
 endif()
 
-add_plugin(crashdetect ${CRASHDETECT_SOURCES})
+add_samp_plugin(crashdetect ${CRASHDETECT_SOURCES})
 
 add_subdirectory(amx)
 target_link_Libraries(crashdetect amx pcre subhook)

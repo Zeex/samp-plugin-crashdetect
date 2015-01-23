@@ -1,17 +1,17 @@
-include(AmxConfig)
+include(AMXConfig)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_definitions(
-  -DAMX_ALIGN 
+  -DAMX_ALIGN
   -DAMX_CLEANUP
-  -DAMX_EXEC 
+  -DAMX_EXEC
   -DAMX_FLAGS
   -DAMX_GETADDR
   -DAMX_INIT
-  -DAMX_REGISTER 
+  -DAMX_REGISTER
   -DAMX_SETCALLBACK
   -DAMX_SETDEBUGHOOK
   -DAMX_XXXNATIVES

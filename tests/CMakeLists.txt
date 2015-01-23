@@ -1,6 +1,6 @@
-include(PluginTest)
+include(AddSAMPPluginTest)
 
-find_package(PawnCompiler REQUIRED)
+find_package(PawnCC REQUIRED)
 find_package(PythonInterp 2.7 REQUIRED)
 find_package(SAMPServer REQUIRED)
 find_package(SAMPServerCLI REQUIRED)
@@ -45,13 +45,13 @@ macro(test target name)
 
   add_custom_command(
     OUTPUT            ${CMAKE_CURRENT_BINARY_DIR}/${name}.amx
-    COMMAND           ${PawnCompiler_EXECUTABLE} ${_compile_flags}
+    COMMAND           ${PawnCC_EXECUTABLE} ${_compile_flags}
     COMMENT           "Compiling test ${name}"
     DEPENDS           ${name}.pwn test.inc
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-  add_plugin_test(${name}
+  add_samp_plugin_test(${name}
     TARGET            ${target}
     SCRIPT            ${CMAKE_CURRENT_BINARY_DIR}/${name}
     OUTPUT_FILE       ${CMAKE_CURRENT_BINARY_DIR}/${name}.out
