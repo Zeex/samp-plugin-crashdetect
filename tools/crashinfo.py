@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2013 Zeex
+# Copyright (c) 2013-2015 Zeex
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,11 @@ class Register:
   def __init__(self, name, value):
     self._name = name
     self._value = value
-  
+
   @property
   def name(self):
     return self._name
-    
+
   @property
   def value(self):
     return self._value
@@ -46,15 +46,15 @@ class Module:
     self._filename = filename
     self._location = (start_address, end_address)
     self._full_path = full_path
-    
+
   @property
   def filename(self):
     return self._filename
-    
+
   @property
   def location(self):
     return self._location
-    
+
   @property
   def path(self):
     return self._full_path
@@ -68,26 +68,26 @@ class CrashInfo:
 
   def set_version(self, version):
     self._version = version
-    
+
   def get_version(self):
     return self._version
-    
+
   def add_register(self, name, value):
     self._registers.append(Register(name, int(value, 16)))
-    
+
   def get_registers(self):
     return self._registers
 
   def add_stack(self, value):
     self._stack.append(int(value, 16))
-    
+
   def get_stack(self):
     return self._stack
 
   def add_module(self, filename, start_address, end_address, full_path):
     self._modules.append(Module(filename, int(start_address, 16),
                                 int(end_address, 16), full_path))
-    
+
   def get_modules(self):
     return self._modules
 
@@ -97,7 +97,7 @@ class CrashInfo:
       if address >= start and address <= end:
         return module
     return None
-  
+
   def get_call_stack(self):
     for address in self._stack:
       module = self.find_module(address)
@@ -108,7 +108,7 @@ def search_register(name, string):
   match = re.search(r'%s: (?P<value>0x[0-9A-F]{8})' % name, string)
   if match is not None:
     return match.group('value')
-  
+
 def parse_crashinfo(file):
   crashinfo = CrashInfo()
   section = None
@@ -169,7 +169,7 @@ def main(argv):
   arg_parser.add_argument('-a', '--all', action='store_true',
                           default=False, help='print all')
   args = arg_parser.parse_args(argv[1:])
-  
+
   with open(args.file, 'r') as file:
     crashinfo = parse_crashinfo(file)
     if args.all or args.version:
@@ -195,4 +195,3 @@ def main(argv):
 
 if __name__ == '__main__':
   main(sys.argv)
-
