@@ -32,8 +32,7 @@
 class StackFrame {
  public:
   StackFrame(void *ret_addr, const std::string &name = std::string());
-  virtual ~StackFrame();
-
+  
   void *return_address() const { return return_address_; }
   std::string callee_name() const { return callee_name_; }
 
@@ -44,19 +43,6 @@ class StackFrame {
   std::string callee_name_;
 };
 
-class StackTrace {
- public:
-  StackTrace(void *context = 0);
-
-  std::deque<StackFrame> GetFrames() const {
-    return frames_;
-  }
-
- protected:
-  struct HappyCompiler {};
-  StackTrace(HappyCompiler *happyCompiler);
-
-  std::deque<StackFrame> frames_;
-};
+std::deque<StackFrame> GetStackTrace(void *context);
 
 #endif // !STACKTRACE_H

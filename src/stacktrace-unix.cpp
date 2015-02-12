@@ -31,26 +31,34 @@ static const int kMaxFrames = 100;
 
 static std::string GetSymbolName(const std::string &symbol) {
   std::string name;
+
   if (!symbol.empty()) {
     std::string::size_type lp = symbol.find('(');
     std::string::size_type rp = symbol.find_first_of(")+-", lp);
+
     if (lp != std::string::npos && rp != std::string::npos) {
       name = symbol.substr(lp + 1, rp - lp - 1);
     }
   }
+
   return name;
 }
 
-StackTrace::StackTrace(void *context) {
+std::deque<StackFrame> GetStackTrace(void *context) {
+  std::deque<StackFrame> frames;
+
   void *trace[kMaxFrames];
   int length = backtrace(trace, kMaxFrames);
   char **symbols = backtrace_symbols(trace, length);
+
   for (int i = 0; i < length; i++) {
     if (symbols[i] != 0) {
       std::string name = GetSymbolName(symbols[i]);
-      frames_.push_back(StackFrame(trace[i], name));
+      frames.push_back(StackFrame(trace[i], name));
     } else {
-      frames_.push_back(StackFrame(trace[i]));
+      frames.push_back(StackFrame(trace[i]));
     }
   }
+
+  return frames;
 }

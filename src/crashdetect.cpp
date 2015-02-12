@@ -517,26 +517,23 @@ void CrashDetect::PrintNativeBacktrace(void *context) {
 
 // static
 void CrashDetect::PrintNativeBacktrace(std::ostream &stream, void *context) {
-  StackTrace trace(context);
-  std::deque<StackFrame> frames = trace.GetFrames();
+  std::deque<StackFrame> frames = GetStackTrace(context);
 
-  if (frames.empty()) {
-    return;
-  }
+  if (!frames.empty()) {
+    stream << "Native backtrace:";
 
-  stream << "Native backtrace:";
+    int level = 0;
+    for (std::deque<StackFrame>::const_iterator it = frames.begin();
+         it != frames.end(); it++) {
+      const StackFrame &frame = *it;
 
-  int level = 0;
-  for (std::deque<StackFrame>::const_iterator it = frames.begin();
-       it != frames.end(); it++) {
-    const StackFrame &frame = *it;
+      stream << "\n#" << level++ << " ";
+      frame.Print(stream);
 
-    stream << "\n#" << level++ << " ";
-    frame.Print(stream);
-
-    std::string module = os::GetModuleName(frame.return_address());
-    if (!module.empty()) {
-      stream << " from " << fileutils::GetRelativePath(module);
+      std::string module = os::GetModuleName(frame.return_address());
+      if (!module.empty()) {
+        stream << " from " << fileutils::GetRelativePath(module);
+      }
     }
   }
 }

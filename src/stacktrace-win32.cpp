@@ -29,17 +29,19 @@
 
 static const int kMaxSymbolNameLength = 128;
 
-StackTrace::StackTrace(void *their_context) {
+std::deque<StackFrame> GetStackTrace(void *their_context) {
+  std::deque<StackFrame> frames;
+
   PCONTEXT context = reinterpret_cast<PCONTEXT>(their_context);
   CONTEXT current_context;
   if (context == NULL) {
     RtlCaptureContext(&current_context);
     context = &current_context;
   }
-  
+
   HANDLE process = GetCurrentProcess();
   if (!SymInitialize(process, NULL, TRUE)) {
-    return;
+    return frames;
   }
 
   STACKFRAME64 stack_frame;
@@ -82,7 +84,7 @@ StackTrace::StackTrace(void *their_context) {
       name = symbol->Name;
     }
 
-    frames_.push_back(StackFrame(reinterpret_cast<void*>(address), name));
+    frames.push_back(StackFrame(reinterpret_cast<void*>(address), name));
 
     HANDLE thread = GetCurrentThread();
     if (!StackWalk64(IMAGE_FILE_MACHINE_I386, process, thread, &stack_frame,
@@ -93,4 +95,6 @@ StackTrace::StackTrace(void *their_context) {
 
   HeapFree(GetProcessHeap(), 0, symbol);
   SymCleanup(process);
+
+  return frames;
 }

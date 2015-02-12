@@ -29,16 +29,10 @@
 
 #include "stacktrace.h"
 
-StackTrace::StackTrace(HappyCompiler *happyCompiler) {
-}
-
 StackFrame::StackFrame(void *return_address, const std::string &callee_name)
  : return_address_(return_address),
    callee_name_(callee_name)
 {
-}
-
-StackFrame::~StackFrame() {
 }
 
 void StackFrame::Print(std::ostream &stream) const {
