@@ -44,10 +44,9 @@ static std::string GetSymbolName(const std::string &symbol) {
   return name;
 }
 
-std::deque<StackFrame> GetStackTrace(void *context) {
-  std::deque<StackFrame> frames;
-
+void GetStackTrace(std::vector<StackFrame> &frames, void *context) {
   void *trace[kMaxFrames];
+
   int length = backtrace(trace, kMaxFrames);
   char **symbols = backtrace_symbols(trace, length);
 
@@ -59,6 +58,4 @@ std::deque<StackFrame> GetStackTrace(void *context) {
       frames.push_back(StackFrame(trace[i]));
     }
   }
-
-  return frames;
 }

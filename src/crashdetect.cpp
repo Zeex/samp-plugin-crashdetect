@@ -26,11 +26,11 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
-#include <deque>
 #include <functional>
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
@@ -517,13 +517,14 @@ void CrashDetect::PrintNativeBacktrace(void *context) {
 
 // static
 void CrashDetect::PrintNativeBacktrace(std::ostream &stream, void *context) {
-  std::deque<StackFrame> frames = GetStackTrace(context);
+  std::vector<StackFrame> frames;
+  GetStackTrace(frames, context);
 
   if (!frames.empty()) {
     stream << "Native backtrace:";
 
     int level = 0;
-    for (std::deque<StackFrame>::const_iterator it = frames.begin();
+    for (std::vector<StackFrame>::const_iterator it = frames.begin();
          it != frames.end(); it++) {
       const StackFrame &frame = *it;
 

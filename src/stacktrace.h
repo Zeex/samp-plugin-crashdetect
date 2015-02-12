@@ -25,14 +25,14 @@
 #ifndef STACKTRACE_H
 #define STACKTRACE_H
 
-#include <deque>
 #include <iosfwd>
 #include <string>
+#include <vector>
 
 class StackFrame {
  public:
   StackFrame(void *ret_addr, const std::string &name = std::string());
-  
+
   void *return_address() const { return return_address_; }
   std::string callee_name() const { return callee_name_; }
 
@@ -43,6 +43,6 @@ class StackFrame {
   std::string callee_name_;
 };
 
-std::deque<StackFrame> GetStackTrace(void *context);
+void GetStackTrace(std::vector<StackFrame> &frames, void *context);
 
 #endif // !STACKTRACE_H

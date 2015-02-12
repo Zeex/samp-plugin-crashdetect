@@ -29,9 +29,7 @@
 
 static const int kMaxSymbolNameLength = 128;
 
-std::deque<StackFrame> GetStackTrace(void *their_context) {
-  std::deque<StackFrame> frames;
-
+void GetStackTrace(std::vector<StackFrame> &frames, void *their_context) {
   PCONTEXT context = reinterpret_cast<PCONTEXT>(their_context);
   CONTEXT current_context;
   if (context == NULL) {
@@ -41,7 +39,7 @@ std::deque<StackFrame> GetStackTrace(void *their_context) {
 
   HANDLE process = GetCurrentProcess();
   if (!SymInitialize(process, NULL, TRUE)) {
-    return frames;
+    return;
   }
 
   STACKFRAME64 stack_frame;
@@ -95,6 +93,4 @@ std::deque<StackFrame> GetStackTrace(void *their_context) {
 
   HeapFree(GetProcessHeap(), 0, symbol);
   SymCleanup(process);
-
-  return frames;
 }
