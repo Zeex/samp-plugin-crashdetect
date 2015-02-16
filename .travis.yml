@@ -7,7 +7,7 @@ compiler:
 env:
   global:
     - SAMP_SERVER_ROOT=$TRAVIS_BUILD_DIR/samp03
-    - PATH=$TRAVIS_BUILD_DIR/cli/bin:$PATH
+    - PATH=$TRAVIS_BUILD_DIR/cli:$PATH
 
 install:
   - sudo apt-get update -qq
