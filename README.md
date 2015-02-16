@@ -3,6 +3,7 @@
 
 [![Version][version_badge]][version]
 [![Build Status][build_status]][build]
+[![Build Status - Windows][build_status_win]][build_win]
 
 This plugin helps you debug runtime errors and server crashes. When something
 goes wrong you see a more or less detailed error message that contains a
@@ -57,5 +58,7 @@ Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 [version_badge]: https://badge.fury.io/gh/Zeex%2Fsamp-plugin-crashdetect.svg
 [build]: https://travis-ci.org/Zeex/samp-plugin-crashdetect
 [build_status]: https://travis-ci.org/Zeex/samp-plugin-crashdetect.svg?branch=master
+[build_win]: https://ci.appveyor.com/project/Zeex/samp-plugin-crashdetect/branch/master
+[build_status_win]: https://ci.appveyor.com/api/projects/status/nay4h3t5cu6469ic/branch/master?svg=true
 [forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [download]: https://github.com/Zeex/samp-plugin-crashdetect/releases

@@ -1,0 +1,15 @@
+version: '{build}'
+
+configuration:
+  - RelWithDebInfo
+
+before_build:
+  - cmake . -DBUILD_TESTING=OFF
+
+build_script:
+  - cmake --build . --config %CONFIGURATION%
+  - cmake --build . --config %CONFIGURATION% --target package
+
+artifacts:
+  - path: crashdetect-*-win32.zip
+    name: Binaries
