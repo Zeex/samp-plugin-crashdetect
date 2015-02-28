@@ -87,10 +87,13 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
   CrashDetect::CreateInstance(amx)->Load();
+
   amx_SetDebugHook(amx, AmxDebug);
   amx_SetCallback(amx, AmxCallback);
   amx_SetExecErrorHandler(amx, AmxExecError);
-  return RegisterNatives(amx);
+
+  RegisterNatives(amx);
+  return AMX_ERR_NONE;
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
