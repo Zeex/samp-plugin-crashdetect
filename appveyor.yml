@@ -4,7 +4,7 @@ configuration:
   - RelWithDebInfo
 
 before_build:
-  - cmake . -DBUILD_TESTING=OFF
+  - cmake . -G "Visual Studio 10 2010" -DBUILD_TESTING=OFF
 
 build_script:
   - cmake --build . --config %CONFIGURATION%
