@@ -9,9 +9,6 @@ This plugin helps you debug runtime errors and server crashes. When something
 goes wrong you see a more or less detailed error message that contains a
 description of the error and a stack trace.
 
-See the [original][forum] topic on the SA-MP Forums for more information and
-examples.
-
 Download
 --------
 
@@ -60,5 +57,4 @@ Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 [build_status]: https://travis-ci.org/Zeex/samp-plugin-crashdetect.svg?branch=master
 [build_win]: https://ci.appveyor.com/project/Zeex/samp-plugin-crashdetect/branch/master
 [build_status_win]: https://ci.appveyor.com/api/projects/status/nay4h3t5cu6469ic/branch/master?svg=true
-[forum]: http://forum.sa-mp.com/showthread.php?t=262796
 [download]: https://github.com/Zeex/samp-plugin-crashdetect/releases
