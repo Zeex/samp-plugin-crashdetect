@@ -25,6 +25,8 @@
 #ifndef CRASHDETECT_H
 #define CRASHDETECT_H
 
+#include <cstdarg>
+#include <cstdio>
 #include <string>
 
 #include "amxcallstack.h"
@@ -63,7 +65,9 @@ class CrashDetect : public AMXService<CrashDetect> {
 
   static void OnException(void *context);
   static void OnInterrupt(void *context);
+  static void OnExit();
 
+  static void Print(const char *prefix, const char *format, std::va_list va);
   static void TracePrint(const char *format, ...);
   static void DebugPrint(const char *format, ...);
 
@@ -92,6 +96,7 @@ class CrashDetect : public AMXService<CrashDetect> {
 
  private:
   static ConfigReader server_cfg_;
+  static FILE *log_file_;
   static int trace_flags_;
   static RegExp trace_filter_;
   static AMXCallStack call_stack_;

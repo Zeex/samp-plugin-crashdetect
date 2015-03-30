@@ -23,7 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
-#include <cstdarg>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
@@ -100,13 +99,6 @@ void SplitString(const std::string &s, char delim, Func func) {
   }
 }
 
-void Print(const char *prefix, const char *format, std::va_list va) {
-  std::string new_format;
-  new_format.append(prefix);
-  new_format.append(format);
-  vlogprintf(new_format.c_str(), va);
-}
-
 template<typename FormattedPrinter>
 class PrintLine : public std::unary_function<const std::string &, void> {
  public:
@@ -127,6 +119,8 @@ void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
 
 ConfigReader CrashDetect::server_cfg_("server.cfg");
 
+FILE *CrashDetect::log_file_(std::fopen(
+  server_cfg_.GetOptionDefault<std::string>("crashdetect_log").c_str(), "w"));
 int CrashDetect::trace_flags_(StringToTraceFlags(
   server_cfg_.GetOptionDefault<std::string>("trace")));
 RegExp CrashDetect::trace_filter_(
@@ -335,6 +329,7 @@ void CrashDetect::OnException(void *context) {
     DebugPrint("Server crashed due to an unknown error");
   }
   PrintNativeBacktrace(context);
+  OnExit();
 }
 
 // static
@@ -345,6 +340,28 @@ void CrashDetect::OnInterrupt(void *context) {
     DebugPrint("Server received interrupt signal");
   }
   PrintNativeBacktrace(context);
+  OnExit();
+}
+
+// static
+void CrashDetect::OnExit() {
+  std::fflush(log_file_);
+}
+
+// static
+void CrashDetect::Print(const char *prefix,
+                        const char *format,
+                        std::va_list va) {
+  std::string new_format;
+  new_format.append(prefix);
+  new_format.append(format);
+
+  if (log_file_ != 0) {
+    new_format.append("\n");
+    vfprintf(log_file_, new_format.c_str(), va);
+  } else {
+    vlogprintf(new_format.c_str(), va);
+  }
 }
 
 // static
