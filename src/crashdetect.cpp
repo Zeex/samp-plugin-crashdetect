@@ -129,7 +129,7 @@ ConfigReader CrashDetect::server_cfg_("server.cfg");
 
 int CrashDetect::trace_flags_(StringToTraceFlags(
   server_cfg_.GetOptionDefault<std::string>("trace")));
-RegExp CrashDetect::trace_regexp_(
+RegExp CrashDetect::trace_filter_(
   server_cfg_.GetOptionDefault<std::string>("trace_filter", ".*"));
 
 AMXCallStack CrashDetect::call_stack_;
@@ -198,7 +198,7 @@ int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
     std::stringstream stream;
     const char *name = amx().GetNativeName(index);
     stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
-    if (trace_regexp_.Test(stream.str())) {
+    if (trace_filter_.Test(stream.str())) {
       PrintStream(TracePrint, stream);
     }
   }
@@ -369,7 +369,7 @@ void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
   std::stringstream stream;
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
-  if (trace_regexp_.Test(stream.str())) {
+  if (trace_filter_.Test(stream.str())) {
     PrintStream(TracePrint, stream);
   }
 }

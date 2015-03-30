@@ -83,24 +83,17 @@ class CrashDetect : public AMXService<CrashDetect> {
 
  private:
   AMXDebugInfo debug_info_;
-
   AMX_DEBUG prev_debug_;
   AMX_CALLBACK prev_callback_;
-
   cell last_frame_;
-
   std::string amx_path_;
   std::string amx_name_;
-
   bool block_exec_errors_;
 
  private:
   static ConfigReader server_cfg_;
-
-  // server.cfg options
   static int trace_flags_;
-  static RegExp trace_regexp_;
-
+  static RegExp trace_filter_;
   static AMXCallStack call_stack_;
 };
 
