@@ -74,7 +74,8 @@ go to menu -> Build -> Build Solution (or just press F7).
 Configuration
 -------------
 
-CrashDetect settings can be changed via the following `server.cfg` options:
+CrashDetect reads settings from server.cfg, the server configuration file.
+Below is the list of available settings along with some examples.
 
 * `trace <flags>`
 
