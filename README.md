@@ -9,13 +9,70 @@ This plugin helps you debug runtime errors and server crashes. When something
 goes wrong you see a more or less detailed error message that contains a
 description of the error and a stack trace.
 
-Download
---------
+Installing
+----------
 
-Get latest binaries for Windows and Linux [here][download].
+1. Download a compiled plugin form the [Relaeses][download] page on Github or
+build it yourself from source code (see below).
+2. Extract/copy `crashdetect.so` or `crashdetect.dll` to `<sever>/plugins/`.
+3. Add `crashdetect` (Windows) or `crashdetect.so` (Linux) to the `plugins` line of your server.cfg.
 
-Settings
---------
+Building on Linux
+-----------------
+
+Install gcc and g++, make and cmake. On Ubuntu you would do that with:
+
+```
+sudo apt-get install gcc g++ make cmake
+```
+
+If you're building on a 64-bit system you'll need multilib packages for gcc and g++:
+
+```
+sudo apt-get install gcc-multilib g++-multilib
+```
+
+If you're building on CentOS, install the following packages:
+
+```
+yum install gcc gcc-c++ cmake28 make
+```
+
+Now you're ready to build CrashDetect:
+
+```
+cd crashdetect
+mkdir build && cd build
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+make
+```
+
+Building on Windows
+-------------------
+
+You'll need to install CMake and Visual Studio (Express edition will suffice).
+After that, either run cmake from the command line:
+
+```
+cd crashdetect
+mkdir build && cd build
+path/to/cmake.exe ../ -DBUILD_TESTING=OFF
+```
+
+or do the same from cmake-gui. This will generate a Visual Studio project in
+the build folder.
+
+To build the project:
+
+```
+path/to/cmake.exe --build . --config Release
+```
+
+You can also build it from within Visual Studio: open build/crashdetect.sln and
+go to menu -> Build -> Build Solution (or just press F7).
+
+Configuration
+-------------
 
 CrashDetect settings can be changed via the following `server.cfg` options:
 
