@@ -103,6 +103,12 @@ Below is the list of available settings along with some examples.
   * `trace_filter Player`     - output functions whose name contains `Player`
   * `trace_filter playerid=0` - show functions whose `playerid` parameter is 0
 
+Debug info
+----------
+
+To get as much useful information as possible in crash and runtime error reports
+during debuggin [compile your script(s) with debug info][debug-info].
+
 License
 -------
 
@@ -116,3 +122,4 @@ Licensed under the 2-clause BSD license. See the LICENSE.txt file.
 [build_win]: https://ci.appveyor.com/project/Zeex/samp-plugin-crashdetect/branch/master
 [build_status_win]: https://ci.appveyor.com/api/projects/status/nay4h3t5cu6469ic/branch/master?svg=true
 [download]: https://github.com/Zeex/samp-plugin-crashdetect/releases
+[debug-info]: https://github.com/Zeex/samp-plugin-crashdetect/wiki/Compiling-scripts-with-debug-info
