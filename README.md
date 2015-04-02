@@ -107,7 +107,7 @@ Debug info
 ----------
 
 To get as much useful information as possible in crash and runtime error reports
-during debuggin [compile your script(s) with debug info][debug-info].
+during debugging [compile your script(s) with debug info][debug-info].
 
 License
 -------
