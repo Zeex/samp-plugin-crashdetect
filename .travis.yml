@@ -21,10 +21,10 @@ install:
   - sudo tar xvf pawncc-linux.tar.gz -C /usr/local/lib libpawnc.so
   - sudo ldconfig
 
-  - wget https://www.dropbox.com/s/c6pu3qolxqeb480/samp03zsvr_R4.tar.gz?dl=1
+  - wget https://www.dropbox.com/s/c6pu3qolxqeb480/samp03zsvr_R4.tar.gz
   - tar xvf samp03zsvr_R4.tar.gz
 
-  - wget https://www.dropbox.com/s/9b5wca29x8uc9yi/samp03z_svr_R4_win32.zip?dl=1
+  - wget https://www.dropbox.com/s/9b5wca29x8uc9yi/samp03z_svr_R4_win32.zip
   - unzip samp03z_svr_R4_win32.zip -d $SAMP_SERVER_ROOT pawno/include/*
 
   - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git cli
