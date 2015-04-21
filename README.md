@@ -12,7 +12,7 @@ description of the error and a stack trace.
 Installing
 ----------
 
-1. Download a compiled plugin form the [Relaeses][download] page on Github or
+1. Download a compiled plugin form the [Releases][download] page on Github or
 build it yourself from source code (see below).
 2. Extract/copy `crashdetect.so` or `crashdetect.dll` to `<sever>/plugins/`.
 3. Add `crashdetect` (Windows) or `crashdetect.so` (Linux) to the `plugins` line of your server.cfg.
