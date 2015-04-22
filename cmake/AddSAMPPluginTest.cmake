@@ -29,7 +29,7 @@ function(add_samp_plugin_test)
   endif()
 
   if(WIN32)
-    set(command samp-server-cli.bat)
+    set(command samp-server-cli.exe)
   else()
     set(command samp-server-cli)
   endif()

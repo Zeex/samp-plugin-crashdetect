@@ -12,8 +12,8 @@ install:
   - 7z x samp03z_svr_R4_win32.zip -oserver
   - set SAMP_SERVER_ROOT=%CD%\server
 
-  - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git server\cli
-  - set PATH=%PATH%;%CD%\server\cli
+  - set PATH=%PATH%;C:\Python27\Scripts
+  - pip install samp-server-cli
 
 before_build:
   - cmake . -G "Visual Studio 10 2010"

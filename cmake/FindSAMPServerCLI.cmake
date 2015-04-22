@@ -1,7 +1,7 @@
 include(FindPackageHandleStandardArgs)
 
 if(WIN32)
-  set(_SAMPServerCLI_EXECUTABLE_NAME samp-server-cli.bat)
+  set(_SAMPServerCLI_EXECUTABLE_NAME samp-server-cli.exe)
 else()
   set(_SAMPServerCLI_EXECUTABLE_NAME samp-server-cli)
 endif()

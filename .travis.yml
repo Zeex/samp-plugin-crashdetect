@@ -7,11 +7,10 @@ compiler:
 env:
   global:
     - SAMP_SERVER_ROOT=$TRAVIS_BUILD_DIR/samp03
-    - PATH=$TRAVIS_BUILD_DIR/cli:$PATH
 
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y gcc-multilib g++-multilib cmake python
+  - sudo apt-get install -y gcc-multilib g++-multilib cmake python python-pip
 
   - wget http://www.cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.sh
   - sudo sh cmake-2.8.12.2-Linux-i386.sh --exclude-subdir --prefix=/usr
@@ -27,7 +26,7 @@ install:
   - wget https://www.dropbox.com/s/9b5wca29x8uc9yi/samp03z_svr_R4_win32.zip
   - unzip samp03z_svr_R4_win32.zip -d $SAMP_SERVER_ROOT pawno/include/*
 
-  - git clone --depth 1 https://github.com/Zeex/samp-server-cli.git cli
+  - sudo pip install samp-server-cli
 
 before_script:
   - cmake . -DCMAKE_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX}
