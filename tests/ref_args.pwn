@@ -1,7 +1,7 @@
 // FLAGS: -d3
 // OUTPUT: \[debug\] Run time error 27: "General error \(unknown or unspecific error\)"
 // OUTPUT: \[debug\] AMX backtrace:
-// OUTPUT: \[debug\] #0 00000248 in end \(\) at .*ref_args\.pwn:50
+// OUTPUT: \[debug\] #0 00000248 in end \(\) at .*ref_args\.pwn:51
 // OUTPUT: \[debug\] #1 00000230 in f3 \(&Float:f=@00003fc4 1\.50000\) at .*ref_args\.pwn:47
 // OUTPUT: \[debug\] #2 000001d0 in f2 \(&bool:b1=@00003fe0 true, &bool:b2=@00003fdc false\) at .*ref_args\.pwn:42
 // OUTPUT: \[debug\] #3 00000174 in f1 \(&x=@00003ff4 123\) at .*ref_args\.pwn:36

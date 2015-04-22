@@ -4,13 +4,13 @@ configuration:
   - RelWithDebInfo
 
 install:
-  - appveyor DownloadFile https://github.com/Zeex/pawn/releases/download/pawncc-20141116/pawncc-win32.zip
-  - 7z x pawncc-win32.zip -opawn
-  - set PATH=%PATH%;%CD%\pawn
+  - appveyor DownloadFile https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-windows.zip
+  - 7z x pawnc-3.10.20150412-windows.zip
+  - set PATH=%PATH%;%CD%\pawnc-3.10.20150412-windows\bin
 
   - appveyor DownloadFile https://www.dropbox.com/s/9b5wca29x8uc9yi/samp03z_svr_R4_win32.zip?dl=1
-  - 7z x samp03z_svr_R4_win32.zip -oserver
-  - set SAMP_SERVER_ROOT=%CD%\server
+  - 7z x samp03z_svr_R4_win32.zip
+  - set SAMP_SERVER_ROOT=%CD%
 
   - set PATH=%PATH%;C:\Python27\Scripts
   - pip install samp-server-cli
