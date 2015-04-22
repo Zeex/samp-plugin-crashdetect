@@ -55,7 +55,7 @@ macro(test target name)
     TARGET            ${target}
     SCRIPT            ${CMAKE_CURRENT_BINARY_DIR}/${name}
     OUTPUT_FILE       ${CMAKE_CURRENT_BINARY_DIR}/${name}.out
-    TIMEOUT           0.5
+    TIMEOUT           1
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   )
 
