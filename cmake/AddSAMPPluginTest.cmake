@@ -16,6 +16,9 @@ function(add_samp_plugin_test)
   set(options TARGET OUTPUT_FILE SCRIPT TIMEOUT CONFIG WORKING_DIRECTORY)
   cmake_parse_arguments(ARG "" "${options}" "" ${ARGN})
 
+  find_package(SAMPServerCLI REQUIRED)
+  set(command ${SAMPServerCLI_EXECUTABLE})
+
   if(ARG_SCRIPT)
     list(APPEND args --gamemode ${ARG_SCRIPT})
   endif()
@@ -26,12 +29,6 @@ function(add_samp_plugin_test)
 
   if(ARG_WORKING_DIRECTORY)
     list(APPEND args --workdir ${ARG_WORKING_DIRECTORY})
-  endif()
-
-  if(WIN32)
-    set(command samp-server-cli.exe)
-  else()
-    set(command samp-server-cli)
   endif()
 
   add_test(NAME ${name} COMMAND ${command} ${args} --output
