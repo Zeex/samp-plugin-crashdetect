@@ -56,7 +56,7 @@ list(APPEND CRASHDETECT_SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/pluginversion.h
 )
 
-if(WIN32)
+if(WIN32 OR CYGWIN)
   list(APPEND CRASHDETECT_SOURCES
     fileutils-win32.cpp
     os-win32.cpp
