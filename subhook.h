@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2014 Zeex
+/* Copyright (c) 2012-2015 Zeex
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@
 
 #if defined __linux__
 	#define SUBHOOK_LINUX
-#elif defined _WIN32
+#elif defined _WIN32 || defined __CYGWIN__
 	#define SUBHOOK_WINDOWS
 #else
 	#error Unsupported operating system
