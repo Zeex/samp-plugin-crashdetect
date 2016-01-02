@@ -9,11 +9,9 @@ env:
     - SAMP_SERVER_ROOT=$TRAVIS_BUILD_DIR/samp03
 
 install:
+  - sudo apt-add-repository -y ppa:kubuntu-ppa/backports
   - sudo apt-get update -qq
   - sudo apt-get install -y gcc-multilib g++-multilib cmake python python-pip
-
-  - wget http://www.cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.sh
-  - sudo sh cmake-2.8.12.2-Linux-i386.sh --exclude-subdir --prefix=/usr
 
   - wget https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-linux.tar.gz
   - sudo tar xvf pawnc-3.10.20150412-linux.tar.gz --strip-components=1 -C /usr/local
