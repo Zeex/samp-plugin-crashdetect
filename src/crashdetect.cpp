@@ -399,13 +399,14 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
     case AMX_ERR_BOUNDS: {
       cell opcode = *ip;
       if (opcode == RelocateAmxOpcode(AMX_OP_BOUNDS)) {
-        cell bound = *(ip + 1);
+        cell upper_bound = *(ip + 1);
         cell index = amx.GetPri();
         if (index < 0) {
-          DebugPrint(" Accessing element at negative index %d", index);
+          DebugPrint(" Attempted to read/write array element at negative "
+                     "index %d", index);
         } else {
-          DebugPrint(" Accessing element at index %d past array upper bound %d",
-                     index, bound);
+          DebugPrint(" Attempted to read/write array element at index %d "
+                     "in array of size %d", index, upper_bound + 1);
         }
       }
       break;
