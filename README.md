@@ -103,6 +103,13 @@ Below is the list of available settings along with some examples.
   * `trace_filter Player`     - output functions whose name contains `Player`
   * `trace_filter playerid=0` - show functions whose `playerid` parameter is 0
 
+* `crashdetect_log <filename>`
+  
+  Use a custom log file for output.
+
+  By default crashes and errors are printed to the server log. This options
+  allows you to set a different file for that.
+
 Debug info
 ----------
 
