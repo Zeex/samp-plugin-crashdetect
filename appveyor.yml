@@ -1,0 +1,16 @@
+version: '{build}'
+
+configuration:
+  - Release
+
+environment:
+  CTEST_OUTPUT_ON_FAILURE: ON
+
+before_build:
+  - cmake .
+
+build_script:
+  - cmake --build . --config %CONFIGURATION%
+
+test_script:
+  - ctest --build-config %CONFIGURATION%
