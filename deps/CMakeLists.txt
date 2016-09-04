@@ -18,6 +18,18 @@ macro(get_library_filename library filename)
   set(${filename} ${_prefix}${library}${_suffix})
 endmacro()
 
+externalproject_add(configreader-external
+  PREFIX ${DEPS_PREFIX}
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/configreader
+  CMAKE_ARGS ${DEPS_COMMON_CMAKE_ARGS})
+
+add_library(configreader STATIC IMPORTED GLOBAL)
+add_dependencies(configreader configreader-external)
+
+get_library_filename(configreader CONFIGREADER_FILENAME)
+set_target_properties(configreader PROPERTIES
+  IMPORTED_LOCATION ${DEPS_LIBRARY_DIR}/${CONFIGREADER_FILENAME})
+
 externalproject_add(subhook-external
   PREFIX ${DEPS_PREFIX}
   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/subhook
@@ -60,7 +72,7 @@ set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
 set_property(DIRECTORY ${CMAKE_SOURCE_DIR} APPEND PROPERTY
   INCLUDE_DIRECTORIES ${DEPS_INCLUDE_DIR})
 
-foreach(target subhook-external pcre-external)
+foreach(target configreader-external subhook-external pcre-external)
   file(RELATIVE_PATH folder ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
   set_property(TARGET ${target} PROPERTY FOLDER ${folder})
 endforeach()

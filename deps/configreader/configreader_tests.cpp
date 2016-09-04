@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2015 Zeex
+// Copyright (c) 2016 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,67 +22,63 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <algorithm>
-#include <cctype>
+#include <cstdio>
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
-#include <sstream>
-#include <string>
-
 #include "configreader.h"
 
-ConfigReader::ConfigReader() 
- : loaded_(false)
-{
+#define CHECK_EQUAL(x, y) \
+  Check((x) == (y), #x, x, #y, y, '=')
+
+void OK() {
+  std::cout << "OK" << std::endl;
+  std::exit(EXIT_SUCCESS);
 }
 
-ConfigReader::ConfigReader(const std::string &filename) 
- : loaded_(false)
-{
-  LoadFile(filename);
+void Failed() {
+  std::cout << "Failed" << std::endl;
+  std::exit(EXIT_FAILURE);
 }
 
-struct is_not_space {
-  bool operator()(char c) {
-    return !(c == ' ' || c == '\r' || c == '\n' || c == '\t');
+template<typename T, typename U>
+void Check(bool result,
+           const char *op1,
+           const T &op1_value,
+           const char *op2,
+           const U &op2_value,
+           char rel) {
+  if (!result) {
+    std::cout << "Check failed: "
+              << op1 << " `" << op1_value << "`"
+              << " " << rel << " "
+              << op2 << " `" << op2_value << "`"
+              << std::endl;
+    Failed();
   }
-};
-
-static inline std::string &TrimStringLeft(std::string &s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), is_not_space()));
-  return s;
 }
 
-static inline std::string &TrimStringRight(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), is_not_space()).base(), s.end());
-  return s;
-}
+int main() {
+  ConfigReader config;
+  config.ReadFromString(
+    "i 1\n"
+    "f 1.5\n"
+    "s string with\twhitespace\n"
+    "v \thello \tworld\n"
+  );
 
-static inline std::string &TrimString(std::string &s) {
-  return TrimStringLeft(TrimStringRight(s));
-}
+  int i = config.GetValueWithDefault("i", 0);
+  CHECK_EQUAL(i, 1);
 
-bool ConfigReader::LoadFile(const std::string &filename) {
-  std::ifstream cfg(filename.c_str());
+  double f = config.GetValueWithDefault("f", 0.0);
+  CHECK_EQUAL(f, 1.5);
 
-  if (cfg.is_open()) {
-    std::string line, name, value;
+  std::string s = config.GetValueWithDefault("s", "");
+  CHECK_EQUAL(s, "string with\twhitespace");
 
-    while (std::getline(cfg, line, '\n')) {
-      std::stringstream stream(line);
+  std::vector<std::string> v = config.GetValues<std::string>("v");
+  CHECK_EQUAL(v.size(), 2);
+  CHECK_EQUAL(v[0], "hello");
+  CHECK_EQUAL(v[1], "world");
 
-      std::getline(stream, name, ' ');
-      TrimString(name);
-
-      std::getline(stream, value, '\n');
-      TrimString(value);
-
-      options_.insert(std::make_pair(name, value));
-    }
-
-    loaded_ = true;
-  }
-
-  return loaded_;
+  OK();
 }

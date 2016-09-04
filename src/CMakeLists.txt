@@ -28,8 +28,6 @@ set(CRASHDETECT_SOURCES
   amxservice.h
   amxstacktrace.cpp
   amxstacktrace.h
-  configreader.cpp
-  configreader.h
   crashdetect.cpp
   crashdetect.h
   fileutils.cpp
@@ -73,7 +71,7 @@ endif()
 add_samp_plugin(crashdetect ${CRASHDETECT_SOURCES})
 
 add_subdirectory(amx)
-target_link_Libraries(crashdetect amx pcre subhook)
+target_link_Libraries(crashdetect amx configreader pcre subhook)
 
 if(WIN32)
   target_link_libraries(crashdetect DbgHelp)

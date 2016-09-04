@@ -31,6 +31,8 @@
 #include <string>
 #include <vector>
 
+#include <configreader.h>
+
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxerror.h"
@@ -48,6 +50,8 @@
 #define AMX_EXEC_GDK_42 (-10000)
 
 namespace {
+
+ConfigReader server_cfg("server.cfg");
 
 class HexDword {
  public:
@@ -117,14 +121,12 @@ void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
 
 } // anonymous namespace
 
-ConfigReader CrashDetect::server_cfg_("server.cfg");
-
 FILE *CrashDetect::log_file_(std::fopen(
-  server_cfg_.GetOptionDefault<std::string>("crashdetect_log").c_str(), "w"));
+  server_cfg.GetValueWithDefault("crashdetect_log").c_str(), "w"));
 int CrashDetect::trace_flags_(StringToTraceFlags(
-  server_cfg_.GetOptionDefault<std::string>("trace")));
+  server_cfg.GetValueWithDefault("trace")));
 RegExp CrashDetect::trace_filter_(
-  server_cfg_.GetOptionDefault<std::string>("trace_filter", ".*"));
+  server_cfg.GetValueWithDefault("trace_filter", ".*"));
 
 AMXCallStack CrashDetect::call_stack_;
 

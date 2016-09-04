@@ -33,7 +33,6 @@
 #include "amxdebuginfo.h"
 #include "amxscript.h"
 #include "amxservice.h"
-#include "configreader.h"
 #include "regexp.h"
 
 class AMXError;
@@ -95,7 +94,6 @@ class CrashDetect : public AMXService<CrashDetect> {
   bool block_exec_errors_;
 
  private:
-  static ConfigReader server_cfg_;
   static FILE *log_file_;
   static int trace_flags_;
   static RegExp trace_filter_;
