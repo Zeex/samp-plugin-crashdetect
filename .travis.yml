@@ -26,7 +26,9 @@ install:
   - sudo pip install samp-server-cli
 
 before_script:
-  - cmake . -DCMAKE_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX}
+  - cmake . -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_COMPILER=${CC}
+            -DCMAKE_CXX_COMPILER=${CXX}
 
 script:
   - make
@@ -35,3 +37,17 @@ script:
 
 after_failure:
   - cat Testing/Temporary/LastTest.log
+
+deploy:
+  provider: releases
+  api_key:
+    secure: gYJaxOU5bDUYMYTFhkKqf+JziaNceHj9Aj5ULGVhAwUp2PaLEI+sCiJagW1pBVVXxnOycmZ8ZEqsB+T8vypcV3OME8+AfVbyr9Se8OgFFHcf4Cd5EfsLCDY+V02e5aZAmofRBYAz4R6T92aSqKDfiA5OAxv2hAI+VHRAzoZpD4Q=
+  file_glob: true
+  file:
+    - 'crashdetect-*-linux.tar.gz'
+  draft: true
+  skip_cleanup: true
+  on:
+    repo: Zeex/samp-plugin-crashdetect
+    tags: true
+    condition: "$CC = gcc"

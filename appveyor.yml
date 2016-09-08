@@ -31,3 +31,13 @@ artifacts:
 
 on_failure:
   - type Testing\Temporary\LastTest.log
+
+deploy:
+  description: '<Put release description here>'
+  provider: GitHub
+  auth_token:
+    secure: ++mk9GhXTpN/hdVjIIi/nHpu0gYpDybMJNDPB3lld8r1UyfoPbz08SVGeSS84HjR
+  artifact: /crashdetect-.*-win32\.zip/
+  draft: true
+  on:
+    appveyor_repo_tag: true
