@@ -123,6 +123,8 @@ void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
 
 FILE *CrashDetect::log_file_(std::fopen(
   server_cfg.GetValueWithDefault("crashdetect_log").c_str(), "w"));
+std::string CrashDetect::log_time_format_(
+  server_cfg.GetValueWithDefault("logtimeformat"));
 int CrashDetect::trace_flags_(StringToTraceFlags(
   server_cfg.GetValueWithDefault("trace")));
 RegExp CrashDetect::trace_filter_(
@@ -355,7 +357,22 @@ void CrashDetect::Print(const char *prefix,
                         const char *format,
                         std::va_list va) {
   std::string new_format;
-  new_format.append(prefix);
+
+  if (log_file_ != 0) {
+    if (!log_time_format_.empty()) {
+      char time_buffer[128];
+      std::time_t time = std::time(0);
+      std::strftime(time_buffer,
+                    sizeof(time_buffer),
+                    log_time_format_.c_str(),
+                    std::localtime(&time));
+      new_format.append(time_buffer);
+      new_format.append(" ");
+    }
+  } else {
+    new_format.append(prefix);
+  }
+
   new_format.append(format);
 
   if (log_file_ != 0) {

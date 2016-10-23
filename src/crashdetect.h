@@ -95,6 +95,7 @@ class CrashDetect : public AMXService<CrashDetect> {
 
  private:
   static FILE *log_file_;
+  static std::string log_time_format_;
   static int trace_flags_;
   static RegExp trace_filter_;
   static AMXCallStack call_stack_;
