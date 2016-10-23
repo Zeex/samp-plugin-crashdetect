@@ -122,9 +122,9 @@ void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
 } // anonymous namespace
 
 FILE *CrashDetect::log_file_(std::fopen(
-  server_cfg.GetValueWithDefault("crashdetect_log").c_str(), "w"));
+  server_cfg.GetValueWithDefault("crashdetect_log").c_str(), "a"));
 std::string CrashDetect::log_time_format_(
-  server_cfg.GetValueWithDefault("logtimeformat"));
+  server_cfg.GetValueWithDefault("logtimeformat", "[%H:%M:%S]"));
 int CrashDetect::trace_flags_(StringToTraceFlags(
   server_cfg.GetValueWithDefault("trace")));
 RegExp CrashDetect::trace_filter_(
