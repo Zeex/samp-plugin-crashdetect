@@ -38,6 +38,10 @@
 class AMXError;
 class AMXStackFrame;
 
+namespace os {
+  class Context;
+}
+
 class CrashDetect : public AMXService<CrashDetect> {
  friend class AMXService<CrashDetect>;
 
@@ -62,8 +66,8 @@ class CrashDetect : public AMXService<CrashDetect> {
 
   static bool IsInsideAmx();
 
-  static void OnException(void *context);
-  static void OnInterrupt(void *context);
+  static void OnCrash(const os::Context &context);
+  static void OnInterrupt(const os::Context &context);
   static void OnExit();
 
   static void Print(const char *prefix, const char *format, std::va_list va);
@@ -78,8 +82,12 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void PrintAmxBacktrace();
   static void PrintAmxBacktrace(std::ostream &stream);
 
-  static void PrintNativeBacktrace(void *context);
-  static void PrintNativeBacktrace(std::ostream &stream, void *context);
+  static void PrintNativeBacktrace(const os::Context &context);
+  static void PrintNativeBacktrace(std::ostream &stream,
+                                   const os::Context &context);
+  static void PrintRegisters(const os::Context &context);
+  static void PrintStack(const os::Context &context);
+  static void PrintLoadedModules();
 
  private:
   CrashDetect(AMX *amx);

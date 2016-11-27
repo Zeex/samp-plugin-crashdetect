@@ -23,6 +23,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <algorithm>
+#include <cstdlib>
 #include <functional>
 #include <vector>
 
@@ -32,7 +33,46 @@
 
 #include "os.h"
 
-std::string os::GetModuleName(void *address) {
+namespace os {
+
+Context::Registers Context::GetRegisters() const {
+  Registers registers;
+  if (native_context_ != 0) {
+    PCONTEXT context = (PCONTEXT)native_context_;
+    registers.eax = context->Eax;
+    registers.ebx = context->Ebx;
+    registers.ecx = context->Ecx;
+    registers.edx = context->Edx;
+    registers.esi = context->Esi;
+    registers.edi = context->Edi;
+    registers.ebp = context->Ebp;
+    registers.esp = context->Esp;
+    registers.eip = context->Eip;
+    registers.eflags = context->EFlags;
+  }
+  return registers;
+}
+
+void GetLoadedModules(std::vector<Module> &modules) {
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0);
+  if (snapshot != INVALID_HANDLE_VALUE) {
+    modules.clear();
+    MODULEENTRY32 module_entry;
+    module_entry.dwSize = sizeof(module_entry);
+    if (Module32First(snapshot, &module_entry)) {
+      do {
+        Module module(module_entry.szModule,
+                      (uint32_t)module_entry.modBaseAddr,
+                      module_entry.modBaseSize);
+        modules.push_back(module);
+        module_entry.dwSize = sizeof(module_entry);
+      } while (Module32Next(snapshot, &module_entry));
+    }
+    CloseHandle(snapshot);
+  }
+}
+
+std::string GetModuleName(void *address) {
   std::vector<char> filename(MAX_PATH);
   if (address != 0) {
     MEMORY_BASIC_INFORMATION mbi;
@@ -52,33 +92,35 @@ std::string os::GetModuleName(void *address) {
   return std::string(&filename[0]);
 }
 
-static os::ExceptionHandler except_handler = 0;
-static LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
+namespace {
 
-static LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
-  if (::except_handler != 0) {
-    ::except_handler(exception->ContextRecord);
+CrashHandler crash_handler = 0;
+LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
+
+LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
+  if (crash_handler != 0) {
+    crash_handler(Context(exception->ContextRecord));
   }
-  if (::prev_except_handler != 0) {
-    return ::prev_except_handler(exception);
+  if (prev_except_handler != 0) {
+    return prev_except_handler(exception);
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void os::SetExceptionHandler(ExceptionHandler handler) {
-  ::except_handler = handler;
+} // namespace
+
+void SetCrashHandler(CrashHandler handler) {
+  crash_handler = handler;
   if (handler != 0) {
-    ::prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
+    prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
   } else {
-    SetUnhandledExceptionFilter(::prev_except_handler);
+    SetUnhandledExceptionFilter(prev_except_handler);
   }
 }
 
-static os::InterruptHandler interrupt_handler;
+namespace {
 
-static HANDLE GetThreadHandle(DWORD thread_id, DWORD desired_access) {
-  return OpenThread(desired_access, FALSE, thread_id);
-}
+InterruptHandler interrupt_handler;
 
 struct ThreadInfo {
   DWORD    id;
@@ -88,11 +130,11 @@ struct ThreadInfo {
   FILETIME user_time;
 };
 
-class InvalidThread: std::unary_function<ThreadInfo, bool> {
+class IsInvalidThread: std::unary_function<ThreadInfo, bool> {
  public:
   bool operator()(const ThreadInfo &thread) {
     return thread.creation_time.dwHighDateTime == 0 &&
-            thread.creation_time.dwHighDateTime == 0;
+           thread.creation_time.dwHighDateTime == 0;
   }
 };
 
@@ -103,7 +145,11 @@ class CompareThreads: std::binary_function<ThreadInfo, ThreadInfo, bool> {
   }
 };
 
-static DWORD GetMainThreadId() {
+HANDLE GetThreadHandle(DWORD thread_id, DWORD desired_access) {
+  return OpenThread(desired_access, FALSE, thread_id);
+}
+
+DWORD GetMainThreadId() {
   std::vector<ThreadInfo> threads;
 
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
@@ -137,7 +183,7 @@ static DWORD GetMainThreadId() {
   }
 
   threads.erase(std::remove_if(threads.begin(), threads.end(),
-                               InvalidThread()), threads.end());
+                               IsInvalidThread()), threads.end());
   if (!threads.empty()) {
     return std::min_element(threads.begin(), threads.end(),
                             CompareThreads())->id;
@@ -145,7 +191,7 @@ static DWORD GetMainThreadId() {
   return 0;
 }
 
-static BOOL GetMainThreadContext(PCONTEXT context) {
+BOOL GetMainThreadContext(PCONTEXT context) {
   DWORD thread_id = GetMainThreadId();
   if (thread_id != 0) {
     HANDLE thread_handle = GetThreadHandle(thread_id, THREAD_GET_CONTEXT |
@@ -161,20 +207,24 @@ static BOOL GetMainThreadContext(PCONTEXT context) {
   return FALSE;
 }
 
-static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
+BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
   switch (dwCtrlType) {
   case CTRL_C_EVENT:
-    if (::interrupt_handler != 0) {
+    if (interrupt_handler != 0) {
       CONTEXT context = {0};
       context.ContextFlags = CONTEXT_FULL;
       GetMainThreadContext(&context);
-      ::interrupt_handler(&context);
+      interrupt_handler(Context(&context));
     }
   }
   return FALSE;
 }
 
-void os::SetInterruptHandler(InterruptHandler handler) {
-  ::interrupt_handler = handler;
+} // namespace
+
+void SetInterruptHandler(InterruptHandler handler) {
+  interrupt_handler = handler;
   SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 }
+
+} // namespace os

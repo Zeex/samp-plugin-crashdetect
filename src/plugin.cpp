@@ -78,7 +78,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
     return false;
   }
 
-  os::SetExceptionHandler(CrashDetect::OnException);
+  os::SetCrashHandler(CrashDetect::OnCrash);
   os::SetInterruptHandler(CrashDetect::OnInterrupt);
 
   logprintf("  CrashDetect v" PROJECT_VERSION_STRING " is OK.");

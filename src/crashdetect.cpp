@@ -326,24 +326,27 @@ bool CrashDetect::IsInsideAmx() {
 }
 
 // static
-void CrashDetect::OnException(void *context) {
+void CrashDetect::OnCrash(const os::Context &context) {
   if (IsInsideAmx()) {
     CrashDetect::GetInstance(call_stack_.Top().amx())->HandleException();
   } else {
     DebugPrint("Server crashed due to an unknown error");
   }
-  PrintNativeBacktrace(context);
+  PrintNativeBacktrace(context.native_context());
+  PrintRegisters(context);
+  PrintStack(context);
+  PrintLoadedModules();
   OnExit();
 }
 
 // static
-void CrashDetect::OnInterrupt(void *context) {
+void CrashDetect::OnInterrupt(const os::Context &context) {
   if (IsInsideAmx()) {
     CrashDetect::GetInstance(call_stack_.Top().amx())->HandleInterrupt();
   } else {
     DebugPrint("Server received interrupt signal");
   }
-  PrintNativeBacktrace(context);
+  PrintNativeBacktrace(context.native_context());
   OnExit();
 }
 
@@ -546,16 +549,74 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 }
 
 // static
-void CrashDetect::PrintNativeBacktrace(void *context) {
+void CrashDetect::PrintRegisters(const os::Context &context) {
+  os::Context::Registers registers = context.GetRegisters();
+
+  DebugPrint("Registers:");
+  DebugPrint("EAX: %08x EBX: %08x ECX: %08x EDX: %08x",
+             registers.eax,
+             registers.ebx,
+             registers.ecx,
+             registers.edx);
+  DebugPrint("ESI: %08x EDI: %08x EBP: %08x ESP: %08x",
+             registers.esi,
+             registers.edi,
+             registers.ebp,
+             registers.esp);
+  DebugPrint("EIP: %08x EFLAGS: %08x",
+             registers.eip,
+             registers.eflags);
+}
+
+// static
+void CrashDetect::PrintStack(const os::Context &context) {
+  os::Context::Registers registers = context.GetRegisters();
+  os::uint32_t *stack_ptr = reinterpret_cast<os::uint32_t *>(registers.esp);
+  if (stack_ptr == 0) {
+    return;
+  }
+
+  DebugPrint("Stack:");
+
+  for (int i = 0; i < 256; i += 8) {
+    DebugPrint("ESP+%08x: %08x %08x %08x %08x",
+               i * sizeof(*stack_ptr),
+               stack_ptr[i],
+               stack_ptr[i + 1],
+               stack_ptr[i + 2],
+               stack_ptr[i + 3]);
+  }
+}
+
+// static
+void CrashDetect::PrintLoadedModules() {
+  DebugPrint("Loaded modules:");
+
+  std::vector<os::Module> modules;
+  os::GetLoadedModules(modules);
+
+  for (std::vector<os::Module>::const_iterator it = modules.begin();
+       it != modules.end(); it++) {
+    const os::Module &module = *it;
+    DebugPrint("%08x - %08x %s",
+               module.base_address(),
+               module.base_address() + module.size(),
+               module.name().c_str());
+  }
+}
+
+// static
+void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
   std::stringstream stream;
   PrintNativeBacktrace(stream, context);
   PrintStream(DebugPrint, stream);
 }
 
 // static
-void CrashDetect::PrintNativeBacktrace(std::ostream &stream, void *context) {
+void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
+                                       const os::Context &context) {
   std::vector<StackFrame> frames;
-  GetStackTrace(frames, context);
+  GetStackTrace(frames, context.native_context());
 
   if (!frames.empty()) {
     stream << "Native backtrace:";

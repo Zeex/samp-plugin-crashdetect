@@ -26,23 +26,87 @@
 #define OS_H
 
 #include <string>
+#include <vector>
 
 namespace os {
 
-// GetModuleName returns the name of the module (executable/DLL) which
-// a given address belongs to.
+#if defined __GNUC__ || (defined _MSC_VER && _MSC_VER >= 1600)
+  #include <stdint.h>
+  using ::int32_t;
+  using ::uint32_t;
+#elif defined _WIN32
+  typedef signed __int32 int32_t;
+  typedef unsigned __int32 uint32_t;
+#endif
+
+class Context;
+
+typedef void (*CrashHandler)(const Context &context);
+typedef void (*InterruptHandler)(const Context &context);
+
+class Context {
+ public:
+  struct Registers {
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+    uint32_t esi;
+    uint32_t edi;
+    uint32_t ebp;
+    uint32_t esp;
+    uint32_t eip;
+    uint32_t eflags;
+  };
+
+  Context(): native_context_(0) {}
+  Context(void *native_context): native_context_(native_context) {}
+
+  void *native_context() const {
+    return native_context_;
+  }
+
+  Registers GetRegisters() const;
+
+ private:
+  Context(const Context &);
+  void operator=(const Context &);
+
+ private:
+  void *native_context_;
+};
+
+class Module {
+ public:
+  Module(const std::string &name, uint32_t base_address, uint32_t size):
+    name_(name),
+    base_address_(base_address),
+    size_(size)
+  {
+  }
+
+  const std::string &name() const {
+    return name_;
+  }
+
+  uint32_t base_address() const {
+    return base_address_;
+  }
+
+  uint32_t size() const {
+    return size_;
+  }
+
+ private:
+  std::string name_;
+  uint32_t base_address_;
+  uint32_t size_;
+};
+
+void GetLoadedModules(std::vector<Module> &modules);
 std::string GetModuleName(void *address);
 
-typedef void (*ExceptionHandler)(void *context);
-
-// SetExceptionHandler sets a global exception handler on Windows and SIGSEGV
-// signal handler on Linux.
-void SetExceptionHandler(ExceptionHandler handler);
-
-typedef void (*InterruptHandler)(void *context);
-
-// SetInterruptHandler sets a global Ctrl+C event handler on Windows
-// and SIGINT signal handler on Linux.
+void SetCrashHandler(CrashHandler handler);
 void SetInterruptHandler(InterruptHandler handler);
 
 } // namespace os

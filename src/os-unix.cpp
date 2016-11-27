@@ -27,11 +27,64 @@
 #include <vector>
 
 #include <dlfcn.h>
+#include <link.h>
 #include <signal.h>
+#include <ucontext.h>
 
 #include "os.h"
 
-std::string os::GetModuleName(void *address) {
+extern const char *__progname;
+
+namespace os {
+
+Context::Registers Context::GetRegisters() const {
+  Registers registers = {0};
+  if (native_context_ != 0) {
+    ucontext_t *const context = static_cast<ucontext_t *>(native_context_);
+    registers.eax = context->uc_mcontext.gregs[REG_EAX];
+    registers.ebx = context->uc_mcontext.gregs[REG_EBX];
+    registers.ecx = context->uc_mcontext.gregs[REG_ECX];
+    registers.edx = context->uc_mcontext.gregs[REG_EDX];
+    registers.esi = context->uc_mcontext.gregs[REG_ESI];
+    registers.edi = context->uc_mcontext.gregs[REG_EDI];
+    registers.ebp = context->uc_mcontext.gregs[REG_EBP];
+    registers.esp = context->uc_mcontext.gregs[REG_ESP];
+    registers.eip = context->uc_mcontext.gregs[REG_EIP];
+    registers.eflags = context->uc_mcontext.gregs[REG_EFL];
+  }
+  return registers;
+}
+
+namespace {
+
+int VisitModule(struct dl_phdr_info *info, size_t size, void *data) {
+  std::vector<Module> *modules = reinterpret_cast<std::vector<Module> *>(data);
+
+  const char *name = info->dlpi_name;
+  if (modules->size() == 0) {
+    // First visited entry is the main program.
+    name = __progname;
+  }
+
+  uint32_t base_address = info->dlpi_addr;
+  uint32_t total_size = 0;
+  for (int i = 0; i < info->dlpi_phnum; i++) {
+    total_size += info->dlpi_phdr[i].p_memsz;
+  }
+
+  Module module(name, base_address, total_size);
+  modules->push_back(module);
+  return 0;
+}
+
+} // namespace
+
+void GetLoadedModules(std::vector<Module> &modules) {
+  modules.clear();
+  dl_iterate_phdr(VisitModule, reinterpret_cast<void *>(&modules));
+}
+
+std::string GetModuleName(void *address) {
   std::string filename;
   if (address != 0) {
     Dl_info info;
@@ -41,10 +94,13 @@ std::string os::GetModuleName(void *address) {
   return filename;
 }
 
+namespace {
+
 typedef void (*SignalHandler)(int signal, siginfo_t *info, void *context);
 
-static void SetSignalHandler(int signal, SignalHandler handler,
-                             struct sigaction *prev_action = 0) {
+void SetSignalHandler(int signal,
+                     SignalHandler handler,
+                     struct sigaction *prev_action = 0) {
   struct sigaction action;
   sigemptyset(&action.sa_mask);
   action.sa_sigaction = handler;
@@ -52,41 +108,49 @@ static void SetSignalHandler(int signal, SignalHandler handler,
   sigaction(signal, &action, prev_action);
 }
 
-static void CallPreviousSignalHandler(int signal,
-                                      struct sigaction *prev_action = 0) {
+void CallPreviousSignalHandler(int signal,
+                               struct sigaction *prev_action = 0) {
   sigaction(signal, prev_action, 0);
   raise(signal);
 }
 
-static os::ExceptionHandler except_handler = 0;
-static struct sigaction prev_sigsegv_action;
+CrashHandler crash_handler = 0;
+struct sigaction prev_sigsegv_action;
 
 static void HandleSIGSEGV(int signal, siginfo_t *info, void *context) {
   assert(signal == SIGSEGV || signal == SIGABRT);
-  if (::except_handler != 0) {
-    ::except_handler(context);
+  if (crash_handler != 0) {
+    crash_handler(Context(context));
   }
-  CallPreviousSignalHandler(signal, &::prev_sigsegv_action);
+  CallPreviousSignalHandler(signal, &prev_sigsegv_action);
 }
 
-void os::SetExceptionHandler(ExceptionHandler handler) {
-  ::except_handler = handler;
-  SetSignalHandler(SIGSEGV, HandleSIGSEGV, &::prev_sigsegv_action);
+} // namespace
+
+void SetCrashHandler(CrashHandler handler) {
+  crash_handler = handler;
+  SetSignalHandler(SIGSEGV, HandleSIGSEGV, &prev_sigsegv_action);
   SetSignalHandler(SIGABRT, HandleSIGSEGV);
 }
 
-static os::InterruptHandler interrupt_handler;
-static struct sigaction prev_sigint_action;
+namespace {
 
-static void HandleSIGINT(int signal, siginfo_t *info, void *context) {
+InterruptHandler interrupt_handler;
+struct sigaction prev_sigint_action;
+
+void HandleSIGINT(int signal, siginfo_t *info, void *context) {
   assert(signal == SIGINT);
-  if (::interrupt_handler != 0) {
-    ::interrupt_handler(context);
+  if (interrupt_handler != 0) {
+    interrupt_handler(Context(context));
   }
-  CallPreviousSignalHandler(signal, &::prev_sigint_action);
+  CallPreviousSignalHandler(signal, &prev_sigint_action);
 }
 
-void os::SetInterruptHandler(InterruptHandler handler) {
-  ::interrupt_handler = handler;
-  SetSignalHandler(SIGINT, HandleSIGINT, &::prev_sigint_action);
+} // namespace
+
+void SetInterruptHandler(InterruptHandler handler) {
+  interrupt_handler = handler;
+  SetSignalHandler(SIGINT, HandleSIGINT, &prev_sigint_action);
 }
+
+} // namespace os

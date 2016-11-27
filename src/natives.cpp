@@ -26,6 +26,7 @@
 
 #include "crashdetect.h"
 #include "natives.h"
+#include "os.h"
 
 namespace {
 
@@ -37,7 +38,7 @@ cell AMX_NATIVE_CALL PrintAmxBacktrace(AMX *amx, cell *params) {
 
 // native PrintNativeBacktrace();
 cell AMX_NATIVE_CALL PrintNativeBacktrace(AMX *amx, cell *params) {
-  CrashDetect::PrintNativeBacktrace(0);
+  CrashDetect::PrintNativeBacktrace(os::Context());
   return 1;
 }
 
