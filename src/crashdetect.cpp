@@ -42,7 +42,7 @@
 #include "amxstacktrace.h"
 #include "crashdetect.h"
 #include "fileutils.h"
-#include "logprintf.h"
+#include "log.h"
 #include "os.h"
 #include "stacktrace.h"
 
@@ -121,10 +121,6 @@ void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
 
 } // anonymous namespace
 
-FILE *CrashDetect::log_file_(std::fopen(
-  server_cfg.GetValueWithDefault("crashdetect_log").c_str(), "a"));
-std::string CrashDetect::log_time_format_(
-  server_cfg.GetValueWithDefault("logtimeformat", "[%H:%M:%S]"));
 int CrashDetect::trace_flags_(StringToTraceFlags(
   server_cfg.GetValueWithDefault("trace")));
 RegExp CrashDetect::trace_filter_(
@@ -197,7 +193,7 @@ int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
     const char *name = amx().GetNativeName(index);
     stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
     if (trace_filter_.Test(stream.str())) {
-      PrintStream(TracePrint, stream);
+      PrintStream(LogTracePrint, stream);
     }
   }
 
@@ -302,7 +298,7 @@ void CrashDetect::HandleExecError(int index,
         error.code() != AMX_ERR_INDEX    &&
         error.code() != AMX_ERR_CALLBACK &&
         error.code() != AMX_ERR_INIT) {
-      PrintStream(DebugPrint, bt_stream);
+      PrintStream(LogDebugPrint, bt_stream);
     }
   }
 
@@ -310,13 +306,13 @@ void CrashDetect::HandleExecError(int index,
 }
 
 void CrashDetect::HandleException() {
-  DebugPrint("Server crashed while executing %s", amx_name_.c_str());
+  LogDebugPrint("Server crashed while executing %s", amx_name_.c_str());
   PrintAmxBacktrace();
 }
 
 void CrashDetect::HandleInterrupt() {
-  DebugPrint("Server received interrupt signal while executing %s",
-             amx_name_.c_str());
+  LogDebugPrint("Server received interrupt signal while executing %s",
+                amx_name_.c_str());
   PrintAmxBacktrace();
 }
 
@@ -330,7 +326,7 @@ void CrashDetect::OnCrash(const os::Context &context) {
   if (IsInsideAmx()) {
     CrashDetect::GetInstance(call_stack_.Top().amx())->HandleException();
   } else {
-    DebugPrint("Server crashed due to an unknown error");
+    LogDebugPrint("Server crashed due to an unknown error");
   }
   PrintNativeBacktrace(context.native_context());
   PrintRegisters(context);
@@ -344,7 +340,7 @@ void CrashDetect::OnInterrupt(const os::Context &context) {
   if (IsInsideAmx()) {
     CrashDetect::GetInstance(call_stack_.Top().amx())->HandleInterrupt();
   } else {
-    DebugPrint("Server received interrupt signal");
+    LogDebugPrint("Server received interrupt signal");
   }
   PrintNativeBacktrace(context.native_context());
   OnExit();
@@ -352,54 +348,7 @@ void CrashDetect::OnInterrupt(const os::Context &context) {
 
 // static
 void CrashDetect::OnExit() {
-  std::fflush(log_file_);
-}
-
-// static
-void CrashDetect::Print(const char *prefix,
-                        const char *format,
-                        std::va_list va) {
-  std::string new_format;
-
-  if (log_file_ != 0) {
-    if (!log_time_format_.empty()) {
-      char time_buffer[128];
-      std::time_t time = std::time(0);
-      std::strftime(time_buffer,
-                    sizeof(time_buffer),
-                    log_time_format_.c_str(),
-                    std::localtime(&time));
-      new_format.append(time_buffer);
-      new_format.append(" ");
-    }
-  } else {
-    new_format.append(prefix);
-  }
-
-  new_format.append(format);
-
-  if (log_file_ != 0) {
-    new_format.append("\n");
-    vfprintf(log_file_, new_format.c_str(), va);
-  } else {
-    vlogprintf(new_format.c_str(), va);
-  }
-}
-
-// static
-void CrashDetect::TracePrint(const char *format, ...) {
-  std::va_list va;
-  va_start(va, format);
-  Print("[trace] ", format, va);
-  va_end(va);
-}
-
-// static
-void CrashDetect::DebugPrint(const char *format, ...) {
-  std::va_list va;
-  va_start(va, format);
-  Print("[debug] ", format, va);
-  va_end(va);
+  LogFlush();
 }
 
 // static
@@ -409,13 +358,13 @@ void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
   if (trace_filter_.Test(stream.str())) {
-    PrintStream(TracePrint, stream);
+    PrintStream(LogTracePrint, stream);
   }
 }
 
 // static
 void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
-  DebugPrint("Run time error %d: \"%s\"", error.code(), error.GetString());
+  LogDebugPrint("Run time error %d: \"%s\"", error.code(), error.GetString());
   cell *ip = reinterpret_cast<cell*>(amx.GetCode() + amx.GetCip());
   switch (error.code()) {
     case AMX_ERR_BOUNDS: {
@@ -424,11 +373,11 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
         cell upper_bound = *(ip + 1);
         cell index = amx.GetPri();
         if (index < 0) {
-          DebugPrint(" Attempted to read/write array element at negative "
-                     "index %d", index);
+          LogDebugPrint(" Attempted to read/write array element at negative "
+                        "index %d", index);
         } else {
-          DebugPrint(" Attempted to read/write array element at index %d "
-                     "in array of size %d", index, upper_bound + 1);
+          LogDebugPrint(" Attempted to read/write array element at index %d "
+                        "in array of size %d", index, upper_bound + 1);
         }
       }
       break;
@@ -438,34 +387,34 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
       int num_natives = amx.GetNumNatives();
       for (int i = 0; i < num_natives; ++i) {
         if (natives[i].address == 0) {
-          DebugPrint(" %s", amx.GetName(natives[i].nameofs));
+          LogDebugPrint(" %s", amx.GetName(natives[i].nameofs));
         }
       }
       break;
     }
     case AMX_ERR_STACKERR:
-      DebugPrint(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X",
-                 amx.GetStk(), amx.GetHea());
+      LogDebugPrint(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X",
+                    amx.GetStk(), amx.GetHea());
       break;
     case AMX_ERR_STACKLOW:
-      DebugPrint(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X",
-                 amx.GetStk(), amx.GetStp());
+      LogDebugPrint(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X",
+                    amx.GetStk(), amx.GetStp());
       break;
     case AMX_ERR_HEAPLOW:
-      DebugPrint(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X",
-                 amx.GetHea(), amx.GetHlw());
+      LogDebugPrint(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X",
+                    amx.GetHea(), amx.GetHlw());
       break;
     case AMX_ERR_INVINSTR: {
       cell opcode = *ip;
-      DebugPrint(" Unknown opcode 0x%x at address 0x%08X",
-                 opcode , amx.GetCip());
+      LogDebugPrint(" Unknown opcode 0x%x at address 0x%08X",
+                    opcode , amx.GetCip());
       break;
     }
     case AMX_ERR_NATIVE: {
       cell opcode = *(ip - 2);
       if (opcode == RelocateAmxOpcode(AMX_OP_SYSREQ_C)) {
         cell index = *(ip - 1);
-        DebugPrint(" %s", amx.GetNativeName(index));
+        LogDebugPrint(" %s", amx.GetNativeName(index));
       }
       break;
     }
@@ -476,7 +425,7 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
 void CrashDetect::PrintAmxBacktrace() {
   std::stringstream stream;
   PrintAmxBacktrace(stream);
-  PrintStream(DebugPrint, stream);
+  PrintStream(LogDebugPrint, stream);
 }
 
 // static
@@ -552,20 +501,20 @@ void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
 void CrashDetect::PrintRegisters(const os::Context &context) {
   os::Context::Registers registers = context.GetRegisters();
 
-  DebugPrint("Registers:");
-  DebugPrint("EAX: %08x EBX: %08x ECX: %08x EDX: %08x",
-             registers.eax,
-             registers.ebx,
-             registers.ecx,
-             registers.edx);
-  DebugPrint("ESI: %08x EDI: %08x EBP: %08x ESP: %08x",
-             registers.esi,
-             registers.edi,
-             registers.ebp,
-             registers.esp);
-  DebugPrint("EIP: %08x EFLAGS: %08x",
-             registers.eip,
-             registers.eflags);
+  LogDebugPrint("Registers:");
+  LogDebugPrint("EAX: %08x EBX: %08x ECX: %08x EDX: %08x",
+                registers.eax,
+                registers.ebx,
+                registers.ecx,
+                registers.edx);
+  LogDebugPrint("ESI: %08x EDI: %08x EBP: %08x ESP: %08x",
+                registers.esi,
+                registers.edi,
+                registers.ebp,
+                registers.esp);
+  LogDebugPrint("EIP: %08x EFLAGS: %08x",
+                registers.eip,
+                registers.eflags);
 }
 
 // static
@@ -576,21 +525,21 @@ void CrashDetect::PrintStack(const os::Context &context) {
     return;
   }
 
-  DebugPrint("Stack:");
+  LogDebugPrint("Stack:");
 
   for (int i = 0; i < 256; i += 8) {
-    DebugPrint("ESP+%08x: %08x %08x %08x %08x",
-               i * sizeof(*stack_ptr),
-               stack_ptr[i],
-               stack_ptr[i + 1],
-               stack_ptr[i + 2],
-               stack_ptr[i + 3]);
+    LogDebugPrint("ESP+%08x: %08x %08x %08x %08x",
+                  i * sizeof(*stack_ptr),
+                  stack_ptr[i],
+                  stack_ptr[i + 1],
+                  stack_ptr[i + 2],
+                  stack_ptr[i + 3]);
   }
 }
 
 // static
 void CrashDetect::PrintLoadedModules() {
-  DebugPrint("Loaded modules:");
+  LogDebugPrint("Loaded modules:");
 
   std::vector<os::Module> modules;
   os::GetLoadedModules(modules);
@@ -598,10 +547,10 @@ void CrashDetect::PrintLoadedModules() {
   for (std::vector<os::Module>::const_iterator it = modules.begin();
        it != modules.end(); it++) {
     const os::Module &module = *it;
-    DebugPrint("%08x - %08x %s",
-               module.base_address(),
-               module.base_address() + module.size(),
-               module.name().c_str());
+    LogDebugPrint("%08x - %08x %s",
+                  module.base_address(),
+                  module.base_address() + module.size(),
+                  module.name().c_str());
   }
 }
 
@@ -609,7 +558,7 @@ void CrashDetect::PrintLoadedModules() {
 void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
   std::stringstream stream;
   PrintNativeBacktrace(stream, context);
-  PrintStream(DebugPrint, stream);
+  PrintStream(LogDebugPrint, stream);
 }
 
 // static

@@ -78,10 +78,10 @@ class Context {
 
 class Module {
  public:
-  Module(const std::string &name, uint32_t base_address, uint32_t size):
-    name_(name),
-    base_address_(base_address),
-    size_(size)
+  Module(const std::string &name, uint32_t base_address, uint32_t size)
+    : name_(name),
+      base_address_(base_address),
+      size_(size)
   {
   }
 

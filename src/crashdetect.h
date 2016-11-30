@@ -70,10 +70,6 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void OnInterrupt(const os::Context &context);
   static void OnExit();
 
-  static void Print(const char *prefix, const char *format, std::va_list va);
-  static void TracePrint(const char *format, ...);
-  static void DebugPrint(const char *format, ...);
-
   static void PrintTraceFrame(const AMXStackFrame &frame,
                               const AMXDebugInfo &debug_info);
 
@@ -102,8 +98,6 @@ class CrashDetect : public AMXService<CrashDetect> {
   bool block_exec_errors_;
 
  private:
-  static FILE *log_file_;
-  static std::string log_time_format_;
   static int trace_flags_;
   static RegExp trace_filter_;
   static AMXCallStack call_stack_;

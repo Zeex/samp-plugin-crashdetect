@@ -32,6 +32,8 @@ set(CRASHDETECT_SOURCES
   crashdetect.h
   fileutils.cpp
   fileutils.h
+  log.cpp
+  log.h
   logprintf.cpp
   logprintf.h
   natives.cpp
