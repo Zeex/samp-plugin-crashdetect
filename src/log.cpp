@@ -23,7 +23,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <ctime>
-#include "configreader.h"
+#include <cstdio>
+
+#include <configreader.h>
+
 #include "log.h"
 #include "logprintf.h"
 
