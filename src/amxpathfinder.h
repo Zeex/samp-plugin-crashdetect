@@ -38,7 +38,7 @@ class AMXPathFinder {
 
   void AddSearchPath(std::string path);
 
-  std::string FindAmx(AMXScript amx);
+  std::string Find(AMXScript amx);
 
  private:
   std::list<std::string> search_paths_;

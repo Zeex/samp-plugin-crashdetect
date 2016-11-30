@@ -79,6 +79,6 @@ enum AMXOpcode {
 
 const int NUM_AMX_OPCODES = AMX_OP_LAST_;
 
-cell RelocateAmxOpcode(cell opcode);
+cell RelocateAMXOpcode(cell opcode);
 
 #endif // !AMXOPCODE_H

@@ -299,7 +299,7 @@ cell GetStateVarAddress(AMXScript amx, cell function_address) {
   if (IsCodeAddress(amx, function_address) &&
       IsCodeAddress(amx, function_address + sizeof(cell))) {
     cell opcode = *reinterpret_cast<cell*>(amx.GetCode() + function_address);
-    if (opcode == RelocateAmxOpcode(AMX_OP_LOAD_PRI)) {
+    if (opcode == RelocateAMXOpcode(AMX_OP_LOAD_PRI)) {
       return *reinterpret_cast<cell*>(amx.GetCode() + function_address
                                       + sizeof(cell));
     }

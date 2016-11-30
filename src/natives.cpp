@@ -31,8 +31,8 @@
 namespace {
 
 // native PrintAmxBacktrace();
-cell AMX_NATIVE_CALL PrintAmxBacktrace(AMX *amx, cell *params) {
-  CrashDetect::PrintAmxBacktrace();
+cell AMX_NATIVE_CALL PrintBacktrace(AMX *amx, cell *params) {
+  CrashDetect::PrintAMXBacktrace();
   return 1;
 }
 
@@ -43,14 +43,14 @@ cell AMX_NATIVE_CALL PrintNativeBacktrace(AMX *amx, cell *params) {
 }
 
 // native GetAmxBacktrace(string[], size = sizeof(string));
-cell AMX_NATIVE_CALL GetAmxBacktrace(AMX *amx, cell *params) {
+cell AMX_NATIVE_CALL GetBacktrace(AMX *amx, cell *params) {
   cell string = params[1];
   cell size = params[2];
 
   cell *string_ptr;
   if (amx_GetAddr(amx, string, &string_ptr) == AMX_ERR_NONE) {
     std::stringstream stream;
-    CrashDetect::PrintAmxBacktrace(stream);
+    CrashDetect::PrintAMXBacktrace(stream);
     return amx_SetString(string_ptr, stream.str().c_str(),
                          0, 0, size) == AMX_ERR_NONE;
   }
@@ -75,10 +75,13 @@ cell AMX_NATIVE_CALL GetNativeBacktrace(AMX *amx, cell *params) {
 }
 
 const AMX_NATIVE_INFO natives[] = {
-  {"PrintAmxBacktrace",    PrintAmxBacktrace},
+  {"PrintBacktrace",       PrintBacktrace},
   {"PrintNativeBacktrace", PrintNativeBacktrace},
-  {"GetAmxBacktrace",      GetAmxBacktrace},
-  {"GetNativeBacktrace",   GetNativeBacktrace}
+  {"GetBacktrace",         GetBacktrace},
+  {"GetNativeBacktrace",   GetNativeBacktrace},
+  // Backwards compatibility:
+  {"PrintAmxBacktrace",    PrintBacktrace},
+  {"GetAmxBacktrace",      GetBacktrace}
 };
 
 } // anonymous namespace

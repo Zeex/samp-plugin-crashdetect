@@ -39,22 +39,22 @@
 static SubHook exec_hook;
 
 static int AMXAPI AmxDebug(AMX *amx) {
-  return CrashDetect::GetInstance(amx)->DoAmxDebug();
+  return CrashDetect::GetInstance(amx)->HandleAMXDebug();
 }
 
 static int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-  return CrashDetect::GetInstance(amx)->DoAmxCallback(index, result, params);
+  return CrashDetect::GetInstance(amx)->HandleAMXCallback(index, result, params);
 }
 
 static int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
   if (amx->flags & AMX_FLAG_BROWSE) {
     return amx_Exec(amx, retval, index);
   }
-  return CrashDetect::GetInstance(amx)->DoAmxExec(retval, index);
+  return CrashDetect::GetInstance(amx)->HandleAMXExec(retval, index);
 }
 
 static void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
-  CrashDetect::GetInstance(amx)->HandleExecError(index, retval, error);
+  CrashDetect::GetInstance(amx)->HandleAMXExecError(index, retval, error);
 }
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {

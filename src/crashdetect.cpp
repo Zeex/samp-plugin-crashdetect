@@ -148,7 +148,7 @@ int CrashDetect::Load() {
         std::bind1st(std::mem_fun(&AMXPathFinder::AddSearchPath), &amx_finder));
   }
 
-  amx_path_ = amx_finder.FindAmx(amx());
+  amx_path_ = amx_finder.Find(amx());
   if (!amx_path_.empty()) {
     if (AMXDebugInfo::IsPresent(amx())) {
       debug_info_.Load(amx_path_);
@@ -172,7 +172,7 @@ int CrashDetect::Unload() {
   return AMX_ERR_NONE;
 }
 
-int CrashDetect::DoAmxDebug() {
+int CrashDetect::HandleAMXDebug() {
   if (amx().GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
     AMXStackTrace trace =
@@ -185,7 +185,7 @@ int CrashDetect::DoAmxDebug() {
   return prev_debug_ != 0 ? prev_debug_(amx()) : AMX_ERR_NONE;
 }
 
-int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
+int CrashDetect::HandleAMXCallback(cell index, cell *result, cell *params) {
   call_stack_.Push(AMXCall::Native(amx(), index));
 
   if (trace_flags_ & TRACE_NATIVES) {
@@ -203,7 +203,7 @@ int CrashDetect::DoAmxCallback(cell index, cell *result, cell *params) {
   return error;
 }
 
-int CrashDetect::DoAmxExec(cell *retval, int index) {
+int CrashDetect::HandleAMXExec(cell *retval, int index) {
   call_stack_.Push(AMXCall::Public(amx(), index));
 
   if (trace_flags_ & TRACE_FUNCTIONS) {
@@ -233,16 +233,16 @@ int CrashDetect::DoAmxExec(cell *retval, int index) {
   {
     // For these types of errors amx_Error() is not called because of
     // early return from amx_Exec().
-    HandleExecError(index, retval, error);
+    HandleAMXExecError(index, retval, error);
   }
 
   call_stack_.Pop();
   return error;
 }
 
-void CrashDetect::HandleExecError(int index,
-                                  cell *retval,
-                                  const AMXError &error) {
+void CrashDetect::HandleAMXExecError(int index,
+                                     cell *retval,
+                                     const AMXError &error) {
   if (block_exec_errors_) {
     return;
   }
@@ -275,7 +275,7 @@ void CrashDetect::HandleExecError(int index,
   // other things too. This also should protect from cases where something
   // hooks logprintf (like fixes2).
   std::stringstream bt_stream;
-  PrintAmxBacktrace(bt_stream);
+  PrintAMXBacktrace(bt_stream);
 
   // public OnRuntimeError(code, &bool:suppress);
   cell callback_index = amx().GetPublicIndex("OnRuntimeError");
@@ -286,7 +286,7 @@ void CrashDetect::HandleExecError(int index,
       cell suppress_addr, *suppress_ptr;
       amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
       amx_Push(amx(), error.code());
-      DoAmxExec(retval, callback_index);
+      HandleAMXExec(retval, callback_index);
       amx_Release(amx(), suppress_addr);
       suppress = *suppress_ptr;
     }
@@ -307,23 +307,23 @@ void CrashDetect::HandleExecError(int index,
 
 void CrashDetect::HandleException() {
   LogDebugPrint("Server crashed while executing %s", amx_name_.c_str());
-  PrintAmxBacktrace();
+  PrintAMXBacktrace();
 }
 
 void CrashDetect::HandleInterrupt() {
   LogDebugPrint("Server received interrupt signal while executing %s",
                 amx_name_.c_str());
-  PrintAmxBacktrace();
+  PrintAMXBacktrace();
 }
 
 // static
-bool CrashDetect::IsInsideAmx() {
+bool CrashDetect::IsInsideAMX() {
   return !call_stack_.IsEmpty();
 }
 
 // static
 void CrashDetect::OnCrash(const os::Context &context) {
-  if (IsInsideAmx()) {
+  if (IsInsideAMX()) {
     CrashDetect::GetInstance(call_stack_.Top().amx())->HandleException();
   } else {
     LogDebugPrint("Server crashed due to an unknown error");
@@ -337,7 +337,7 @@ void CrashDetect::OnCrash(const os::Context &context) {
 
 // static
 void CrashDetect::OnInterrupt(const os::Context &context) {
-  if (IsInsideAmx()) {
+  if (IsInsideAMX()) {
     CrashDetect::GetInstance(call_stack_.Top().amx())->HandleInterrupt();
   } else {
     LogDebugPrint("Server received interrupt signal");
@@ -369,7 +369,7 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
   switch (error.code()) {
     case AMX_ERR_BOUNDS: {
       cell opcode = *ip;
-      if (opcode == RelocateAmxOpcode(AMX_OP_BOUNDS)) {
+      if (opcode == RelocateAMXOpcode(AMX_OP_BOUNDS)) {
         cell upper_bound = *(ip + 1);
         cell index = amx.GetPri();
         if (index < 0) {
@@ -412,7 +412,7 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
     }
     case AMX_ERR_NATIVE: {
       cell opcode = *(ip - 2);
-      if (opcode == RelocateAmxOpcode(AMX_OP_SYSREQ_C)) {
+      if (opcode == RelocateAMXOpcode(AMX_OP_SYSREQ_C)) {
         cell index = *(ip - 1);
         LogDebugPrint(" %s", amx.GetNativeName(index));
       }
@@ -422,14 +422,14 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
 }
 
 // static
-void CrashDetect::PrintAmxBacktrace() {
+void CrashDetect::PrintAMXBacktrace() {
   std::stringstream stream;
-  PrintAmxBacktrace(stream);
+  PrintAMXBacktrace(stream);
   PrintStream(LogDebugPrint, stream);
 }
 
 // static
-void CrashDetect::PrintAmxBacktrace(std::ostream &stream) {
+void CrashDetect::PrintAMXBacktrace(std::ostream &stream) {
   AMXScript amx = call_stack_.Top().amx();
   AMXScript top_amx = amx;
 

@@ -66,7 +66,7 @@ void AMXPathFinder::AddSearchPath(std::string path) {
   search_paths_.push_back(path);
 }
 
-std::string AMXPathFinder::FindAmx(AMXScript amx) {
+std::string AMXPathFinder::Find(AMXScript amx) {
   // Look up in cache first.
   AMXToStringMap::const_iterator cache_iterator = amx_to_string_.find(amx);
   if (cache_iterator != amx_to_string_.end()) {

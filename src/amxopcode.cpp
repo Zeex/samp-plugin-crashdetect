@@ -37,7 +37,7 @@ static cell *GetOpcodeMap() {
   #endif
 }
 
-cell RelocateAmxOpcode(cell opcode) {
+cell RelocateAMXOpcode(cell opcode) {
   #if defined __GNUC__
     static cell *opcode_map = GetOpcodeMap();
     if (opcode >= 0 && opcode < NUM_AMX_OPCODES) {

@@ -26,7 +26,6 @@
 #define LOG_H
 
 #include <cstdarg>
-#include <string>
 
 void LogPrintV(const char *prefix, const char *format, std::va_list va);
 void LogTracePrint(const char *format, ...);

@@ -56,31 +56,34 @@ class CrashDetect : public AMXService<CrashDetect> {
   int Load();
   int Unload();
 
-  int DoAmxDebug();
-  int DoAmxCallback(cell index, cell *result, cell *params);
-  int DoAmxExec(cell *retval, int index);
-
-  void HandleException();
-  void HandleInterrupt();
-  void HandleExecError(int index, cell *retval, const AMXError &error);
-
-  static bool IsInsideAmx();
+  int HandleAMXDebug();
+  int HandleAMXCallback(cell index, cell *result, cell *params);
+  int HandleAMXExec(cell *retval, int index);
+  void HandleAMXExecError(int index, cell *retval, const AMXError &error);
 
   static void OnCrash(const os::Context &context);
   static void OnInterrupt(const os::Context &context);
+
+  static void PrintAMXBacktrace();
+  static void PrintAMXBacktrace(std::ostream &stream);
+
+  static void PrintNativeBacktrace(const os::Context &context);
+  static void PrintNativeBacktrace(std::ostream &stream,
+                                   const os::Context &context);
+
+ private:
+  void HandleException();
+  void HandleInterrupt();
+
   static void OnExit();
+
+  static bool IsInsideAMX();
 
   static void PrintTraceFrame(const AMXStackFrame &frame,
                               const AMXDebugInfo &debug_info);
 
   static void PrintRuntimeError(AMXScript amx, const AMXError &error);
 
-  static void PrintAmxBacktrace();
-  static void PrintAmxBacktrace(std::ostream &stream);
-
-  static void PrintNativeBacktrace(const os::Context &context);
-  static void PrintNativeBacktrace(std::ostream &stream,
-                                   const os::Context &context);
   static void PrintRegisters(const os::Context &context);
   static void PrintStack(const os::Context &context);
   static void PrintLoadedModules();
