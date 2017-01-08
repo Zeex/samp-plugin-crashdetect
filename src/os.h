@@ -28,16 +28,20 @@
 #include <string>
 #include <vector>
 
-namespace os {
-
 #if defined __GNUC__ || (defined _MSC_VER && _MSC_VER >= 1600)
   #include <stdint.h>
-  using ::int32_t;
-  using ::uint32_t;
+  namespace os {
+    using ::int32_t;
+    using ::uint32_t;
+  }
 #elif defined _WIN32
-  typedef signed __int32 int32_t;
-  typedef unsigned __int32 uint32_t;
+  namespace os {
+    typedef signed __int32 int32_t;
+    typedef unsigned __int32 uint32_t;
+  }
 #endif
+
+namespace os {
 
 class Context;
 
