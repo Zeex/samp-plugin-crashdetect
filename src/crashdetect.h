@@ -75,8 +75,6 @@ class CrashDetect : public AMXService<CrashDetect> {
   void HandleException();
   void HandleInterrupt();
 
-  static void OnExit();
-
   static bool IsInsideAMX();
 
   static void PrintTraceFrame(const AMXStackFrame &frame,

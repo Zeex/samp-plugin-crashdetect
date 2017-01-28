@@ -332,7 +332,6 @@ void CrashDetect::OnCrash(const os::Context &context) {
   PrintRegisters(context);
   PrintStack(context);
   PrintLoadedModules();
-  OnExit();
 }
 
 // static
@@ -343,12 +342,6 @@ void CrashDetect::OnInterrupt(const os::Context &context) {
     LogDebugPrint("Server received interrupt signal");
   }
   PrintNativeBacktrace(context.native_context());
-  OnExit();
-}
-
-// static
-void CrashDetect::OnExit() {
-  LogFlush();
 }
 
 // static

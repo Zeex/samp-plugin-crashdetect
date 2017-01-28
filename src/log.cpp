@@ -39,6 +39,7 @@ class Log {
     std::string filename = server_cfg.GetValueWithDefault("crashdetect_log");
     if (!filename.empty()) {
       file_ = std::fopen(filename.c_str(), "a");
+      std::setbuf(file_, 0);
     }
     if (file_ != 0) {
       time_format_ =
@@ -82,12 +83,6 @@ class Log {
     }
   }
 
-  void Flush() {
-    if (file_ != 0) {
-      std::fflush(file_);
-    }
-  }
-
  private:
   std::FILE *file_;
   std::string time_format_;
@@ -113,8 +108,4 @@ void LogDebugPrint(const char *format, ...) {
   va_start(va, format);
   LogPrintV("[debug] ", format, va);
   va_end(va);
-}
-
-void LogFlush() {
-  global_log.Flush();
 }

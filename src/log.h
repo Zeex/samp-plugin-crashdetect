@@ -30,6 +30,5 @@
 void LogPrintV(const char *prefix, const char *format, std::va_list va);
 void LogTracePrint(const char *format, ...);
 void LogDebugPrint(const char *format, ...);
-void LogFlush();
 
 #endif
