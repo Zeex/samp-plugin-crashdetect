@@ -81,7 +81,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   os::SetCrashHandler(CrashDetect::OnCrash);
   os::SetInterruptHandler(CrashDetect::OnInterrupt);
 
-  logprintf("  CrashDetect v" PROJECT_VERSION_STRING " is OK.");
+  logprintf("  CrashDetect plugin " PROJECT_VERSION_STRING);
   return true;
 }
 
