@@ -7,14 +7,14 @@
             "name": "^crashdetect-(.*)-linux.tar.gz$",
             "platform": "linux",
             "archive": true,
-            "includes": ["."],
+            "includes": ["crashdetect-(.*)-linux"],
             "plugins": ["crashdetect-(.*)-linux/crashdetect.so"]
         },
         {
             "name": "^crashdetect-(.*)-win32.zip$",
             "platform": "windows",
             "archive": true,
-            "includes": ["."],
+            "includes": ["crashdetect-(.*)-win32"],
             "plugins": ["crashdetect-(.*)-win32/crashdetect.dll"]
         }
     ],
