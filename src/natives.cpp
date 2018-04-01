@@ -24,7 +24,7 @@
 
 #include <sstream>
 
-#include "crashdetect.h"
+#include "crashdetecthandler.h"
 #include "natives.h"
 #include "os.h"
 
@@ -32,13 +32,13 @@ namespace {
 
 // native PrintAmxBacktrace();
 cell AMX_NATIVE_CALL PrintBacktrace(AMX *amx, cell *params) {
-  CrashDetect::PrintAMXBacktrace();
+  CrashDetectHandler::PrintAMXBacktrace();
   return 1;
 }
 
 // native PrintNativeBacktrace();
 cell AMX_NATIVE_CALL PrintNativeBacktrace(AMX *amx, cell *params) {
-  CrashDetect::PrintNativeBacktrace(os::Context());
+  CrashDetectHandler::PrintNativeBacktrace(os::Context());
   return 1;
 }
 
@@ -50,7 +50,7 @@ cell AMX_NATIVE_CALL GetBacktrace(AMX *amx, cell *params) {
   cell *string_ptr;
   if (amx_GetAddr(amx, string, &string_ptr) == AMX_ERR_NONE) {
     std::stringstream stream;
-    CrashDetect::PrintAMXBacktrace(stream);
+    CrashDetectHandler::PrintAMXBacktrace(stream);
     return amx_SetString(string_ptr, stream.str().c_str(),
                          0, 0, size) == AMX_ERR_NONE;
   }
@@ -66,7 +66,7 @@ cell AMX_NATIVE_CALL GetNativeBacktrace(AMX *amx, cell *params) {
   cell *string_ptr;
   if (amx_GetAddr(amx, string, &string_ptr) == AMX_ERR_NONE) {
     std::stringstream stream;
-    CrashDetect::PrintNativeBacktrace(stream, 0);
+    CrashDetectHandler::PrintNativeBacktrace(stream, 0);
     return amx_SetString(string_ptr, stream.str().c_str(),
                          0, 0, size) == AMX_ERR_NONE;
   }

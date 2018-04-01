@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2015 Zeex
+// Copyright (c) 2018 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -22,61 +22,43 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXPATHFINDER_H
-#define AMXPATHFINDER_H
+#include <algorithm>
+#include <cctype>
+#include "stringutils.h"
 
-#include <ctime>
-#include <list>
-#include <map>
-#include <string>
+namespace stringutils {
 
-#include "amxscript.h"
+void SplitString(const std::string &s,
+                 char delim,
+                 std::vector<std::string> &parts) {
+  std::string::size_type begin = 0;
+  std::string::size_type end;
 
-class AMXPathFinder {
- public:
-  ~AMXPathFinder();
+  while (begin < s.length()) {
+    end = s.find(delim, begin);
+    end = (end == std::string::npos) ? s.length() : end;
+    parts.push_back(std::string(s.begin() + begin, s.begin() + end));
+    begin = end + 1;
+  }
+}
 
-  void AddSearchPath(std::string path);
-  void AddKnownFile(AMX *amx, std::string path);
+template<typename CharTransformer>
+std::string TransformString(const std::string &s, 
+                            CharTransformer transformer) {
+  std::string t;
+  t.reserve(s.length());
+  for (std::string::const_iterator it = s.begin(); it != s.end(); it++) {
+    t.push_back(transformer(*it));
+  }
+  return t;
+}
 
-  std::string Find(AMXScript amx);
+std::string ToLower(const std::string &s) {
+  return TransformString(s, ::tolower);
+}
 
- private:
-  std::list<std::string> search_paths_;
+std::string ToUpper(const std::string &s) {
+  return TransformString(s, ::toupper);
+}
 
-  class AMXFile {
-   public:
-    explicit AMXFile(const std::string &name);
-    ~AMXFile();
-
-    bool IsLoaded() const { return amx_ != 0; }
-
-    const AMX *amx() const {
-      return amx_;
-    }
-    const std::string &name() const {
-      return name_;
-    }
-    std::time_t mtime() const {
-      return mtime_;
-    }
-
-   private:
-    AMXFile(const AMXFile &other);
-    AMXFile &operator=(const AMXFile &other);
-
-   private:
-    AMX *amx_;
-    std::string name_;
-    std::time_t mtime_;
-  };
-
- private:
-  typedef std::map<std::string, AMXFile*> StringToAMXFileMap;
-  StringToAMXFileMap string_to_amx_file_;
-
-  typedef std::map<AMX*, std::string> AMXToStringMap;
-  AMXToStringMap amx_to_string_;
-};
-
-#endif // AMXPATHFINDER_H
+} // namespace stringutils

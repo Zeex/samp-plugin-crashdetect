@@ -19,17 +19,17 @@ set(CRASHDETECT_SOURCES
   amxdebuginfo.h
   amxerror.cpp
   amxerror.h
+  amxhandler.h
   amxopcode.cpp
   amxopcode.h
   amxpathfinder.cpp
   amxpathfinder.h
   amxscript.cpp
   amxscript.h
-  amxservice.h
   amxstacktrace.cpp
   amxstacktrace.h
-  crashdetect.cpp
-  crashdetect.h
+  crashdetecthandler.cpp
+  crashdetecthandler.h
   fileutils.cpp
   fileutils.h
   log.cpp
@@ -46,6 +46,8 @@ set(CRASHDETECT_SOURCES
   regexp.h
   stacktrace.cpp
   stacktrace.h
+  stringutils.cpp
+  stringutils.h
 )
 
 configure_file(plugin.rc.in plugin.rc @ONLY)

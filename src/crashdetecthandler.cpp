@@ -40,11 +40,12 @@
 #include "amxpathfinder.h"
 #include "amxscript.h"
 #include "amxstacktrace.h"
-#include "crashdetect.h"
+#include "crashdetecthandler.h"
 #include "fileutils.h"
 #include "log.h"
 #include "os.h"
 #include "stacktrace.h"
+#include "stringutils.h"
 
 #define AMX_EXEC_GDK    (-10)
 #define AMX_EXEC_GDK_42 (-10000)
@@ -69,40 +70,6 @@ class HexDword {
   uint32_t value_;
 };
 
-int CharToTraceFlag(char c) {
-  switch (c) {
-    case 'n':
-      return CrashDetect::TRACE_NATIVES;
-    case 'p':
-      return CrashDetect::TRACE_PUBLICS;
-    case 'f':
-      return CrashDetect::TRACE_FUNCTIONS;
-  }
-  return 0;
-}
-
-int StringToTraceFlags(const std::string &string) {
-  int flags = 0;
-  for (std::size_t i = 0; i < string.length(); i++) {
-    flags |= CharToTraceFlag(string[i]);
-  }
-  return flags;
-}
-
-template<typename Func>
-void SplitString(const std::string &s, char delim, Func func) {
-  std::string::size_type begin = 0;
-  std::string::size_type end;
-
-  while (begin < s.length()) {
-    end = s.find(delim, begin);
-    end = (end == std::string::npos) ? s.length() : end;
-    func(std::string(s.begin() + begin,
-                     s.begin() + end));
-    begin = end + 1;
-  }
-}
-
 template<typename FormattedPrinter>
 class PrintLine : public std::unary_function<const std::string &, void> {
  public:
@@ -116,20 +83,22 @@ class PrintLine : public std::unary_function<const std::string &, void> {
 
 template<typename FormattedPrinter>
 void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
-  SplitString(stream.str(), '\n', PrintLine<FormattedPrinter>(printer));
+  stringutils::SplitString(stream.str(),
+                           '\n',
+                           PrintLine<FormattedPrinter>(printer));
 }
 
 } // anonymous namespace
 
-int CrashDetect::trace_flags_(StringToTraceFlags(
-  server_cfg.GetValueWithDefault("trace")));
-RegExp CrashDetect::trace_filter_(
+unsigned int CrashDetectHandler::trace_flags_(
+  TraceFlagsFromString(server_cfg.GetValueWithDefault("trace")));
+RegExp CrashDetectHandler::trace_filter_(
   server_cfg.GetValueWithDefault("trace_filter", ".*"));
 
-AMXCallStack CrashDetect::call_stack_;
+AMXCallStack CrashDetectHandler::call_stack_;
 
-CrashDetect::CrashDetect(AMX *amx)
- : AMXService<CrashDetect>(amx),
+CrashDetectHandler::CrashDetectHandler(AMX *amx)
+ : AMXHandler<CrashDetectHandler>(amx),
    prev_debug_(0),
    prev_callback_(0),
    last_frame_(amx->stp),
@@ -137,18 +106,8 @@ CrashDetect::CrashDetect(AMX *amx)
 {
 }
 
-int CrashDetect::Load() {
-  AMXPathFinder amx_finder;
-  amx_finder.AddSearchPath("gamemodes");
-  amx_finder.AddSearchPath("filterscripts");
-
-  const char *var = getenv("AMX_PATH");
-  if (var != 0) {
-    SplitString(var, fileutils::kNativePathListSepChar,
-        std::bind1st(std::mem_fun(&AMXPathFinder::AddSearchPath), &amx_finder));
-  }
-
-  amx_path_ = amx_finder.Find(amx());
+int CrashDetectHandler::Load() {
+  amx_path_ = amx_path_finder_->Find(amx());
   if (!amx_path_.empty()) {
     if (AMXDebugInfo::IsPresent(amx())) {
       debug_info_.Load(amx_path_);
@@ -168,11 +127,27 @@ int CrashDetect::Load() {
   return AMX_ERR_NONE;
 }
 
-int CrashDetect::Unload() {
+int CrashDetectHandler::Unload() {
   return AMX_ERR_NONE;
 }
 
-int CrashDetect::HandleAMXDebug() {
+unsigned int CrashDetectHandler::TraceFlagsFromString(const std::string &s) {
+  unsigned int flags = 0;
+  for (std::size_t i = 0; i < s.length(); i++) {
+    switch (s[i]) {
+      case 'n':
+        flags |= CrashDetectHandler::TRACE_NATIVES;
+      case 'p':
+        flags |= CrashDetectHandler::TRACE_PUBLICS;
+      case 'f':
+        flags |= CrashDetectHandler::TRACE_FUNCTIONS;
+    }
+  }
+  return flags;
+}
+
+
+int CrashDetectHandler::HandleAMXDebug() {
   if (amx().GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
     AMXStackTrace trace =
@@ -185,7 +160,9 @@ int CrashDetect::HandleAMXDebug() {
   return prev_debug_ != 0 ? prev_debug_(amx()) : AMX_ERR_NONE;
 }
 
-int CrashDetect::HandleAMXCallback(cell index, cell *result, cell *params) {
+int CrashDetectHandler::HandleAMXCallback(cell index,
+                                          cell *result,
+                                          cell *params) {
   call_stack_.Push(AMXCall::Native(amx(), index));
 
   if (trace_flags_ & TRACE_NATIVES) {
@@ -203,7 +180,7 @@ int CrashDetect::HandleAMXCallback(cell index, cell *result, cell *params) {
   return error;
 }
 
-int CrashDetect::HandleAMXExec(cell *retval, int index) {
+int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
   call_stack_.Push(AMXCall::Public(amx(), index));
 
   if (trace_flags_ & TRACE_FUNCTIONS) {
@@ -240,7 +217,7 @@ int CrashDetect::HandleAMXExec(cell *retval, int index) {
   return error;
 }
 
-void CrashDetect::HandleAMXExecError(int index,
+void CrashDetectHandler::HandleAMXExecError(int index,
                                      cell *retval,
                                      const AMXError &error) {
   if (block_exec_errors_) {
@@ -305,26 +282,26 @@ void CrashDetect::HandleAMXExecError(int index,
   block_exec_errors_ = false;
 }
 
-void CrashDetect::HandleException() {
+void CrashDetectHandler::HandleException() {
   LogDebugPrint("Server crashed while executing %s", amx_name_.c_str());
   PrintAMXBacktrace();
 }
 
-void CrashDetect::HandleInterrupt() {
+void CrashDetectHandler::HandleInterrupt() {
   LogDebugPrint("Server received interrupt signal while executing %s",
                 amx_name_.c_str());
   PrintAMXBacktrace();
 }
 
 // static
-bool CrashDetect::IsInsideAMX() {
+bool CrashDetectHandler::IsInsideAMX() {
   return !call_stack_.IsEmpty();
 }
 
 // static
-void CrashDetect::OnCrash(const os::Context &context) {
+void CrashDetectHandler::OnCrash(const os::Context &context) {
   if (IsInsideAMX()) {
-    CrashDetect::GetInstance(call_stack_.Top().amx())->HandleException();
+    CrashDetectHandler::GetHandler(call_stack_.Top().amx())->HandleException();
   } else {
     LogDebugPrint("Server crashed due to an unknown error");
   }
@@ -335,9 +312,9 @@ void CrashDetect::OnCrash(const os::Context &context) {
 }
 
 // static
-void CrashDetect::OnInterrupt(const os::Context &context) {
+void CrashDetectHandler::OnInterrupt(const os::Context &context) {
   if (IsInsideAMX()) {
-    CrashDetect::GetInstance(call_stack_.Top().amx())->HandleInterrupt();
+    CrashDetectHandler::GetHandler(call_stack_.Top().amx())->HandleInterrupt();
   } else {
     LogDebugPrint("Server received interrupt signal");
   }
@@ -345,8 +322,8 @@ void CrashDetect::OnInterrupt(const os::Context &context) {
 }
 
 // static
-void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
-                                  const AMXDebugInfo &debug_info) {
+void CrashDetectHandler::PrintTraceFrame(const AMXStackFrame &frame,
+                                         const AMXDebugInfo &debug_info) {
   std::stringstream stream;
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
@@ -356,7 +333,8 @@ void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
 }
 
 // static
-void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
+void CrashDetectHandler::PrintRuntimeError(AMXScript amx,
+                                           const AMXError &error) {
   LogDebugPrint("Run time error %d: \"%s\"", error.code(), error.GetString());
   cell *ip = reinterpret_cast<cell*>(amx.GetCode() + amx.GetCip());
   switch (error.code()) {
@@ -415,14 +393,14 @@ void CrashDetect::PrintRuntimeError(AMXScript amx, const AMXError &error) {
 }
 
 // static
-void CrashDetect::PrintAMXBacktrace() {
+void CrashDetectHandler::PrintAMXBacktrace() {
   std::stringstream stream;
   PrintAMXBacktrace(stream);
   PrintStream(LogDebugPrint, stream);
 }
 
 // static
-void CrashDetect::PrintAMXBacktrace(std::ostream &stream) {
+void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
   AMXScript amx = call_stack_.Top().amx();
   AMXScript top_amx = amx;
 
@@ -452,7 +430,7 @@ void CrashDetect::PrintAMXBacktrace(std::ostream &stream) {
 
     // public function
     else if (call.IsPublic()) {
-      CrashDetect *cd = CrashDetect::GetInstance(amx);
+      CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
 
       AMXStackTrace trace = GetAMXStackTrace(amx, frm, cip, 100);
       std::deque<AMXStackFrame> frames;
@@ -477,10 +455,10 @@ void CrashDetect::PrintAMXBacktrace(std::ostream &stream) {
         const AMXStackFrame &frame = *it;
 
         stream << "\n#" << level++ << " ";
-        frame.Print(stream, cd->debug_info_);
+        frame.Print(stream, handler->debug_info_);
 
-        if (!cd->debug_info_.IsLoaded()) {
-          stream << " from " << cd->amx_name_;
+        if (!handler->debug_info_.IsLoaded()) {
+          stream << " from " << handler->amx_name_;
         }
       }
 
@@ -491,7 +469,7 @@ void CrashDetect::PrintAMXBacktrace(std::ostream &stream) {
 }
 
 // static
-void CrashDetect::PrintRegisters(const os::Context &context) {
+void CrashDetectHandler::PrintRegisters(const os::Context &context) {
   os::Context::Registers registers = context.GetRegisters();
 
   LogDebugPrint("Registers:");
@@ -511,7 +489,7 @@ void CrashDetect::PrintRegisters(const os::Context &context) {
 }
 
 // static
-void CrashDetect::PrintStack(const os::Context &context) {
+void CrashDetectHandler::PrintStack(const os::Context &context) {
   os::Context::Registers registers = context.GetRegisters();
   os::uint32_t *stack_ptr = reinterpret_cast<os::uint32_t *>(registers.esp);
   if (stack_ptr == 0) {
@@ -531,7 +509,7 @@ void CrashDetect::PrintStack(const os::Context &context) {
 }
 
 // static
-void CrashDetect::PrintLoadedModules() {
+void CrashDetectHandler::PrintLoadedModules() {
   LogDebugPrint("Loaded modules:");
 
   std::vector<os::Module> modules;
@@ -548,15 +526,15 @@ void CrashDetect::PrintLoadedModules() {
 }
 
 // static
-void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
+void CrashDetectHandler::PrintNativeBacktrace(const os::Context &context) {
   std::stringstream stream;
   PrintNativeBacktrace(stream, context);
   PrintStream(LogDebugPrint, stream);
 }
 
 // static
-void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
-                                       const os::Context &context) {
+void CrashDetectHandler::PrintNativeBacktrace(std::ostream &stream,
+                                              const os::Context &context) {
   std::vector<StackFrame> frames;
   GetStackTrace(frames, context.native_context());
 

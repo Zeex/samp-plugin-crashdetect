@@ -22,8 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef CRASHDETECT_H
-#define CRASHDETECT_H
+#ifndef CRASHDETECTHANDLER_H
+#define CRASHDETECTHANDLER_H
 
 #include <cstdarg>
 #include <cstdio>
@@ -31,19 +31,20 @@
 
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
+#include "amxhandler.h"
 #include "amxscript.h"
-#include "amxservice.h"
 #include "regexp.h"
 
 class AMXError;
+class AMXPathFinder;
 class AMXStackFrame;
 
 namespace os {
   class Context;
 }
 
-class CrashDetect : public AMXService<CrashDetect> {
- friend class AMXService<CrashDetect>;
+class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
+ friend class AMXHandler<CrashDetectHandler>; // for accessing private ctor
 
  public:
   enum TraceFlags {
@@ -52,6 +53,10 @@ class CrashDetect : public AMXService<CrashDetect> {
     TRACE_PUBLICS = 0x02,
     TRACE_FUNCTIONS = 0x04
   };
+
+  void set_amx_path_finder(AMXPathFinder *finder) {
+    amx_path_finder_ = finder;
+  }
 
   int Load();
   int Unload();
@@ -75,6 +80,7 @@ class CrashDetect : public AMXService<CrashDetect> {
   void HandleException();
   void HandleInterrupt();
 
+  static unsigned int TraceFlagsFromString(const std::string &s);
   static bool IsInsideAMX();
 
   static void PrintTraceFrame(const AMXStackFrame &frame,
@@ -87,9 +93,10 @@ class CrashDetect : public AMXService<CrashDetect> {
   static void PrintLoadedModules();
 
  private:
-  CrashDetect(AMX *amx);
+  CrashDetectHandler(AMX *amx);
 
  private:
+  AMXPathFinder *amx_path_finder_;
   AMXDebugInfo debug_info_;
   AMX_DEBUG prev_debug_;
   AMX_CALLBACK prev_callback_;
@@ -99,9 +106,9 @@ class CrashDetect : public AMXService<CrashDetect> {
   bool block_exec_errors_;
 
  private:
-  static int trace_flags_;
+  static unsigned int trace_flags_;
   static RegExp trace_filter_;
   static AMXCallStack call_stack_;
 };
 
-#endif // !CRASHDETECT_H
+#endif // !CRASHDETECTHANDLER_H
