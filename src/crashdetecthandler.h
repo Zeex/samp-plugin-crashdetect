@@ -28,7 +28,6 @@
 #include <cstdarg>
 #include <cstdio>
 #include <string>
-
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxhandler.h"
@@ -96,6 +95,7 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   CrashDetectHandler(AMX *amx);
 
  private:
+  AMXScript amx_script_;
   AMXPathFinder *amx_path_finder_;
   AMXDebugInfo debug_info_;
   AMX_DEBUG prev_debug_;

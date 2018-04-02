@@ -23,7 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <amx/amxaux.h>
-
 #include "amxerror.h"
 
 AMXError::AMXError(int error_code)

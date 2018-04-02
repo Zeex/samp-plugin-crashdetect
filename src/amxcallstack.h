@@ -26,7 +26,6 @@
 #define AMXCALLSTACK_H
 
 #include <stack>
-
 #include "amxscript.h"
 
 class AMXCall {

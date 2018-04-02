@@ -24,10 +24,8 @@
 
 #include <cstddef>
 #include <cstdlib>
-
-#include <Windows.h>
-#include <DbgHelp.h>
-
+#include <windows.h>
+#include <dbghelp.h>
 #include "stacktrace.h"
 
 namespace {

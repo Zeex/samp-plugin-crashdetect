@@ -23,7 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstring>
-
 #include "amxscript.h"
 
 AMXScript::AMXScript(AMX *amx)

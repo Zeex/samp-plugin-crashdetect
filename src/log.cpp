@@ -24,9 +24,7 @@
 
 #include <ctime>
 #include <cstdio>
-
 #include <configreader.h>
-
 #include "log.h"
 #include "logprintf.h"
 

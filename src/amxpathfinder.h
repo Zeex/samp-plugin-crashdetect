@@ -29,8 +29,7 @@
 #include <list>
 #include <map>
 #include <string>
-
-#include "amxscript.h"
+#include <amx/amx.h>
 
 class AMXPathFinder {
  public:
@@ -39,7 +38,7 @@ class AMXPathFinder {
   void AddSearchPath(std::string path);
   void AddKnownFile(AMX *amx, std::string path);
 
-  std::string Find(AMXScript amx);
+  std::string Find(AMX *amx);
 
  private:
   std::list<std::string> search_paths_;

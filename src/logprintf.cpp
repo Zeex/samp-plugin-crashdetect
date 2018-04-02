@@ -24,7 +24,6 @@
 
 #include <cstdarg>
 #include <cstdio>
-
 #include "logprintf.h"
 
 #define LOGPRINTF_BUFFER_SIZE 1024

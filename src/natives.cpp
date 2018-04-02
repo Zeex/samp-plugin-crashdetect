@@ -23,7 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <sstream>
-
 #include "crashdetecthandler.h"
 #include "natives.h"
 #include "os.h"

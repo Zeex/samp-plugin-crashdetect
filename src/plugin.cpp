@@ -25,14 +25,12 @@
 #include <functional>
 #include <sstream>
 #include <string>
-
 #include <subhook.h>
 #ifdef _WIN32
   #include <windows.h>
 #else
   #include <stdio.h>
 #endif
-
 #include "amxerror.h"
 #include "amxpathfinder.h"
 #include "crashdetecthandler.h"
@@ -106,7 +104,8 @@ int AMXAPI AmxDebug(AMX *amx) {
 }
 
 int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
-  return CrashDetectHandler::GetHandler(amx)->HandleAMXCallback(index, result, params);
+  CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
+  return handler->HandleAMXCallback(index, result, params);
 }
 
 int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
@@ -117,7 +116,8 @@ int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
 }
 
 void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
-  CrashDetectHandler::GetHandler(amx)->HandleAMXExecError(index, retval, error);
+  CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
+  handler->HandleAMXExecError(index, retval, error);
 }
 
 } // anonymous namespace
@@ -136,7 +136,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   if (amx_Exec_sub == 0) {
     amx_exec_hook.Install(amx_Exec_ptr, (void*)AmxExec);
   } else {
-    std::string module = fileutils::GetFileName(os::GetModuleName(amx_Exec_sub));
+    std::string module =
+      fileutils::GetFileName(os::GetModuleName(amx_Exec_sub));
     if (!module.empty()) {
       logprintf("  CrashDetect must be loaded before '%s'", module.c_str());
     }
@@ -157,7 +158,8 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
     stringutils::SplitString(
       amx_path_var,
       fileutils::kNativePathListSepChar,
-      std::bind1st(std::mem_fun(&AMXPathFinder::AddSearchPath), &amx_path_finder));
+      std::bind1st(std::mem_fun(&AMXPathFinder::AddSearchPath),
+                   &amx_path_finder));
   }
 
   os::SetCrashHandler(CrashDetectHandler::OnCrash);

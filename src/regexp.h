@@ -23,7 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <string>
-
 #include <pcre.h>
 
 class RegExp {

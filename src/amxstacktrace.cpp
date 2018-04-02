@@ -31,7 +31,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #include "amxdebuginfo.h"
 #include "amxopcode.h"
 #include "amxscript.h"

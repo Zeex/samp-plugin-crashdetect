@@ -26,7 +26,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
 #include "stacktrace.h"
 
 StackFrame::StackFrame(void *return_address, const std::string &callee_name)

@@ -26,25 +26,22 @@
 #define AMXHANDLER_H
 
 #include <map>
-
 #include <amx/amx.h>
-
-#include "amxscript.h"
 
 template<typename T>
 class AMXHandler {
  public:
-  AMXHandler(AMXScript amx) : amx_(amx) {}
+  AMXHandler(AMX *amx) : amx_(amx) {}
 
-  AMXScript amx() const { return amx_; }
+  AMX *amx() const { return amx_; }
 
  public:
-  static T *CreateHandler(AMXScript amx);
-  static T *GetHandler(AMXScript amx);
-  static void DestroyHandler(AMXScript amx);
+  static T *CreateHandler(AMX *amx);
+  static T *GetHandler(AMX *amx);
+  static void DestroyHandler(AMX *amx);
 
  private:
-  AMXScript amx_;
+  AMX *amx_;
 
  private:
   typedef std::map<AMX*, T*> HandlerMap;
@@ -56,7 +53,7 @@ typename AMXHandler<T>::HandlerMap AMXHandler<T>::handlers_;
 
 // static
 template<typename T>
-T *AMXHandler<T>::CreateHandler(AMXScript amx) {
+T *AMXHandler<T>::CreateHandler(AMX *amx) {
   T *handler = new T(amx);
   handlers_.insert(std::make_pair(amx, handler));
   return handler;
@@ -64,7 +61,7 @@ T *AMXHandler<T>::CreateHandler(AMXScript amx) {
 
 // static
 template<typename T>
-T *AMXHandler<T>::GetHandler(AMXScript amx) {
+T *AMXHandler<T>::GetHandler(AMX *amx) {
   typename HandlerMap::const_iterator iterator = handlers_.find(amx);
   if (iterator != handlers_.end()) {
     return iterator->second;
@@ -74,7 +71,7 @@ T *AMXHandler<T>::GetHandler(AMXScript amx) {
 
 // static
 template<typename T>
-void AMXHandler<T>::DestroyHandler(AMXScript amx) {
+void AMXHandler<T>::DestroyHandler(AMX *amx) {
   typename HandlerMap::iterator iterator = handlers_.find(amx);
   if (iterator != handlers_.end()) {
     T *handler = iterator->second;

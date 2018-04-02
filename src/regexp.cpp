@@ -23,7 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstring>
-
 #include "regexp.h"
 
 RegExp::RegExp(const std::string &pattern)

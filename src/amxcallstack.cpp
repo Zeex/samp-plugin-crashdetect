@@ -23,7 +23,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
-
 #include "amxcallstack.h"
 
 AMXCall::AMXCall(Type type, AMXScript amx, cell index)

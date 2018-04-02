@@ -26,7 +26,6 @@
 #define AMXSCRIPT_H
 
 #include <amx/amx.h>
-
 #include "amxerror.h"
 
 class AMXScript {

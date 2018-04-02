@@ -22,11 +22,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#define WIN32_LEAN_AND_MEAN
 #include <string>
 #include <vector>
-
-#include <Windows.h>
-
+#include <windows.h>
 #include "fileutils.h"
 
 namespace fileutils {

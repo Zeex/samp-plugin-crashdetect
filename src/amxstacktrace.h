@@ -26,7 +26,6 @@
 #define AMXSTACKTRACE_H
 
 #include <iosfwd>
-
 #include "amxscript.h"
 
 class AMXDebugInfo;

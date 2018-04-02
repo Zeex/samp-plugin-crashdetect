@@ -30,9 +30,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #include <configreader.h>
-
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxerror.h"
@@ -99,6 +97,7 @@ AMXCallStack CrashDetectHandler::call_stack_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
  : AMXHandler<CrashDetectHandler>(amx),
+   amx_script_(amx),
    prev_debug_(0),
    prev_callback_(0),
    last_frame_(amx->stp),
@@ -120,9 +119,9 @@ int CrashDetectHandler::Load() {
     amx_name_ = "<unknown>";
   }
 
-  amx().DisableSysreqD();
-  prev_debug_ = amx().GetDebugHook();
-  prev_callback_ = amx().GetCallback();
+  amx_script_.DisableSysreqD();
+  prev_debug_ = amx_script_.GetDebugHook();
+  prev_callback_ = amx_script_.GetCallback();
 
   return AMX_ERR_NONE;
 }
@@ -148,60 +147,60 @@ unsigned int CrashDetectHandler::TraceFlagsFromString(const std::string &s) {
 
 
 int CrashDetectHandler::HandleAMXDebug() {
-  if (amx().GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
+  if (amx_script_.GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
     AMXStackTrace trace =
-      GetAMXStackTrace(amx(), amx().GetFrm(), amx().GetCip(), 1);
+      GetAMXStackTrace(amx_script_, amx_script_.GetFrm(), amx_script_.GetCip(), 1);
     if (trace.current_frame().return_address() != 0) {
       PrintTraceFrame(trace.current_frame(), debug_info_);
     }
   }
-  last_frame_ = amx().GetFrm();
-  return prev_debug_ != 0 ? prev_debug_(amx()) : AMX_ERR_NONE;
+  last_frame_ = amx_script_.GetFrm();
+  return prev_debug_ != 0 ? prev_debug_(amx_script_) : AMX_ERR_NONE;
 }
 
 int CrashDetectHandler::HandleAMXCallback(cell index,
                                           cell *result,
                                           cell *params) {
-  call_stack_.Push(AMXCall::Native(amx(), index));
+  call_stack_.Push(AMXCall::Native(amx_script_, index));
 
   if (trace_flags_ & TRACE_NATIVES) {
     std::stringstream stream;
-    const char *name = amx().GetNativeName(index);
+    const char *name = amx_script_.GetNativeName(index);
     stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
     if (trace_filter_.Test(stream.str())) {
       PrintStream(LogTracePrint, stream);
     }
   }
 
-  int error = prev_callback_(amx(), index, result, params);
+  int error = prev_callback_(amx_script_, index, result, params);
 
   call_stack_.Pop();
   return error;
 }
 
 int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
-  call_stack_.Push(AMXCall::Public(amx(), index));
+  call_stack_.Push(AMXCall::Public(amx_script_, index));
 
   if (trace_flags_ & TRACE_FUNCTIONS) {
     last_frame_ = 0;
   }
   if (trace_flags_ & TRACE_PUBLICS) {
-    if (cell address = amx().GetPublicAddress(index)) {
+    if (cell address = amx_script_.GetPublicAddress(index)) {
       AMXStackTrace trace =
-        GetAMXStackTrace(amx(), amx().GetFrm(), amx().GetCip(), 1);
+        GetAMXStackTrace(amx_script_, amx_script_.GetFrm(), amx_script_.GetCip(), 1);
       AMXStackFrame frame = trace.current_frame();
       if (frame.return_address() != 0) {
         frame.set_caller_address(address);
         PrintTraceFrame(frame, debug_info_);
       } else {
-        AMXStackFrame fake_frame(amx(), amx().GetFrm(), 0, 0, address);
+        AMXStackFrame fake_frame(amx_script_, amx_script_.GetFrm(), 0, 0, address);
         PrintTraceFrame(fake_frame, debug_info_);
       }
     }
   }
 
-  int error = ::amx_Exec(amx(), retval, index);
+  int error = ::amx_Exec(amx_script_, retval, index);
   if (error == AMX_ERR_CALLBACK ||
       error == AMX_ERR_NOTFOUND ||
       error == AMX_ERR_INIT     ||
@@ -255,22 +254,22 @@ void CrashDetectHandler::HandleAMXExecError(int index,
   PrintAMXBacktrace(bt_stream);
 
   // public OnRuntimeError(code, &bool:suppress);
-  cell callback_index = amx().GetPublicIndex("OnRuntimeError");
+  cell callback_index = amx_script_.GetPublicIndex("OnRuntimeError");
   cell suppress = 0;
 
   if (callback_index >= 0) {
-    if (amx().IsStackOK()) {
+    if (amx_script_.IsStackOK()) {
       cell suppress_addr, *suppress_ptr;
-      amx_PushArray(amx(), &suppress_addr, &suppress_ptr, &suppress, 1);
-      amx_Push(amx(), error.code());
+      amx_PushArray(amx_script_, &suppress_addr, &suppress_ptr, &suppress, 1);
+      amx_Push(amx_script_, error.code());
       HandleAMXExec(retval, callback_index);
-      amx_Release(amx(), suppress_addr);
+      amx_Release(amx_script_, suppress_addr);
       suppress = *suppress_ptr;
     }
   }
 
   if (suppress == 0) {
-    PrintRuntimeError(amx(), error);
+    PrintRuntimeError(amx_script_, error);
     if (error.code() != AMX_ERR_NOTFOUND &&
         error.code() != AMX_ERR_INDEX    &&
         error.code() != AMX_ERR_CALLBACK &&
