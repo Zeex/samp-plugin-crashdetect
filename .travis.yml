@@ -4,12 +4,22 @@ compiler:
   - gcc
   - clang
 
+env:
+  global:
+    - CTEST_OUTPUT_ON_FAILURE=ON
+  matrix:
+    - BITS=32
+    - BITS=64
+
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y cmake
+  - sudo apt-get install -y cmake gcc-multilib g++-multilib
 
 before_script:
-  - cmake . -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX}
+  - cmake . -DCMAKE_C_COMPILER=${CC}
+            -DCMAKE_CXX_COMPILER=${CXX}
+            -DCMAKE_C_FLAGS=-m$BITS
+            -DCMAKE_CXX_FLAGS=-m$BITS
 
 script:
   - make
