@@ -44,7 +44,7 @@
 
 namespace {
 
-SubHook amx_exec_hook;
+subhook::Hook amx_exec_hook;
 
 // Path to the last loaded AMX file. This is used to make a connection between
 // *.amx files and their corresponding AMX instances.
@@ -55,7 +55,7 @@ std::string last_amx_path;
 AMXPathFinder amx_path_finder;
 
 #ifdef _WIN32
-  SubHook create_file_hook;
+  subhook::Hook create_file_hook;
 
   HANDLE
   WINAPI
@@ -68,7 +68,7 @@ AMXPathFinder amx_path_finder;
       _In_ DWORD dwFlagsAndAttributes,
       _In_opt_ HANDLE hTemplateFile)
   {
-    SubHook::ScopedRemove _(&create_file_hook);
+    subhook::ScopedHookRemove _(&create_file_hook);
 
     std::string file_ext(fileutils::GetExtenstion(lpFileName));
     if (stringutils::ToLower(file_ext) == "amx") {
@@ -85,10 +85,10 @@ AMXPathFinder amx_path_finder;
       hTemplateFile);
   }
 #else
-  SubHook fopen_hook;
+  subhook::Hook fopen_hook;
 
   FILE *FopenHook(const char *filename, const char *mode) {
-    SubHook::ScopedRemove _(&fopen_hook);
+    subhook::ScopedHookRemove _(&fopen_hook);
 
     std::string file_ext(fileutils::GetExtenstion(filename));
     if (stringutils::ToLower(file_ext) == "amx") {
@@ -131,7 +131,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   ::logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 
   void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
-  void *amx_Exec_sub = SubHook::ReadDst(amx_Exec_ptr);
+  void *amx_Exec_sub = subhook::Hook::ReadDst(amx_Exec_ptr);
 
   if (amx_Exec_sub == 0) {
     amx_exec_hook.Install(amx_Exec_ptr, (void*)AmxExec);

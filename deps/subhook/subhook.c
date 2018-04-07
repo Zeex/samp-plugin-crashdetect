@@ -27,27 +27,39 @@
 #include "subhook_private.h"
 
 SUBHOOK_EXPORT void *SUBHOOK_API subhook_get_src(subhook_t hook) {
-	return hook->src;
+  if (hook == NULL) {
+    return NULL;
+  }
+  return hook->src;
 }
 
 SUBHOOK_EXPORT void *SUBHOOK_API subhook_get_dst(subhook_t hook) {
-	return hook->dst;
+  if (hook == NULL) {
+    return NULL;
+  }
+  return hook->dst;
 }
 
 SUBHOOK_EXPORT void *SUBHOOK_API subhook_get_trampoline(subhook_t hook) {
-	return hook->trampoline;
+  if (hook == NULL) {
+    return NULL;
+  }
+  return hook->trampoline;
 }
 
 SUBHOOK_EXPORT int SUBHOOK_API subhook_is_installed(subhook_t hook) {
-	return hook->installed;
+  if (hook == NULL) {
+    return false;
+  }
+  return hook->installed;
 }
 
 #if defined SUBHOOK_WINDOWS
-	#include "subhook_windows.c"
-#elif defined SUBHOOK_LINUX
-	#include "subhook_linux.c"
+  #include "subhook_windows.c"
+#elif defined SUBHOOK_UNIX
+  #include "subhook_unix.c"
 #endif
 
 #if defined SUBHOOK_X86 || defined SUBHOOK_X86_64
-	#include "subhook_x86.c"
+  #include "subhook_x86.c"
 #endif

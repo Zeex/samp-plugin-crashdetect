@@ -28,12 +28,23 @@
 
 #include <stddef.h>
 
-struct subhook {
-	int installed;
-	void *src;
-	void *dst;
-	void *code;
-	void *trampoline;
+#ifndef true
+  #define true 1
+#endif
+#ifndef false
+  #define false 0
+#endif
+
+struct subhook_struct {
+  int installed;
+  void *src;
+  void *dst;
+  subhook_options_t options;
+  void *code;
+  void *trampoline;
+  size_t jmp_size;
+  size_t trampoline_size;
+  size_t trampoline_len;
 };
 
 void *subhook_unprotect(void *address, size_t size);
