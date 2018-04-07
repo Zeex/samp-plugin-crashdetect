@@ -34,6 +34,7 @@ externalproject_add(subhook-external
   PREFIX ${DEPS_PREFIX}
   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/subhook
   CMAKE_ARGS -DSUBHOOK_STATIC=ON
+             -DSUBHOOK_NO_TESTS=ON
              ${DEPS_COMMON_CMAKE_ARGS})
 
 add_library(subhook STATIC IMPORTED GLOBAL)
