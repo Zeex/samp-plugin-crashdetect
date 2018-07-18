@@ -47,4 +47,3 @@ deploy:
   on:
     repo: Zeex/samp-plugin-crashdetect
     tags: true
-    condition: "$CC = gcc"
