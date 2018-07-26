@@ -83,10 +83,3 @@ if(WIN32)
 endif()
 
 install(TARGETS crashdetect LIBRARY DESTINATION ".")
-
-if(MSVC_IDE AND MSVC_VERSION GREATER 1200)
-  set(config \${CMAKE_INSTALL_CONFIG_NAME})
-  set(pdb_name crashdetect.pdb)
-  set(pdb_path ${CMAKE_CURRENT_BINARY_DIR}/${config}/${pdb_name})
-  install(FILES ${pdb_path} DESTINATION ".")
-endif()
