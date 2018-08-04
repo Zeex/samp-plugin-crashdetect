@@ -149,8 +149,11 @@ unsigned int CrashDetectHandler::TraceFlagsFromString(const std::string &s) {
 int CrashDetectHandler::HandleAMXDebug() {
   if (amx_script_.GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
-    AMXStackTrace trace =
-      GetAMXStackTrace(amx_script_, amx_script_.GetFrm(), amx_script_.GetCip(), 1);
+    AMXStackTrace trace = GetAMXStackTrace(
+      amx_script_,
+      amx_script_.GetFrm(),
+      amx_script_.GetCip(),
+      1);
     if (trace.current_frame().return_address() != 0) {
       PrintTraceFrame(trace.current_frame(), debug_info_);
     }
@@ -187,14 +190,22 @@ int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
   }
   if (trace_flags_ & TRACE_PUBLICS) {
     if (cell address = amx_script_.GetPublicAddress(index)) {
-      AMXStackTrace trace =
-        GetAMXStackTrace(amx_script_, amx_script_.GetFrm(), amx_script_.GetCip(), 1);
+      AMXStackTrace trace = GetAMXStackTrace(
+        amx_script_,
+        amx_script_.GetFrm(),
+        amx_script_.GetCip(),
+        1);
       AMXStackFrame frame = trace.current_frame();
       if (frame.return_address() != 0) {
         frame.set_caller_address(address);
         PrintTraceFrame(frame, debug_info_);
       } else {
-        AMXStackFrame fake_frame(amx_script_, amx_script_.GetFrm(), 0, 0, address);
+        AMXStackFrame fake_frame(
+          amx_script_,
+          amx_script_.GetFrm(),
+          0,
+          0,
+          address);
         PrintTraceFrame(fake_frame, debug_info_);
       }
     }
@@ -217,8 +228,8 @@ int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
 }
 
 void CrashDetectHandler::HandleAMXExecError(int index,
-                                     cell *retval,
-                                     const AMXError &error) {
+                                            cell *retval,
+                                            const AMXError &error) {
   if (block_exec_errors_) {
     return;
   }
