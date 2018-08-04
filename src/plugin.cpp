@@ -112,7 +112,11 @@ int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
   if (amx->flags & AMX_FLAG_BROWSE) {
     return amx_Exec(amx, retval, index);
   }
-  return CrashDetectHandler::GetHandler(amx)->HandleAMXExec(retval, index);
+  CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
+  if (handler == 0) {
+    return amx_Exec(amx, retval, index);
+  }
+  return handler->HandleAMXExec(retval, index);
 }
 
 void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
