@@ -1,15 +1,23 @@
 cmake_minimum_required(VERSION 2.8.6)
-cmake_policy(SET CMP0042 NEW)
-
 project(subhook)
+
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif()
 
 set(SUBHOOK_VERSION_MAJOR 0)
 set(SUBHOOK_VERSION_MINOR 4)
-set(SUBHOOK_VERSION_PATCH 0)
+set(SUBHOOK_VERSION_PATCH 1)
 
 set(SUBHOOK_VERSION ${SUBHOOK_VERSION_MAJOR})
 set(SUBHOOK_VERSION ${SUBHOOK_VERSION}.${SUBHOOK_VERSION_MINOR})
 set(SUBHOOK_VERSION ${SUBHOOK_VERSION}.${SUBHOOK_VERSION_PATCH})
+
+set(SUBHOOK_STATIC OFF CACHE BOOL "Build as a static library")
+set(SUBHOOK_NO_INSTALL OFF CACHE BOOL "Do not install any files")
+set(SUBHOOK_NO_TESTS OFF CACHE BOOL "Exclude tests from build")
+set(SUBHOOK_BUILD_ASM_TEST OFF CACHE BOOL
+    "Build the assembly test executable (asm_test)")
 
 set(SUBHOOK_HEADERS subhook.h)
 set(SUBHOOK_SOURCES subhook.c subhook_private.h)
