@@ -38,7 +38,7 @@ after_failure:
 deploy:
   provider: releases
   api_key:
-    secure: gYJaxOU5bDUYMYTFhkKqf+JziaNceHj9Aj5ULGVhAwUp2PaLEI+sCiJagW1pBVVXxnOycmZ8ZEqsB+T8vypcV3OME8+AfVbyr9Se8OgFFHcf4Cd5EfsLCDY+V02e5aZAmofRBYAz4R6T92aSqKDfiA5OAxv2hAI+VHRAzoZpD4Q=
+    secure: WgyrXal0wrJM6+AiqHpTGmCSUsT3+Q0L8n1Uw3LvO1YrBvu6hVnpEg6P4NxCH3LRg8LxqvWlBNUpUcAXuMLpB/iKDKIIhibPe+WeNkHFKmTCteAyzbW4JkFZ5A7C94Dw/Ie/jxOcoacomLZM65vWYRWTtjh8N3CkFyOwRLk2Fyc=
   file_glob: true
   file:
     - 'crashdetect-*-linux.tar.gz'
