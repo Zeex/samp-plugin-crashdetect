@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2015 Zeex
+// Copyright (c) 2011-2018 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,38 +52,22 @@ namespace {
 
 ConfigReader server_cfg("server.cfg");
 
-class HexDword {
- public:
-  static const int kWidth = 8;
-  HexDword(uint32_t value): value_(value) {}
-  HexDword(void *value): value_(reinterpret_cast<uint32_t>(value)) {}
-  friend std::ostream &operator<<(std::ostream &stream, const HexDword &x) {
-    char fill = stream.fill();
-    stream << std::setw(kWidth) << std::setfill('0') << std::hex
-           << x.value_ << std::dec;
-    stream.fill(fill);
-    return stream;
-  }
- private:
-  uint32_t value_;
-};
-
-template<typename FormattedPrinter>
+template<typename Printer>
 class PrintLine : public std::unary_function<const std::string &, void> {
  public:
-  PrintLine(FormattedPrinter printer) : printer_(printer) {}
+  PrintLine(Printer printer) : printer_(printer) {}
   void operator()(const std::string &line) {
     printer_("%s", line.c_str());
   }
  private:
-  FormattedPrinter printer_;
+  Printer printer_;
 };
 
-template<typename FormattedPrinter>
-void PrintStream(FormattedPrinter printer, const std::stringstream &stream) {
+template<typename Printer>
+void PrintStream(Printer printer, const std::stringstream &stream) {
   stringutils::SplitString(stream.str(),
                            '\n',
-                           PrintLine<FormattedPrinter>(printer));
+                           PrintLine<Printer>(printer));
 }
 
 } // anonymous namespace
@@ -144,7 +128,6 @@ unsigned int CrashDetectHandler::TraceFlagsFromString(const std::string &s) {
   }
   return flags;
 }
-
 
 int CrashDetectHandler::HandleAMXDebug() {
   if (amx_script_.GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
