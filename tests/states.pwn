@@ -4,7 +4,7 @@
 // OUTPUT: \[debug\] AMX backtrace:
 // OUTPUT: \[debug\] #0 000001f8 in foo \(x=2\) <Foo:on, undefined> at .*states\.pwn:33
 // OUTPUT: \[debug\] #1 0000013c in public test \(\) at .*states\.pwn:23
-// OUTPUT: \[debug\] #2 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
+// OUTPUT: \[debug\] #2 native CallLocalFunction \(\) in (samp03svr|samp-server\.exe)
 // OUTPUT: \[debug\] #3 000000dc in main \(\) at .*states\.pwn:16
 
 #include <a_samp>

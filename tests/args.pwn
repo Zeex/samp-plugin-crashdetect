@@ -12,7 +12,7 @@
 // OUTPUT: \[debug\] #8 00000118 in f1 \(x=123\) at .*args\.pwn:36
 // OUTPUT: \[debug\] #9 000000e0 in begin \(\) at .*args\.pwn:31
 // OUTPUT: \[debug\] #10 000000b0 in public test \(\) at .*args\.pwn:27
-// OUTPUT: \[debug\] #11 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
+// OUTPUT: \[debug\] #11 native CallLocalFunction \(\) in (samp03svr|samp-server\.exe)
 // OUTPUT: \[debug\] #12 00000070 in main \(\) at .*args\.pwn:22
 
 #include <a_samp>

@@ -7,7 +7,7 @@
 // OUTPUT: \[debug\] #3 00000174 in f1 \(&x=@00003ff4 123\) at .*ref_args\.pwn:36
 // OUTPUT: \[debug\] #4 000000fc in begin \(\) at .*ref_args\.pwn:29
 // OUTPUT: \[debug\] #5 000000b0 in public test \(\) at .*ref_args\.pwn:24
-// OUTPUT: \[debug\] #6 native CallLocalFunction \(\) from (samp03svr|samp-server\.exe)
+// OUTPUT: \[debug\] #6 native CallLocalFunction \(\) in (samp03svr|samp-server\.exe)
 // OUTPUT: \[debug\] #7 00000070 in main \(\) at .*ref_args\.pwn:19
 
 #include <a_samp>

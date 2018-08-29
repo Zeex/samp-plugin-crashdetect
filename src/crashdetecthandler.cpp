@@ -419,7 +419,7 @@ void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
       std::string module = os::GetModuleName(
         reinterpret_cast<void*>(amx.GetNativeAddress(call.index())));
       if (!module.empty()) {
-        stream << " from " << fileutils::GetFileName(module);
+        stream << " in " << fileutils::GetFileName(module);
       }
     }
 
@@ -453,7 +453,7 @@ void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
         frame.Print(stream, handler->debug_info_);
 
         if (!handler->debug_info_.IsLoaded()) {
-          stream << " from " << handler->amx_name_;
+          stream << " in " << handler->amx_name_;
         }
       }
 
@@ -546,7 +546,7 @@ void CrashDetectHandler::PrintNativeBacktrace(std::ostream &stream,
 
       std::string module = os::GetModuleName(frame.return_address());
       if (!module.empty()) {
-        stream << " from " << fileutils::GetRelativePath(module);
+        stream << " in " << fileutils::GetRelativePath(module);
       }
     }
   }
