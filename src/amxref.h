@@ -45,6 +45,9 @@ class AMXRef {
   AMX_CALLBACK GetCallback() { return amx_->callback; }
   void SetCallback(AMX_CALLBACK callback) { amx_SetCallback(amx_, callback); }
 
+  bool IsSysreqDEnabled() const { return amx_->sysreq_d != 0; }
+  void SetSysreqDEnabled(bool is_enabled) { amx_->sysreq_d = is_enabled; };
+
   cell GetCip() const { return amx_->cip; }
   cell GetFrm() const { return amx_->frm; }
   cell GetHea() const { return amx_->hea; }
@@ -83,13 +86,11 @@ class AMXRef {
   const char *GetPublicName(int index) const;
 
   cell GetStackSpaceLeft() const;
-  bool IsStackOK() const;
+  bool CheckStack() const;
 
   void PushStack(cell value);
   cell PopStack();
   void PopStack(int ncells);
-
-  void DisableSysreqD();
 
  private:
   AMX *amx_;

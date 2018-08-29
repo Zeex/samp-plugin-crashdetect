@@ -103,7 +103,7 @@ int CrashDetectHandler::Load() {
     amx_name_ = "<unknown>";
   }
 
-  amx_.DisableSysreqD();
+  amx_.SetSysreqDEnabled(false);
   prev_debug_ = amx_.GetDebugHook();
   prev_callback_ = amx_.GetCallback();
 
@@ -253,7 +253,7 @@ void CrashDetectHandler::ProcessExecError(int index, cell *retval, int error) {
   cell suppress = 0;
 
   if (callback_index >= 0) {
-    if (amx_.IsStackOK()) {
+    if (amx_.CheckStack()) {
       cell suppress_addr, *suppress_ptr;
       amx_PushArray(amx_, &suppress_addr, &suppress_ptr, &suppress, 1);
       amx_Push(amx_, error);

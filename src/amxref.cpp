@@ -163,7 +163,7 @@ cell AMXRef::GetStackSpaceLeft() const {
   return GetStk() - GetHlw();
 }
 
-bool AMXRef::IsStackOK() const {
+bool AMXRef::CheckStack() const {
   return GetStk() >= GetHlw() && GetStk() <= GetStp();
 }
 
@@ -180,8 +180,4 @@ cell AMXRef::PopStack() {
 
 void AMXRef::PopStack(int ncells) {
   amx_->stk += sizeof(cell) * ncells;
-}
-
-void AMXRef::DisableSysreqD() {
-  amx_->sysreq_d = 0;
 }

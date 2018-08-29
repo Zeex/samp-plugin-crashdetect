@@ -183,7 +183,7 @@ AMXStackTrace GetAMXStackTrace(AMXRef amx,
                                cell frm,
                                cell cip,
                                int max_depth) {
-  if (amx.IsStackOK() && amx.GetStackSpaceLeft() >= 8) {
+  if (amx.CheckStack() && amx.GetStackSpaceLeft() >= 8) {
     amx.PushStack(cip);
     amx.PushStack(frm);
     amx.SetFrm(amx.GetStk());
@@ -191,7 +191,7 @@ AMXStackTrace GetAMXStackTrace(AMXRef amx,
 
   AMXStackTrace trace(amx, amx.GetFrm(), max_depth);
 
-  if (amx.IsStackOK()) {
+  if (amx.CheckStack()) {
     amx.PopStack();
     amx.PopStack();
     amx.SetFrm(frm);
