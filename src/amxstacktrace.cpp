@@ -584,13 +584,9 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
 
 void AMXStackFramePrinter::PrintVariableArguments(int number) {
   assert(number > 0);
-  stream_ << "... <" << number << " ";
-  if (number <= 1) {
-    stream_ << "argument";
-  } else {
-    stream_ << "arguments";
-  }
-  stream_ << ">";
+  stream_ << "... <" << number << " more "
+          << (number == 1 ? "argument" : "arguments")
+          << ">";
 }
 
 void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
@@ -601,11 +597,11 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
     // switch code block, function arguments actually use the real
     // function address for the code start because in different states
     // they may be not the same.
-    cell arg_address = frame.caller_address();
+    cell func_address = frame.caller_address();
     if (UsesAutomata(frame)) {
-      arg_address = GetRealFunctionAddress(frame.amx(),
-                                           frame.caller_address(),
-                                           frame.return_address());
+      func_address = GetRealFunctionAddress(frame.amx(),
+                                            frame.caller_address(),
+                                            frame.return_address());
     }
 
     std::vector<AMXDebugSymbol> args;
@@ -615,7 +611,7 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
       std::remove_copy_if(debug_info_.GetSymbols().begin(),
                           debug_info_.GetSymbols().end(),
                           std::back_inserter(args),
-                          std::not1(IsArgumentOf(arg_address)));
+                          std::not1(IsArgumentOf(func_address)));
       std::sort(args.begin(), args.end());
       num_actual_args = static_cast<int>(args.size());
     } else {
@@ -644,8 +640,8 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
     // number of arguments. In this case we don't evaluate them but just
     // just say that they are present as we can't say anything about
     // their names and types.
-    int num_var_args = GetNumArgs(frame.amx(), prev_frame.address())
-                     - num_actual_args;
+    int num_var_args =
+      GetNumArgs(frame.amx(), prev_frame.address()) - num_actual_args;
     if (num_var_args > 0) {
       if (num_actual_args != 0) {
         stream_ << ", ";
