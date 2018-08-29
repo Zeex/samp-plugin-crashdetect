@@ -84,7 +84,7 @@ AMXPathFinder amx_path_finder;
 
   FILE *FopenHook(const char *filename, const char *mode) {
     subhook::ScopedHookRemove _(&fopen_hook);
-    const char *ext = fileutils::GetFileExtensionPtr(lpFileName);
+    const char *ext = fileutils::GetFileExtensionPtr(filename);
     if (ext != 0 && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
       last_amx_path = lpFileName;
     }
