@@ -26,7 +26,10 @@
 #include <cctype>
 #include "stringutils.h"
 
-#ifdef _MSC_VER
+#if defined LINUX
+  #include <strings.h>
+#elif defined _MSC_VER
+  #include <string.h>
   #define strcasecmp _stricmp
 #endif
 
