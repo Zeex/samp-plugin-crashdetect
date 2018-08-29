@@ -26,6 +26,10 @@
 #include <cctype>
 #include "stringutils.h"
 
+#ifdef _MSC_VER
+  #define strcasecmp _stricmp
+#endif
+
 namespace stringutils {
 
 void SplitString(const std::string &s,
@@ -59,6 +63,14 @@ std::string ToLower(const std::string &s) {
 
 std::string ToUpper(const std::string &s) {
   return TransformString(s, ::toupper);
+}
+
+int CompareIgnoreCase(const char *s1, const char *s2) {
+  return strcasecmp(s1, s2);
+}
+
+int CompareIgnoreCase(const std::string &s1, const std::string &s2) {
+  return CompareIgnoreCase(s1.c_str(), s2.c_str());
 }
 
 } // namespace stringutils

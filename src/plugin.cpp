@@ -56,9 +56,7 @@ AMXPathFinder amx_path_finder;
 #ifdef _WIN32
   subhook::Hook create_file_hook;
 
-  HANDLE
-  WINAPI
-  CreateFileHookA(
+  HANDLE WINAPI CreateFileAHook(
       _In_ LPCSTR lpFileName,
       _In_ DWORD dwDesiredAccess,
       _In_ DWORD dwShareMode,
@@ -68,12 +66,10 @@ AMXPathFinder amx_path_finder;
       _In_opt_ HANDLE hTemplateFile)
   {
     subhook::ScopedHookRemove _(&create_file_hook);
-
-    std::string file_ext(fileutils::GetExtenstion(lpFileName));
-    if (stringutils::ToLower(file_ext) == "amx") {
+    const char *ext = fileutils::GetFileExtensionPtr(lpFileName);
+    if (ext != 0 && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
       last_amx_path = lpFileName;
     }
-
     return CreateFileA(
       lpFileName,
       dwDesiredAccess,
@@ -88,12 +84,10 @@ AMXPathFinder amx_path_finder;
 
   FILE *FopenHook(const char *filename, const char *mode) {
     subhook::ScopedHookRemove _(&fopen_hook);
-
-    std::string file_ext(fileutils::GetExtenstion(filename));
-    if (stringutils::ToLower(file_ext) == "amx") {
-      last_amx_path = filename;
+    const char *ext = fileutils::GetFileExtensionPtr(lpFileName);
+    if (ext != 0 && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
+      last_amx_path = lpFileName;
     }
-
     return fopen(filename, mode);
   }
 #endif
@@ -148,7 +142,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   }
 
   #if _WIN32
-    create_file_hook.Install((void*)CreateFileA, (void*)CreateFileHookA);
+    create_file_hook.Install((void*)CreateFileA, (void*)CreateFileAHook);
   #else
     fopen_hook.Install((void*)fopen, (void*)FopenHook);
   #endif

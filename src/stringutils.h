@@ -48,4 +48,7 @@ void SplitString(const std::string &s, char delim, Func func) {
 std::string ToLower(const std::string &s);
 std::string ToUpper(const std::string &s);
 
+int CompareIgnoreCase(const char *s1, const char *s2);
+int CompareIgnoreCase(const std::string &s1, const std::string &s2);
+
 } // namespace stringutils

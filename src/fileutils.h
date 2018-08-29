@@ -39,7 +39,8 @@ extern const char *kNativePathListSepString;
 
 std::string GetFileName(const std::string &path);
 std::string GetBaseName(const std::string &path);
-std::string GetExtenstion(const std::string &path);
+std::string GetFileExtension(const std::string &path);
+const char *GetFileExtensionPtr(const char *path);
 
 std::time_t GetModificationTime(const std::string &path);
 

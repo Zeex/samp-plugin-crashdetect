@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#include <cstring>
 #include <ctime>
 #include <string>
 #include <vector>
@@ -47,13 +48,21 @@ std::string GetBaseName(const std::string &path) {
   return base;
 }
 
-std::string GetExtenstion(const std::string &path) {
+std::string GetFileExtension(const std::string &path) {
   std::string ext;
   std::string::size_type period = path.rfind('.');
   if (period != std::string::npos) {
     ext = path.substr(period + 1);
   } 
   return ext;
+}
+
+const char *GetFileExtensionPtr(const char *path) {
+  const char *period = std::strrchr(path, '.');
+  if (period == 0) {
+    return 0;
+  }
+  return period + 1;
 }
 
 std::time_t GetModificationTime(const std::string &path) {
