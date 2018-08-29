@@ -247,6 +247,9 @@ void CrashDetectHandler::HandleAMXExecError(int index,
   std::stringstream bt_stream;
   PrintAMXBacktrace(bt_stream);
 
+  // Remember values of AMX registers before calling OnRuntimeError().
+  AMX amx_state = *amx_script_.amx();
+
   // public OnRuntimeError(code, &bool:suppress);
   cell callback_index = amx_script_.GetPublicIndex("OnRuntimeError");
   cell suppress = 0;
@@ -263,7 +266,7 @@ void CrashDetectHandler::HandleAMXExecError(int index,
   }
 
   if (suppress == 0) {
-    PrintRuntimeError(amx_script_, error);
+    PrintRuntimeError(amx_script_, amx_state, error);
     if (error.code() != AMX_ERR_NOTFOUND &&
         error.code() != AMX_ERR_INDEX    &&
         error.code() != AMX_ERR_CALLBACK &&
@@ -327,15 +330,16 @@ void CrashDetectHandler::PrintTraceFrame(const AMXStackFrame &frame,
 
 // static
 void CrashDetectHandler::PrintRuntimeError(AMXScript amx,
+                                           const AMX &amx_state,
                                            const AMXError &error) {
   LogDebugPrint("Run time error %d: \"%s\"", error.code(), error.GetString());
-  cell *ip = reinterpret_cast<cell*>(amx.GetCode() + amx.GetCip());
+  cell *ip = reinterpret_cast<cell*>(amx.GetCode() + amx_state.cip);
   switch (error.code()) {
     case AMX_ERR_BOUNDS: {
       cell opcode = *ip;
       if (opcode == RelocateAMXOpcode(AMX_OP_BOUNDS)) {
         cell upper_bound = *(ip + 1);
-        cell index = amx.GetPri();
+        cell index = amx_state.pri;
         if (index < 0) {
           LogDebugPrint(" Attempted to read/write array element at negative "
                         "index %d", index);
@@ -358,20 +362,20 @@ void CrashDetectHandler::PrintRuntimeError(AMXScript amx,
     }
     case AMX_ERR_STACKERR:
       LogDebugPrint(" Stack pointer (STK) is 0x%X, heap pointer (HEA) is 0x%X",
-                    amx.GetStk(), amx.GetHea());
+                    amx_state.stk, amx_state.hea);
       break;
     case AMX_ERR_STACKLOW:
       LogDebugPrint(" Stack pointer (STK) is 0x%X, stack top (STP) is 0x%X",
-                    amx.GetStk(), amx.GetStp());
+                    amx_state.stk, amx_state.stp);
       break;
     case AMX_ERR_HEAPLOW:
       LogDebugPrint(" Heap pointer (HEA) is 0x%X, heap bottom (HLW) is 0x%X",
-                    amx.GetHea(), amx.GetHlw());
+                    amx_state.hea, amx_state.hlw);
       break;
     case AMX_ERR_INVINSTR: {
       cell opcode = *ip;
       LogDebugPrint(" Unknown opcode 0x%x at address 0x%08X",
-                    opcode , amx.GetCip());
+                    opcode, amx_state.cip);
       break;
     }
     case AMX_ERR_NATIVE: {

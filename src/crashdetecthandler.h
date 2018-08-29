@@ -85,7 +85,9 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   static void PrintTraceFrame(const AMXStackFrame &frame,
                               const AMXDebugInfo &debug_info);
 
-  static void PrintRuntimeError(AMXScript amx, const AMXError &error);
+  static void PrintRuntimeError(AMXScript amx,
+                                const AMX &amx_state,
+                                const AMXError &error);
 
   static void PrintRegisters(const os::Context &context);
   static void PrintStack(const os::Context &context);

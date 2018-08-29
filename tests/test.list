@@ -1,6 +1,7 @@
 args
 bounds
 orte_backtrace
+orte_regs
 presence
 ref_args
 states
