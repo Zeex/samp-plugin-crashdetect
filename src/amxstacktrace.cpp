@@ -33,70 +33,70 @@
 #include <vector>
 #include "amxdebuginfo.h"
 #include "amxopcode.h"
-#include "amxscript.h"
+#include "amxref.h"
 #include "amxstacktrace.h"
 
 namespace {
 
-bool IsStackAddress(AMXScript amx, cell address) {
+bool IsStackAddress(AMXRef amx, cell address) {
   return address >= amx.GetHlw() && address < amx.GetStp();
 }
 
-bool IsDataAddress(AMXScript amx, cell address) {
+bool IsDataAddress(AMXRef amx, cell address) {
   return address >= 0 && address < amx.GetStp();
 }
 
-bool IsCodeAddress(AMXScript amx, cell address) {
+bool IsCodeAddress(AMXRef amx, cell address) {
   const AMX_HEADER *hdr = amx.GetHeader();
   return address >= 0 && address < hdr->dat - hdr->cod;
 }
 
-bool IsPublicFunction(AMXScript amx, cell address) {
+bool IsPublicFunction(AMXRef amx, cell address) {
   return amx.FindPublic(address) != 0;
 }
 
-bool IsMain(AMXScript amx, cell address) {
+bool IsMain(AMXRef amx, cell address) {
   const AMX_HEADER *hdr = amx.GetHeader();
   return address == hdr->cip;
 }
 
-cell GetReturnAddress(AMXScript amx, cell frame_address) {
+cell GetReturnAddress(AMXRef amx, cell frame_address) {
   return *reinterpret_cast<cell*>(amx.GetData() + frame_address
                                   + sizeof(cell));
 }
 
-cell GetReturnAddressSafe(AMXScript amx, cell frame_address) {
+cell GetReturnAddressSafe(AMXRef amx, cell frame_address) {
   if (IsStackAddress(amx, frame_address)) {
     return GetReturnAddress(amx, frame_address);
   }
   return 0;
 }
 
-cell GetPreviousFrame(AMXScript amx, cell frame_address) {
+cell GetPreviousFrame(AMXRef amx, cell frame_address) {
   return *reinterpret_cast<cell*>(amx.GetData() + frame_address);
 }
 
-cell GetPreviousFrameSafe(AMXScript amx, cell frame_address) {
+cell GetPreviousFrameSafe(AMXRef amx, cell frame_address) {
   if (IsStackAddress(amx, frame_address)) {
     return GetPreviousFrame(amx, frame_address);
   }
   return 0;
 }
 
-cell GetCalleeAddress(AMXScript amx, cell return_address) {
+cell GetCalleeAddress(AMXRef amx, cell return_address) {
   cell code_start = reinterpret_cast<cell>(amx.GetCode());
   cell target_address_offset = code_start + return_address - sizeof(cell);
   return *reinterpret_cast<cell*>(target_address_offset) - code_start;
 }
 
-cell GetCalleeAddressSafe(AMXScript amx, cell return_address) {
+cell GetCalleeAddressSafe(AMXRef amx, cell return_address) {
   if (IsCodeAddress(amx, return_address)) {
     return GetCalleeAddress(amx, return_address);
   }
   return 0;
 }
 
-cell GetCallerAddress(AMXScript amx, cell frame_address) {
+cell GetCallerAddress(AMXRef amx, cell frame_address) {
   cell prev_frame = GetPreviousFrameSafe(amx, frame_address);
   if (prev_frame != 0) {
     cell return_address = GetReturnAddressSafe(amx, prev_frame);
@@ -109,7 +109,7 @@ cell GetCallerAddress(AMXScript amx, cell frame_address) {
 
 } // anonymous namespace
 
-AMXStackFrame::AMXStackFrame(AMXScript amx, cell address)
+AMXStackFrame::AMXStackFrame(AMXRef amx, cell address)
  : amx_(amx),
    address_(0),
    return_address_(0),
@@ -128,7 +128,7 @@ AMXStackFrame::AMXStackFrame(AMXScript amx, cell address)
   }
 }
 
-AMXStackFrame::AMXStackFrame(AMXScript amx,
+AMXStackFrame::AMXStackFrame(AMXRef amx,
                              cell address,
                              cell return_address,
                              cell callee_address,
@@ -163,7 +163,7 @@ void AMXStackFrame::Print(std::ostream &stream,
   printer.Print(*this);
 }
 
-AMXStackTrace::AMXStackTrace(AMXScript amx, cell frame, int max_depth)
+AMXStackTrace::AMXStackTrace(AMXRef amx, cell frame, int max_depth)
  : current_frame_(amx, frame),
    max_depth_(max_depth),
    frame_index_(0)
@@ -179,7 +179,7 @@ bool AMXStackTrace::MoveNext() {
   return false;
 }
 
-AMXStackTrace GetAMXStackTrace(AMXScript amx,
+AMXStackTrace GetAMXStackTrace(AMXRef amx,
                                cell frm,
                                cell cip,
                                int max_depth) {
@@ -212,7 +212,7 @@ class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
   cell function_address_;
 };
 
-cell GetArgumentValue(AMXScript amx, cell frame_address, int index) {
+cell GetArgumentValue(AMXRef amx, cell frame_address, int index) {
   cell data = reinterpret_cast<cell>(amx.GetData());
   cell arg_offset = data + frame_address + (3 + index) * sizeof(cell);
   return *reinterpret_cast<cell*>(arg_offset);
@@ -222,7 +222,7 @@ cell GetArgumentValue(const AMXStackFrame &frame, int index) {
   return GetArgumentValue(frame.amx(), frame.address(), index);
 }
 
-cell GetNumArgs(AMXScript amx, cell frame_address) {
+cell GetNumArgs(AMXRef amx, cell frame_address) {
   cell data = reinterpret_cast<cell>(amx.GetData());
   cell num_args_offset = data + frame_address + 2 * sizeof(cell);
   return *reinterpret_cast<cell*>(num_args_offset) / sizeof(cell);
@@ -236,7 +236,7 @@ char IsPrintableChar(cell c) {
   return IsPrintableChar(static_cast<char>(c & 0xFF));
 }
 
-cell *GetDataPtr(AMXScript amx, cell address) {
+cell *GetDataPtr(AMXRef amx, cell address) {
   if (IsDataAddress(amx, address)) {
     return reinterpret_cast<cell*>(amx.GetData() + address);
   }
@@ -247,7 +247,7 @@ bool IsPackedString(const cell *string) {
   return *reinterpret_cast<const ucell*>(string) > UNPACKEDMAX;
 }
 
-cell GetMaxStringSize(AMXScript amx, cell address) {
+cell GetMaxStringSize(AMXRef amx, cell address) {
   return amx.GetHeader()->stp - address;
 }
 
@@ -277,7 +277,7 @@ std::string GetUnpackedString(const cell *string, std::size_t size) {
   return s;
 }
 
-void GetStringContents(AMXScript amx, cell address, std::size_t size,
+void GetStringContents(AMXRef amx, cell address, std::size_t size,
                        std::string &string, bool &packed) {
 
   cell *ptr = GetDataPtr(amx, address);
@@ -294,7 +294,7 @@ void GetStringContents(AMXScript amx, cell address, std::size_t size,
   }
 }
 
-cell GetStateVarAddress(AMXScript amx, cell function_address) {
+cell GetStateVarAddress(AMXRef amx, cell function_address) {
   if (IsCodeAddress(amx, function_address) &&
       IsCodeAddress(amx, function_address + sizeof(cell))) {
     cell opcode = *reinterpret_cast<cell*>(amx.GetCode() + function_address);
@@ -316,7 +316,7 @@ class CaseTable {
     cell value;
     cell address;
   };
-  CaseTable(AMXScript amx, cell address) {
+  CaseTable(AMXRef amx, cell address) {
     Record *table = reinterpret_cast<Record*>(amx.GetCode()
                                               + address + sizeof(cell));
     int num_records = table[0].value;
@@ -340,11 +340,11 @@ class CaseTable {
   std::vector<Record> records_;
 };
 
-cell GetStateTableAddress(AMXScript amx, cell function_address) {
+cell GetStateTableAddress(AMXRef amx, cell function_address) {
   return function_address + 4 * sizeof(cell);
 }
 
-cell GetStateTableAddressSafe(AMXScript amx, cell function_address) {
+cell GetStateTableAddressSafe(AMXRef amx, cell function_address) {
   cell state_table_address = GetStateTableAddress(amx, function_address);
   if (IsCodeAddress(amx, state_table_address)) {
     return state_table_address;
@@ -352,8 +352,9 @@ cell GetStateTableAddressSafe(AMXScript amx, cell function_address) {
   return 0;
 }
 
-cell GetRealFunctionAddress(AMXScript amx, cell function_address,
-                                           cell return_address) {
+cell GetRealFunctionAddress(AMXRef amx,
+                            cell function_address,
+                            cell return_address) {
   cell state_table_address = GetStateTableAddressSafe(amx, function_address);
   if (state_table_address != 0) {
     CaseTable state_table(amx, state_table_address);
@@ -366,8 +367,9 @@ cell GetRealFunctionAddress(AMXScript amx, cell function_address,
   return -1;
 }
 
-std::vector<cell> GetStateIDs(AMXScript amx, cell function_address,
-                                             cell return_address) {
+std::vector<cell> GetStateIDs(AMXRef amx,
+                              cell function_address,
+                              cell return_address) {
   std::vector<cell> states;
 
   cell real_address = GetRealFunctionAddress(amx, function_address,
@@ -474,14 +476,16 @@ void AMXStackFramePrinter::PrintCallerName(const AMXStackFrame &frame) {
   }
 }
 
-void AMXStackFramePrinter::PrintCallerNameAndArguments(const AMXStackFrame &frame) {
+void AMXStackFramePrinter::PrintCallerNameAndArguments(
+    const AMXStackFrame &frame) {
   PrintCallerName(frame);
   stream_ << " (";
   PrintArgumentList(frame);
   stream_ << ")";
 }
 
-void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame, int index) {
+void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame,
+                                         int index) {
   PrintArgumentValue(frame, index);
 }
 
@@ -515,7 +519,8 @@ void AMXStackFramePrinter::PrintArgument(const AMXStackFrame &frame,
   PrintArgumentValue(frame, arg, index);
 }
 
-void AMXStackFramePrinter::PrintValue(const std::string &tag_name, cell value) {
+void AMXStackFramePrinter::PrintValue(const std::string &tag_name,
+                                      cell value) {
   if (tag_name == "bool") {
     stream_ << (value ? "true" : "false");
   } else if (tag_name == "Float") {
@@ -598,8 +603,9 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
     // they may be not the same.
     cell arg_address = frame.caller_address();
     if (UsesAutomata(frame)) {
-      arg_address = GetRealFunctionAddress(frame.amx(), frame.caller_address(),
-                                                        frame.return_address());
+      arg_address = GetRealFunctionAddress(frame.amx(),
+                                           frame.caller_address(),
+                                           frame.return_address());
     }
 
     std::vector<AMXDebugSymbol> args;
@@ -615,7 +621,8 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
     } else {
       static const int kMaxRawArgs = 10;
       num_actual_args = std::min(kMaxRawArgs,
-                                 GetNumArgs(frame.amx(), prev_frame.address()));
+                                 GetNumArgs(frame.amx(),
+                                 prev_frame.address()));
     }
 
     // Print a comma-separated list of arguments and their values.
@@ -652,15 +659,17 @@ void AMXStackFramePrinter::PrintState(const AMXStackFrame &frame) {
   AMXDebugAutomaton automaton = debug_info_.GetAutomaton(
     GetStateVarAddress(frame.amx(), frame.caller_address()));
   if (automaton) {
-    std::vector<cell> states = GetStateIDs(frame.amx(), frame.caller_address(),
-                                                        frame.return_address());
+    std::vector<cell> states = GetStateIDs(frame.amx(),
+                                           frame.caller_address(),
+                                           frame.return_address());
     if (!states.empty()) {
       stream_ << "<" << automaton.GetName() << ":";
       for (std::size_t i = 0; i < states.size(); i++ ) {
         if (i > 0) {
           stream_ << ", ";
         }
-        AMXDebugState state = debug_info_.GetState(automaton.GetID(), states[i]);
+        AMXDebugState state =
+          debug_info_.GetState(automaton.GetID(), states[i]);
         if (state) {
           stream_ << state.GetName();
         }

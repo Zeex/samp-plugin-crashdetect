@@ -26,30 +26,15 @@
 #define AMXSCRIPT_H
 
 #include <amx/amx.h>
-#include "amxerror.h"
 
-class AMXScript {
+class AMXRef {
  public:
-  AMXScript(AMX *amx);
+  AMXRef(AMX *amx);
 
-  operator AMX*()       { return amx_; }
+  AMX *amx() const { return amx_; }
   operator AMX*() const { return amx_; }
 
-  bool operator==(const AMX *rhs) const {
-    return amx_ == rhs;
-  }
-  bool operator==(AMXScript rhs) const {
-    return amx_ == rhs.amx_;
-  }
-
-  bool operator!=(const AMX *rhs) const {
-    return amx_ != rhs;
-  }
-  bool operator!=(AMXScript rhs) const {
-    return amx_ != rhs.amx_;
-  }
-
-  AMXError GetError() const { return AMXError(amx_->error); }
+  int GetError() const { return amx_->error; }
 
   uint16_t GetFlags() const { return amx_->flags; }
   void SetFlags(uint16_t flags) { amx_->flags = flags; }
@@ -75,33 +60,11 @@ class AMXScript {
   void SetPri(cell pri) { amx_->pri = pri; }
   void SetAlt(cell alt) { amx_->alt = alt; }
 
-  AMX *amx()       { return amx_; }
-  AMX *amx() const { return amx_; }
-
-  AMX_HEADER *GetHeader() {
-    return const_cast<AMX_HEADER*>(const_this()->GetHeader());
-  }
-  const AMX_HEADER *GetHeader() const;
-
-  unsigned char *GetData() {
-    return const_cast<unsigned char*>(const_this()->GetData());
-  }
-  const unsigned char *GetData() const;
-
-  unsigned char *GetCode() {
-    return const_cast<unsigned char*>(const_this()->GetCode());
-  }
-  const unsigned char *GetCode() const;
-
-  AMX_FUNCSTUBNT *GetNatives() {
-    return const_cast<AMX_FUNCSTUBNT*>(const_this()->GetNatives());
-  }
-  const AMX_FUNCSTUBNT *GetNatives() const;
-
-  AMX_FUNCSTUBNT *GetPublics() {
-    return const_cast<AMX_FUNCSTUBNT*>(const_this()->GetPublics());
-  }
-  const AMX_FUNCSTUBNT *GetPublics() const;
+  AMX_HEADER *GetHeader() const;
+  unsigned char *GetData() const;
+  unsigned char *GetCode() const;
+  AMX_FUNCSTUBNT *GetNatives() const;
+  AMX_FUNCSTUBNT *GetPublics() const;
 
   const char *FindPublic(cell address) const;
   const char *FindNative(cell address) const;
@@ -115,7 +78,7 @@ class AMXScript {
   cell GetNativeAddress(int index) const;
   cell GetPublicAddress(int index) const;
 
-  const char *GetName(uint32_t offset) const;
+  const char *GetString(uint32_t offset) const;
   const char *GetNativeName(int index) const;
   const char *GetPublicName(int index) const;
 
@@ -127,11 +90,6 @@ class AMXScript {
   void PopStack(int ncells);
 
   void DisableSysreqD();
-
- private:
-  const AMXScript *const_this() {
-    return static_cast<const AMXScript*>(this);
-  }
 
  private:
   AMX *amx_;

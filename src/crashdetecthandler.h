@@ -31,10 +31,9 @@
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxhandler.h"
-#include "amxscript.h"
+#include "amxref.h"
 #include "regexp.h"
 
-class AMXError;
 class AMXPathFinder;
 class AMXStackFrame;
 
@@ -60,10 +59,10 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   int Load();
   int Unload();
 
-  int HandleAMXDebug();
-  int HandleAMXCallback(cell index, cell *result, cell *params);
-  int HandleAMXExec(cell *retval, int index);
-  void HandleAMXExecError(int index, cell *retval, const AMXError &error);
+  int ProcessDebugHook();
+  int ProcessCallback(cell index, cell *result, cell *params);
+  int ProcessExec(cell *retval, int index);
+  void ProcessExecError(int index, cell *retval, int error);
 
   static void OnCrash(const os::Context &context);
   static void OnInterrupt(const os::Context &context);
@@ -84,11 +83,7 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
 
   static void PrintTraceFrame(const AMXStackFrame &frame,
                               const AMXDebugInfo &debug_info);
-
-  static void PrintRuntimeError(AMXScript amx,
-                                const AMX &amx_state,
-                                const AMXError &error);
-
+  static void PrintRuntimeError(AMXRef amx, const AMX &amx_state, int error);
   static void PrintRegisters(const os::Context &context);
   static void PrintStack(const os::Context &context);
   static void PrintLoadedModules();
@@ -97,7 +92,7 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   CrashDetectHandler(AMX *amx);
 
  private:
-  AMXScript amx_script_;
+  AMXRef amx_;
   AMXPathFinder *amx_path_finder_;
   AMXDebugInfo debug_info_;
   AMX_DEBUG prev_debug_;

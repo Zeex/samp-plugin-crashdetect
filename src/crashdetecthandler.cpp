@@ -31,12 +31,12 @@
 #include <string>
 #include <vector>
 #include <configreader.h>
+#include <amx/amxaux.h>
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
-#include "amxerror.h"
 #include "amxopcode.h"
 #include "amxpathfinder.h"
-#include "amxscript.h"
+#include "amxref.h"
 #include "amxstacktrace.h"
 #include "crashdetecthandler.h"
 #include "fileutils.h"
@@ -81,7 +81,7 @@ AMXCallStack CrashDetectHandler::call_stack_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
  : AMXHandler<CrashDetectHandler>(amx),
-   amx_script_(amx),
+   amx_(amx),
    prev_debug_(0),
    prev_callback_(0),
    last_frame_(amx->stp),
@@ -103,9 +103,9 @@ int CrashDetectHandler::Load() {
     amx_name_ = "<unknown>";
   }
 
-  amx_script_.DisableSysreqD();
-  prev_debug_ = amx_script_.GetDebugHook();
-  prev_callback_ = amx_script_.GetCallback();
+  amx_.DisableSysreqD();
+  prev_debug_ = amx_.GetDebugHook();
+  prev_callback_ = amx_.GetCallback();
 
   return AMX_ERR_NONE;
 }
@@ -129,54 +129,54 @@ unsigned int CrashDetectHandler::TraceFlagsFromString(const std::string &s) {
   return flags;
 }
 
-int CrashDetectHandler::HandleAMXDebug() {
-  if (amx_script_.GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
+int CrashDetectHandler::ProcessDebugHook() {
+  if (amx_.GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
     AMXStackTrace trace = GetAMXStackTrace(
-      amx_script_,
-      amx_script_.GetFrm(),
-      amx_script_.GetCip(),
+      amx_,
+      amx_.GetFrm(),
+      amx_.GetCip(),
       1);
     if (trace.current_frame().return_address() != 0) {
       PrintTraceFrame(trace.current_frame(), debug_info_);
     }
   }
-  last_frame_ = amx_script_.GetFrm();
-  return prev_debug_ != 0 ? prev_debug_(amx_script_) : AMX_ERR_NONE;
+  last_frame_ = amx_.GetFrm();
+  return prev_debug_ != 0 ? prev_debug_(amx_) : AMX_ERR_NONE;
 }
 
-int CrashDetectHandler::HandleAMXCallback(cell index,
-                                          cell *result,
-                                          cell *params) {
-  call_stack_.Push(AMXCall::Native(amx_script_, index));
+int CrashDetectHandler::ProcessCallback(cell index,
+                                        cell *result,
+                                        cell *params) {
+  call_stack_.Push(AMXCall::Native(amx_, index));
 
   if (trace_flags_ & TRACE_NATIVES) {
     std::stringstream stream;
-    const char *name = amx_script_.GetNativeName(index);
+    const char *name = amx_.GetNativeName(index);
     stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
     if (trace_filter_.Test(stream.str())) {
       PrintStream(LogTracePrint, stream);
     }
   }
 
-  int error = prev_callback_(amx_script_, index, result, params);
+  int error = prev_callback_(amx_, index, result, params);
 
   call_stack_.Pop();
   return error;
 }
 
-int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
-  call_stack_.Push(AMXCall::Public(amx_script_, index));
+int CrashDetectHandler::ProcessExec(cell *retval, int index) {
+  call_stack_.Push(AMXCall::Public(amx_, index));
 
   if (trace_flags_ & TRACE_FUNCTIONS) {
     last_frame_ = 0;
   }
   if (trace_flags_ & TRACE_PUBLICS) {
-    if (cell address = amx_script_.GetPublicAddress(index)) {
+    if (cell address = amx_.GetPublicAddress(index)) {
       AMXStackTrace trace = GetAMXStackTrace(
-        amx_script_,
-        amx_script_.GetFrm(),
-        amx_script_.GetCip(),
+        amx_,
+        amx_.GetFrm(),
+        amx_.GetCip(),
         1);
       AMXStackFrame frame = trace.current_frame();
       if (frame.return_address() != 0) {
@@ -184,8 +184,8 @@ int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
         PrintTraceFrame(frame, debug_info_);
       } else {
         AMXStackFrame fake_frame(
-          amx_script_,
-          amx_script_.GetFrm(),
+          amx_,
+          amx_.GetFrm(),
           0,
           0,
           address);
@@ -194,7 +194,7 @@ int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
     }
   }
 
-  int error = ::amx_Exec(amx_script_, retval, index);
+  int error = ::amx_Exec(amx_, retval, index);
   if (error == AMX_ERR_CALLBACK ||
       error == AMX_ERR_NOTFOUND ||
       error == AMX_ERR_INIT     ||
@@ -203,16 +203,14 @@ int CrashDetectHandler::HandleAMXExec(cell *retval, int index) {
   {
     // For these types of errors amx_Error() is not called because of
     // early return from amx_Exec().
-    HandleAMXExecError(index, retval, error);
+    ProcessExecError(index, retval, error);
   }
 
   call_stack_.Pop();
   return error;
 }
 
-void CrashDetectHandler::HandleAMXExecError(int index,
-                                            cell *retval,
-                                            const AMXError &error) {
+void CrashDetectHandler::ProcessExecError(int index, cell *retval, int error) {
   if (block_exec_errors_) {
     return;
   }
@@ -224,13 +222,13 @@ void CrashDetectHandler::HandleAMXExecError(int index,
   //
   // 2. AMX_ERR_SLEEP is returned when the VM is put into sleep mode. The
   //    execution can be later continued using AMX_EXEC_CONT.
-  if (error.code() == AMX_ERR_NONE || error.code() == AMX_ERR_SLEEP) {
+  if (error == AMX_ERR_NONE || error == AMX_ERR_SLEEP) {
     return;
   }
 
   // For compatibility with sampgdk.
-  if (error.code() == AMX_ERR_INDEX && (index == AMX_EXEC_GDK ||
-                                        index <= AMX_EXEC_GDK_42)) {
+  if (error == AMX_ERR_INDEX && (index == AMX_EXEC_GDK ||
+                                 index <= AMX_EXEC_GDK_42)) {
     return;
   }
 
@@ -248,29 +246,29 @@ void CrashDetectHandler::HandleAMXExecError(int index,
   PrintAMXBacktrace(bt_stream);
 
   // Remember values of AMX registers before calling OnRuntimeError().
-  AMX amx_state = *amx_script_.amx();
+  AMX amx_state = *amx_.amx();
 
   // public OnRuntimeError(code, &bool:suppress);
-  cell callback_index = amx_script_.GetPublicIndex("OnRuntimeError");
+  cell callback_index = amx_.GetPublicIndex("OnRuntimeError");
   cell suppress = 0;
 
   if (callback_index >= 0) {
-    if (amx_script_.IsStackOK()) {
+    if (amx_.IsStackOK()) {
       cell suppress_addr, *suppress_ptr;
-      amx_PushArray(amx_script_, &suppress_addr, &suppress_ptr, &suppress, 1);
-      amx_Push(amx_script_, error.code());
-      HandleAMXExec(retval, callback_index);
-      amx_Release(amx_script_, suppress_addr);
+      amx_PushArray(amx_, &suppress_addr, &suppress_ptr, &suppress, 1);
+      amx_Push(amx_, error);
+      ProcessExec(retval, callback_index);
+      amx_Release(amx_, suppress_addr);
       suppress = *suppress_ptr;
     }
   }
 
   if (suppress == 0) {
-    PrintRuntimeError(amx_script_, amx_state, error);
-    if (error.code() != AMX_ERR_NOTFOUND &&
-        error.code() != AMX_ERR_INDEX    &&
-        error.code() != AMX_ERR_CALLBACK &&
-        error.code() != AMX_ERR_INIT) {
+    PrintRuntimeError(amx_, amx_state, error);
+    if (error != AMX_ERR_NOTFOUND &&
+        error != AMX_ERR_INDEX    &&
+        error != AMX_ERR_CALLBACK &&
+        error != AMX_ERR_INIT) {
       PrintStream(LogDebugPrint, bt_stream);
     }
   }
@@ -329,12 +327,12 @@ void CrashDetectHandler::PrintTraceFrame(const AMXStackFrame &frame,
 }
 
 // static
-void CrashDetectHandler::PrintRuntimeError(AMXScript amx,
+void CrashDetectHandler::PrintRuntimeError(AMXRef amx,
                                            const AMX &amx_state,
-                                           const AMXError &error) {
-  LogDebugPrint("Run time error %d: \"%s\"", error.code(), error.GetString());
+                                           int error) {
+  LogDebugPrint("Run time error %d: \"%s\"", error, aux_StrError(error));
   cell *ip = reinterpret_cast<cell*>(amx.GetCode() + amx_state.cip);
-  switch (error.code()) {
+  switch (error) {
     case AMX_ERR_BOUNDS: {
       cell opcode = *ip;
       if (opcode == RelocateAMXOpcode(AMX_OP_BOUNDS)) {
@@ -355,7 +353,7 @@ void CrashDetectHandler::PrintRuntimeError(AMXScript amx,
       int num_natives = amx.GetNumNatives();
       for (int i = 0; i < num_natives; ++i) {
         if (natives[i].address == 0) {
-          LogDebugPrint(" %s", amx.GetName(natives[i].nameofs));
+          LogDebugPrint(" %s", amx.GetString(natives[i].nameofs));
         }
       }
       break;
@@ -398,8 +396,8 @@ void CrashDetectHandler::PrintAMXBacktrace() {
 
 // static
 void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
-  AMXScript amx = call_stack_.Top().amx();
-  AMXScript top_amx = amx;
+  AMXRef amx = call_stack_.Top().amx();
+  AMXRef top_amx = amx;
 
   stream << "AMX backtrace:";
 

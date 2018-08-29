@@ -26,21 +26,22 @@
 #define AMXSTACKTRACE_H
 
 #include <iosfwd>
-#include "amxscript.h"
+#include "amxref.h"
 
 class AMXDebugInfo;
 
 class AMXStackFrame {
  public:
-  AMXStackFrame(AMXScript amx, cell address);
+  AMXStackFrame(AMXRef amx, cell address);
 
-  AMXStackFrame(AMXScript amx, cell address,
-                               cell return_address,
-                               cell callee_address,
-                               cell caller_address);
+  AMXStackFrame(AMXRef amx,
+                cell address,
+                cell return_address,
+                cell callee_address,
+                cell caller_address);
 
-  AMXScript &amx() { return amx_; }
-  const AMXScript &amx() const { return amx_; }
+  AMXRef &amx() { return amx_; }
+  const AMXRef &amx() const { return amx_; }
 
   cell address() const { return address_; }
 
@@ -71,7 +72,7 @@ class AMXStackFrame {
   void Print(std::ostream &stream, const AMXDebugInfo &debug_info) const;
 
  private:
-  AMXScript amx_;
+  AMXRef amx_;
   cell address_;
   cell return_address_;
   cell callee_address_;
@@ -80,7 +81,7 @@ class AMXStackFrame {
 
 class AMXStackTrace {
  public:
-  AMXStackTrace(AMXScript amx, cell frame, int max_depth);
+  AMXStackTrace(AMXRef amx, cell frame, int max_depth);
 
   bool MoveNext();
 
@@ -94,7 +95,7 @@ class AMXStackTrace {
   int frame_index_;
 };
 
-AMXStackTrace GetAMXStackTrace(AMXScript amx,
+AMXStackTrace GetAMXStackTrace(AMXRef amx,
                                cell frm,
                                cell cip,
                                int max_depth);

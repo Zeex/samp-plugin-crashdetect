@@ -18,15 +18,13 @@ set(CRASHDETECT_SOURCES
   amxcallstack.h
   amxdebuginfo.cpp
   amxdebuginfo.h
-  amxerror.cpp
-  amxerror.h
   amxhandler.h
   amxopcode.cpp
   amxopcode.h
   amxpathfinder.cpp
   amxpathfinder.h
-  amxscript.cpp
-  amxscript.h
+  amxref.cpp
+  amxref.h
   amxstacktrace.cpp
   amxstacktrace.h
   crashdetecthandler.cpp

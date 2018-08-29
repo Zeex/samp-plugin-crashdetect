@@ -26,7 +26,7 @@
 #define AMXCALLSTACK_H
 
 #include <stack>
-#include "amxscript.h"
+#include "amxref.h"
 
 class AMXCall {
  public:
@@ -35,13 +35,13 @@ class AMXCall {
     PUBLIC
   };
 
-  AMXCall(Type type, AMXScript amx, cell index);
-  AMXCall(Type type, AMXScript amx, cell index, cell frm, cell cip);
+  AMXCall(Type type, AMXRef amx, cell index);
+  AMXCall(Type type, AMXRef amx, cell index, cell frm, cell cip);
 
-  static AMXCall Public(AMXScript amx, cell index);
-  static AMXCall Native(AMXScript amx, cell index);
+  static AMXCall Public(AMXRef amx, cell index);
+  static AMXCall Native(AMXRef amx, cell index);
 
-  AMXScript amx() const { return amx_; }
+  AMXRef amx() const { return amx_; }
 
   Type type()  const { return type_;  }
   cell index() const { return index_; }
@@ -52,7 +52,7 @@ class AMXCall {
   bool IsNative() const { return type_ == NATIVE; }
 
  private:
-  AMXScript amx_;
+  AMXRef amx_;
   Type type_;
   cell frm_;
   cell cip_;

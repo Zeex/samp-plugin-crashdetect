@@ -31,7 +31,6 @@
 #else
   #include <stdio.h>
 #endif
-#include "amxerror.h"
 #include "amxpathfinder.h"
 #include "crashdetecthandler.h"
 #include "fileutils.h"
@@ -99,16 +98,16 @@ AMXPathFinder amx_path_finder;
   }
 #endif
 
-int AMXAPI AmxDebug(AMX *amx) {
-  return CrashDetectHandler::GetHandler(amx)->HandleAMXDebug();
+int AMXAPI ProcessDebugHook(AMX *amx) {
+  return CrashDetectHandler::GetHandler(amx)->ProcessDebugHook();
 }
 
-int AMXAPI AmxCallback(AMX *amx, cell index, cell *result, cell *params) {
+int AMXAPI ProcessCallback(AMX *amx, cell index, cell *result, cell *params) {
   CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
-  return handler->HandleAMXCallback(index, result, params);
+  return handler->ProcessCallback(index, result, params);
 }
 
-int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
+int AMXAPI ProcessExec(AMX *amx, cell *retval, int index) {
   if (amx->flags & AMX_FLAG_BROWSE) {
     return amx_Exec(amx, retval, index);
   }
@@ -116,12 +115,12 @@ int AMXAPI AmxExec(AMX *amx, cell *retval, int index) {
   if (handler == 0) {
     return amx_Exec(amx, retval, index);
   }
-  return handler->HandleAMXExec(retval, index);
+  return handler->ProcessExec(retval, index);
 }
 
-void AMXAPI AmxExecError(AMX *amx, cell index, cell *retval, int error) {
+void AMXAPI ProcessExecError(AMX *amx, cell index, cell *retval, int error) {
   CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
-  handler->HandleAMXExecError(index, retval, error);
+  handler->ProcessExecError(index, retval, error);
 }
 
 } // anonymous namespace
@@ -138,7 +137,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   void *amx_Exec_sub = subhook::Hook::ReadDst(amx_Exec_ptr);
 
   if (amx_Exec_sub == 0) {
-    amx_exec_hook.Install(amx_Exec_ptr, (void*)AmxExec);
+    amx_exec_hook.Install(amx_Exec_ptr, (void*)ProcessExec);
   } else {
     std::string module =
       fileutils::GetFileName(os::GetModuleName(amx_Exec_sub));
@@ -182,9 +181,9 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
   handler->set_amx_path_finder(&amx_path_finder);
   handler->Load();
 
-  amx_SetDebugHook(amx, AmxDebug);
-  amx_SetCallback(amx, AmxCallback);
-  amx_SetExecErrorHandler(amx, AmxExecError);
+  amx_SetDebugHook(amx, ProcessDebugHook);
+  amx_SetCallback(amx, ProcessCallback);
+  amx_SetExecErrorHandler(amx, ProcessExecError);
 
   RegisterNatives(amx);
   return AMX_ERR_NONE;

@@ -23,18 +23,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstring>
-#include "amxscript.h"
+#include "amxref.h"
 
-AMXScript::AMXScript(AMX *amx)
+AMXRef::AMXRef(AMX *amx)
  : amx_(amx)
 {
 }
 
-const AMX_HEADER *AMXScript::GetHeader() const {
+AMX_HEADER *AMXRef::GetHeader() const {
   return reinterpret_cast<AMX_HEADER*>(amx_->base);
 }
 
-const unsigned char *AMXScript::GetData() const {
+unsigned char *AMXRef::GetData() const {
   unsigned char *data = amx_->data;
   if (data == 0) {
     AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
@@ -43,78 +43,78 @@ const unsigned char *AMXScript::GetData() const {
   return data;
 }
 
-const unsigned char *AMXScript::GetCode() const {
+unsigned char *AMXRef::GetCode() const {
   AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
   unsigned char *code = amx_->base + hdr->cod;
   return code;
 }
 
 
-const AMX_FUNCSTUBNT *AMXScript::GetNatives() const {
+AMX_FUNCSTUBNT *AMXRef::GetNatives() const {
   const AMX_HEADER *hdr = GetHeader();
   return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->natives + amx_->base);
 }
 
-const AMX_FUNCSTUBNT *AMXScript::GetPublics() const {
+AMX_FUNCSTUBNT *AMXRef::GetPublics() const {
   const AMX_HEADER *hdr = GetHeader();
   return reinterpret_cast<AMX_FUNCSTUBNT*>(hdr->publics + amx_->base);
 }
 
-const char *AMXScript::FindPublic(cell address) const {
+const char *AMXRef::FindPublic(cell address) const {
   const AMX_FUNCSTUBNT *publics = GetPublics();
   int n = GetNumPublics();
   for (int i = 0; i < n; i++) {
     if (publics[i].address == static_cast<ucell>(address)) {
-      return GetName(publics[i].nameofs);
+      return GetString(publics[i].nameofs);
     }
   }
   return 0;
 }
 
-const char *AMXScript::FindNative(cell address) const {
+const char *AMXRef::FindNative(cell address) const {
   const AMX_FUNCSTUBNT *natives = GetNatives();
   int n = GetNumNatives();
   for (int i = 0; i < n; i++) {
     if (natives[i].address == static_cast<ucell>(address)) {
-      return GetName(natives[i].nameofs);
+      return GetString(natives[i].nameofs);
     }
   }
   return 0;
 }
 
-int AMXScript::GetNumNatives() const {
+int AMXRef::GetNumNatives() const {
   const AMX_HEADER *hdr = GetHeader();
   return (hdr->libraries - hdr->natives) / hdr->defsize;
 }
 
-int AMXScript::GetNumPublics() const {
+int AMXRef::GetNumPublics() const {
   const AMX_HEADER *hdr = GetHeader();
   return (hdr->natives - hdr->publics) / hdr->defsize;
 }
 
-cell AMXScript::GetNativeIndex(const char *name) const {
+cell AMXRef::GetNativeIndex(const char *name) const {
   int n = GetNumNatives();
   const AMX_FUNCSTUBNT *natives = GetNatives();
   for (int i = 0; i < n; i++) {
-    if (std::strcmp(GetName(natives[i].nameofs), name) == 0) {
+    if (std::strcmp(GetString(natives[i].nameofs), name) == 0) {
       return i;
     }
   }
   return -1;
 }
 
-cell AMXScript::GetPublicIndex(const char *name) const {
+cell AMXRef::GetPublicIndex(const char *name) const {
   int n = GetNumPublics();
   const AMX_FUNCSTUBNT *publics = GetPublics();
   for (int i = 0; i < n; i++) {
-    if (std::strcmp(GetName(publics[i].nameofs), name) == 0) {
+    if (std::strcmp(GetString(publics[i].nameofs), name) == 0) {
       return i;
     }
   }
   return -1;
 }
 
-cell AMXScript::GetNativeAddress(int index) const {
+cell AMXRef::GetNativeAddress(int index) const {
   int n = GetNumNatives();
   const AMX_FUNCSTUBNT *natives = GetNatives();
   if (index >= 0 && index < n) {
@@ -123,7 +123,7 @@ cell AMXScript::GetNativeAddress(int index) const {
   return 0;
 }
 
-cell AMXScript::GetPublicAddress(int index) const {
+cell AMXRef::GetPublicAddress(int index) const {
   int n = GetNumPublics();
   const AMX_FUNCSTUBNT *publics = GetPublics();
   if (index >=0 && index < n) {
@@ -135,53 +135,53 @@ cell AMXScript::GetPublicAddress(int index) const {
   return 0;
 }
 
-const char *AMXScript::GetNativeName(int index) const {
+const char *AMXRef::GetNativeName(int index) const {
   int n = GetNumNatives();
   const AMX_FUNCSTUBNT *natives = GetNatives();
   if (index >= 0 && index < n) {
-    return GetName(natives[index].nameofs);
+    return GetString(natives[index].nameofs);
   }
   return 0;
 }
 
-const char *AMXScript::GetPublicName(int index) const {
+const char *AMXRef::GetPublicName(int index) const {
   int n = GetNumPublics();
   const AMX_FUNCSTUBNT *publics = GetPublics();
   if (index >=0 && index < n) {
-    return GetName(publics[index].nameofs);
+    return GetString(publics[index].nameofs);
   } else if (index == AMX_EXEC_MAIN) {
     return "main";
   }
   return 0;
 }
 
-const char *AMXScript::GetName(uint32_t offset) const {
+const char *AMXRef::GetString(uint32_t offset) const {
   return reinterpret_cast<char*>(amx_->base + offset);
 }
 
-cell AMXScript::GetStackSpaceLeft() const {
+cell AMXRef::GetStackSpaceLeft() const {
   return GetStk() - GetHlw();
 }
 
-bool AMXScript::IsStackOK() const {
+bool AMXRef::IsStackOK() const {
   return GetStk() >= GetHlw() && GetStk() <= GetStp();
 }
 
-void AMXScript::PushStack(cell value) {
+void AMXRef::PushStack(cell value) {
   amx_->stk -= sizeof(cell);
   *reinterpret_cast<cell*>(GetData() + amx_->stk) = value;
 }
 
-cell AMXScript::PopStack() {
+cell AMXRef::PopStack() {
   cell value = *reinterpret_cast<cell*>(GetData() + amx_->stk);
   amx_->stk += sizeof(cell);
   return value;
 }
 
-void AMXScript::PopStack(int ncells) {
+void AMXRef::PopStack(int ncells) {
   amx_->stk += sizeof(cell) * ncells;
 }
 
-void AMXScript::DisableSysreqD() {
+void AMXRef::DisableSysreqD() {
   amx_->sysreq_d = 0;
 }

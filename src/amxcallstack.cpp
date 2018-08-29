@@ -25,7 +25,7 @@
 #include <cassert>
 #include "amxcallstack.h"
 
-AMXCall::AMXCall(Type type, AMXScript amx, cell index)
+AMXCall::AMXCall(Type type, AMXRef amx, cell index)
  : amx_(amx),
    type_(type),
    frm_(amx.GetFrm()),
@@ -34,7 +34,7 @@ AMXCall::AMXCall(Type type, AMXScript amx, cell index)
 {
 }
 
-AMXCall::AMXCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
+AMXCall::AMXCall(Type type, AMXRef amx, cell index, cell frm, cell cip)
  : amx_(amx),
    type_(type),
    frm_(frm),
@@ -44,12 +44,12 @@ AMXCall::AMXCall(Type type, AMXScript amx, cell index, cell frm, cell cip)
 }
 
 // static
-AMXCall AMXCall::Public(AMXScript amx, cell index) {
+AMXCall AMXCall::Public(AMXRef amx, cell index) {
   return AMXCall(PUBLIC, amx, index);
 }
 
 // static
-AMXCall AMXCall::Native(AMXScript amx, cell index) {
+AMXCall AMXCall::Native(AMXRef amx, cell index) {
   return AMXCall(NATIVE, amx, index);
 }
 
