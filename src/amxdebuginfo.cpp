@@ -109,7 +109,9 @@ static bool IsBuggedForward(const AMX_DBG_SYMBOL *symbol) {
   return (symbol->name[0] == '@');
 }
 
-AMXDebugSymbol AMXDebugInfo::GetFunction(cell address) const {
+AMXDebugSymbol AMXDebugInfo::GetFunction(
+  cell address, bool ignoreBrokenSymbols) const
+{
   Symbol function;
   SymbolTable symbols = GetSymbols();
   for (SymbolTable::const_iterator it = symbols.begin();
@@ -118,7 +120,7 @@ AMXDebugSymbol AMXDebugInfo::GetFunction(cell address) const {
       continue;
     if (it->GetCodeStart() > address || it->GetCodeEnd() <= address)
       continue;
-    if (IsBuggedForward(it->GetPOD())) 
+    if (ignoreBrokenSymbols && IsBuggedForward(it->GetPOD())) 
       continue;
     function = *it;
     break;
@@ -126,14 +128,16 @@ AMXDebugSymbol AMXDebugInfo::GetFunction(cell address) const {
   return function;
 }
 
-AMXDebugSymbol AMXDebugInfo::GetExactFunction(cell address) const {
+AMXDebugSymbol AMXDebugInfo::GetExactFunction(
+  cell address, bool ignoreBrokenSymbols) const
+{
   Symbol function;
   SymbolTable symbols = GetSymbols();
   for (SymbolTable::const_iterator it = symbols.begin();
        it != symbols.end(); ++it) {
     if (!it->IsFunction())
       continue;
-    if (IsBuggedForward(it->GetPOD())) 
+    if (ignoreBrokenSymbols && IsBuggedForward(it->GetPOD())) 
       continue;
     if (it->GetCodeStart() == address) {
       function = *it;

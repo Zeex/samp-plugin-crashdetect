@@ -284,8 +284,8 @@ class AMXDebugInfo {
 
   Line GetLine(cell address) const;
   File GetFile(cell address) const;
-  Symbol GetFunction(cell address) const;
-  Symbol GetExactFunction(cell address) const;
+  Symbol GetFunction(cell address, bool ignoreBrokenSymbols = true) const;
+  Symbol GetExactFunction(cell address, bool ignoreBrokenSymbols = true) const;
   Tag GetTag(int32_t tag_id) const;  
   Automaton GetAutomaton(cell address) const;
   State GetState(int16_t automaton_id, int16_t state_id) const;

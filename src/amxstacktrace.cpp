@@ -459,6 +459,9 @@ void AMXStackFramePrinter::PrintCallerName(const AMXStackFrame &frame) {
   if (debug_info_.IsLoaded()) {
     AMXDebugSymbol caller =
       debug_info_.GetExactFunction(frame.caller_address());
+    if (!caller) {
+      caller = debug_info_.GetExactFunction(frame.caller_address(), false);
+    }
     if (caller) {
       if (IsPublicFunction(frame.amx(), caller.GetCodeStart())
           && !IsMain(frame.amx(), caller.GetCodeStart())) {
