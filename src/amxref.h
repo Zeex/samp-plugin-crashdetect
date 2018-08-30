@@ -22,8 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef AMXSCRIPT_H
-#define AMXSCRIPT_H
+#ifndef AMXREF_H
+#define AMXREF_H
 
 #include <amx/amx.h>
 
@@ -96,4 +96,4 @@ class AMXRef {
   AMX *amx_;
 };
 
-#endif // !AMXSCRIPT_H
+#endif // !AMXREF_H

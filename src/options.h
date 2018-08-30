@@ -22,6 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef OPTIONS_H
+#define OPTIONS_H
+
 #include <string>
 
 class RegExp;
@@ -58,3 +61,5 @@ class Options {
   std::string log_path_;
   std::string log_time_format_;
 };
+
+#endif // !OPTIONS_H

@@ -22,6 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef STRINGUTILS_H
+#define STRINGUTILS_H
+
 #include <string>
 #include <vector>
 
@@ -52,3 +55,5 @@ int CompareIgnoreCase(const char *s1, const char *s2);
 int CompareIgnoreCase(const std::string &s1, const std::string &s2);
 
 } // namespace stringutils
+
+#endif // !STRINGUTILS_H

@@ -22,6 +22,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef REGEXP_H
+#define REGEXP_H
+
 #include <string>
 #include <pcre.h>
 
@@ -39,3 +42,5 @@ class RegExp {
  private:
   pcre *pcre_;
 };
+
+#endif // !REGEXP_H
