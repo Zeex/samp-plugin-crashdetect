@@ -13,7 +13,8 @@ Installation
 ------------
 
 1. Download a binary package from the [Releases][download] page on Github or
-build it yourself from source code (see below).
+   build it yourself from source code (see 
+   [Build instructions](#build-instructions)).
 2. Extract/copy `crashdetect.so` or `crashdetect.dll` to `<sever>/plugins/`.
 3. Add `crashdetect` (Windows) or `crashdetect.so` (Linux) to the `plugins`
    line of your server.cfg.
@@ -30,11 +31,58 @@ start receiving errors reports. By default, all the errors will be saved in
 your `server_log.txt` but this can be changed 
 (see [Configuration](#configuration)).
 
+For best debugging experience, make sure you
+[compile your script with debug info enabled][debug-info]. Doing this will let
+you see more information in stack traces such as function names, prameter names
+and values, source file names and line numbers.
+
 Please be aware that when using this plugin your code WILL run slower due
 to the overhead associated with detecting errors and providing accurate
 error information (for exmaple, some runtime optimizations are diasbled).
 Usually this is fine during development, but it's not recommended to load
 CrashDetect on a production (live) server with many players.
+
+Configuration
+-------------
+
+CrashDetect reads settings from server.cfg, the server configuration file. This
+is done during plugin loading, so if you change any settings you will probably
+need to restart your server.
+
+Available settings:
+
+* `trace <flags>`
+
+  Enables function call tracing.
+
+  If enabled, CrashDetect will show information about every function call in
+  all running scripts, such as the name of the function being called and the
+  values of its parameters.
+
+  `flags` may be one or combination of the following:
+
+  * `n` - trace native functions
+  * `p` - trace public functions
+  * `f` - trace normal functions (i.e. all non-public functions)
+
+  For example, `trace pn` will trace both public and native calls, and
+  `trace pfn` will trace all functions.
+
+* `trace_filter <regexp>`
+
+  Filters `trace` output based on a regular expression.
+
+  Examples:
+
+  * `trace_filter Player` - output functions whose name contains `Player`
+  * `trace_filter playerid=0` - show functions whose `playerid` parameter is 0
+
+* `crashdetect_log <filename>`
+
+  Use a custom log file for output.
+
+  By default all diagnostic information is printed to the server log. This
+  option lets you redirect output to a separate file.
 
 Build instructions
 ------------------
@@ -94,56 +142,6 @@ path/to/cmake.exe --build . --config Release
 
 You can also build it from within Visual Studio: open build/crashdetect.sln
 and go to menu -> Build -> Build Solution (or just press F7).
-
-Configuration
--------------
-
-CrashDetect reads settings from server.cfg, the server configuration file. This
-is done during plugin loading, so if you change any settings you will probably
-need to restart your server.
-
-Available settings:
-
-* `trace <flags>`
-
-  Enables function call tracing.
-
-  If enabled, CrashDetect will show information about every function call in
-  all running scripts, such as the name of the function being called and the
-  values of its parameters.
-
-  `flags` may be one or combination of the following:
-
-  * `n` - trace native functions
-  * `p` - trace public functions
-  * `f` - trace normal functions (i.e. all non-public functions)
-
-  For example, `trace pn` will trace both public and native calls, and
-  `trace pfn` will trace all functions.
-
-* `trace_filter <regexp>`
-
-  Filters `trace` output based on a regular expression.
-
-  Examples:
-
-  * `trace_filter Player` - output functions whose name contains `Player`
-  * `trace_filter playerid=0` - show functions whose `playerid` parameter is 0
-
-* `crashdetect_log <filename>`
-
-  Use a custom log file for output.
-
-  By default all diagnostic information is printed to the server log. This
-  option lets you redirect output to a separate file.
-
-Debug info
-----------
-
-For best debugging experience, make sure you
-[compile your script with debug info enabled][debug-info]. Doing this will let
-you see more information in stack traces such as function names, prameter names
-and values, source file names and line numbers.
 
 License
 -------
