@@ -34,67 +34,73 @@
 
 class AMXDebugInfo {
  public:
-  template<typename EntryT, typename EntryWrapperT> class Table {
+  template<typename Struct, typename WrapperClass> class Table {
    public:
-    Table(EntryT *table, size_t size)
-      : entries_(reinterpret_cast<EntryWrapperT*>(table)), size_(size)
+    Table(Struct *table, size_t size)
+      : entries_(reinterpret_cast<WrapperClass*>(table)), size_(size)
     {}
 
-    class iterator : public std::iterator<std::bidirectional_iterator_tag, EntryWrapperT> {
+    class iterator : public std::iterator<std::bidirectional_iterator_tag, WrapperClass> {
      public:
-      iterator(EntryWrapperT *entries) : cur_(entries) {}
+      iterator(WrapperClass *entries) : current_(entries) {}
 
-      EntryWrapperT &operator*() const { return *cur_; }
-      EntryWrapperT &operator*()       { return *cur_; }
+      WrapperClass &operator*() const { return *current_; }
+      WrapperClass &operator*() { return *current_; }
 
-      EntryWrapperT *operator->() const { return cur_; }
-      EntryWrapperT *operator->()       { return cur_; }
+      WrapperClass *operator->() const { return current_; }
+      WrapperClass *operator->() { return current_; }
 
-      iterator       &operator++()       { ++cur_; return *this; }
-      const iterator &operator++() const { ++cur_; return *this; }
+      iterator &operator++() { ++current_; return *this; }
+      const iterator &operator++() const { ++current_; return *this; }
 
-      iterator       &operator--()       { --cur_; return *this; }
-      const iterator &operator--() const { --cur_; return *this; }
+      iterator &operator--() { --current_; return *this; }
+      const iterator &operator--() const { --current_; return *this; }
 
       const iterator &operator=(const iterator &rhs) const { 
-        cur_ = rhs.cur_;
+        current_ = rhs.current_;
         return *this;
       }
 
-      bool operator==(const iterator &rhs) const { return rhs.cur_ == cur_;}
-      bool operator!=(const iterator &rhs) const { return rhs.cur_ != cur_;}
+      bool operator==(const iterator &rhs) const
+        { return rhs.current_ == current_;}
+      bool operator!=(const iterator &rhs) const
+        { return rhs.current_ != current_;}
 
      private:
-      mutable EntryWrapperT *cur_;
+      mutable WrapperClass *current_;
     };
 
     typedef const iterator const_iterator;
 
-    typedef std::reverse_iterator<iterator>       reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
-    iterator       begin()       { return entries_; } 
+    iterator begin() { return entries_; } 
     const_iterator begin() const { return entries_; }
 
-    iterator       end()       { return entries_ + size_; }
+    iterator end() { return entries_ + size_; }
     const_iterator end() const { return entries_ + size_; }
 
-    reverse_iterator       rbegin()        { return reverse_iterator(end()); }
-    const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    reverse_iterator rbegin()
+      { return reverse_iterator(end()); }
+    const_reverse_iterator crbegin() const
+      { return const_reverse_iterator(end()); }
 
-    reverse_iterator       rend()        { return reverse_iterator(begin()); }
-    const_reverse_iterator crend() const { return const_reverse_iterator(begin()); }
+    reverse_iterator rend()
+      { return reverse_iterator(begin()); }
+    const_reverse_iterator crend() const
+      { return const_reverse_iterator(begin()); }
 
     size_t size() const { return size_; }
 
-    EntryWrapperT operator[](size_t index) const { 
+    WrapperClass operator[](size_t index) const { 
       assert(index >= 0 && index < size_);
       return entries_[index]; 
     }
 
    private:
-    EntryWrapperT *entries_;
-    size_t         size_;
+    WrapperClass *entries_;
+    size_t size_;
   };
 
   class File {
@@ -102,10 +108,12 @@ class AMXDebugInfo {
     File() : file_(0) {}
     File(const AMX_DBG_FILE *file) : file_(file) {}
 
-    std::string GetName() const    { return file_->name; }
-    cell        GetAddress() const { return file_->address; }
-
-    operator bool() const { return file_ != 0; }
+    std::string GetName() const
+      { return file_->name; }
+    cell GetAddress() const
+      { return file_->address; }
+    operator bool() const
+      { return file_ != 0; }
 
    private:
     const AMX_DBG_FILE *file_;
@@ -116,10 +124,12 @@ class AMXDebugInfo {
     Line() { line_.address = 0; }
     Line(AMX_DBG_LINE line) : line_(line) {}
 
-    int32_t GetNumber() const  { return line_.line; }
-    cell    GetAddress() const { return line_.address; }
-
-    operator bool() const { return line_.address != 0; }
+    int32_t GetNumber() const
+      { return line_.line; }
+    cell GetAddress() const
+      { return line_.address; }
+    operator bool() const
+      { return line_.address != 0; }
 
    private:
     AMX_DBG_LINE line_;
@@ -130,10 +140,12 @@ class AMXDebugInfo {
     Tag() : tag_(0) {}
     Tag(const AMX_DBG_TAG *tag) : tag_(tag) {}
 
-    int32_t     GetID() const   { return tag_->tag; }
-    std::string GetName() const { return tag_->name; }    
-
-    operator bool() const { return tag_ != 0; }
+    int32_t GetID() const
+      { return tag_->tag; }
+    std::string GetName() const
+      { return tag_->name; }    
+    operator bool() const
+      { return tag_ != 0; }
 
    private:
     const AMX_DBG_TAG *tag_;
@@ -141,14 +153,17 @@ class AMXDebugInfo {
 
   class Automaton {
    public:
-     Automaton() : automaton_(0) {}
-     Automaton(const AMX_DBG_MACHINE *automaton) : automaton_(automaton) {}
+    Automaton() : automaton_(0) {}
+    Automaton(const AMX_DBG_MACHINE *automaton) : automaton_(automaton) {}
 
-     int16_t     GetID() const        { return automaton_->automaton; }
-     cell        GetAddress() const   { return automaton_->address; }
-     std::string GetName() const      { return automaton_->name; }
-
-     operator bool() const { return automaton_ != 0; }
+    int16_t GetID() const
+      { return automaton_->automaton; }
+    cell GetAddress() const
+      { return automaton_->address; }
+    std::string GetName() const
+      { return automaton_->name; }
+    operator bool() const
+      { return automaton_ != 0; }
 
    private:
     const AMX_DBG_MACHINE *automaton_;
@@ -156,14 +171,17 @@ class AMXDebugInfo {
 
   class State {
    public:
-     State() : state_(0) {}
-     State(const AMX_DBG_STATE *state) : state_(state) {}
+    State() : state_(0) {}
+    State(const AMX_DBG_STATE *state) : state_(state) {}
 
-     int16_t     GetID() const        { return state_->state; }
-     int16_t     GetAutomaton() const { return state_->automaton; }
-     std::string GetName() const      { return state_->name; }
-
-     operator bool() const { return state_ != 0; }
+    int16_t GetID() const
+      { return state_->state; }
+    int16_t GetAutomaton() const
+      { return state_->automaton; }
+    std::string GetName() const
+      { return state_->name; }
+    operator bool() const
+      { return state_ != 0; }
 
    private:
      const AMX_DBG_STATE *state_;
@@ -174,17 +192,17 @@ class AMXDebugInfo {
   class Symbol {
    public:
     enum VClass {
-      Global      = 0,
-      Local       = 1,
+      Global = 0,
+      Local = 1,
       StaticLocal = 2
     };
 
     enum Kind {
-      Variable    = 1,
-      Reference   = 2,
-      Array       = 3,
-      ArrayRef    = 4,
-      Function    = 9,
+      Variable = 1,
+      Reference = 2,
+      Array = 3,
+      ArrayRef = 4,
+      Function = 9,
       FunctionRef = 10
     };
 
@@ -193,26 +211,44 @@ class AMXDebugInfo {
 
     const AMX_DBG_SYMBOL *GetPOD() const { return symbol_; }
 
-    bool IsGlobal() const      { return GetVClass() == Global; }
-    bool IsLocal() const       { return GetVClass() == Local; }
-    bool IsStaticLocal() const { return GetVClass() == StaticLocal; }
+    bool IsGlobal() const
+      { return GetVClass() == Global; }
+    bool IsLocal() const
+      { return GetVClass() == Local; }
+    bool IsStaticLocal() const
+      { return GetVClass() == StaticLocal; }
 
-    bool IsVariable() const    { return GetKind() == Variable; }
-    bool IsReference() const   { return GetKind() == Reference; }
-    bool IsArray() const       { return GetKind() == Array; }
-    bool IsArrayRef() const    { return GetKind() == ArrayRef; }
-    bool IsFunction() const    { return GetKind() == Function; }
-    bool IsFunctionRef() const { return GetKind() == FunctionRef; }
+    bool IsVariable() const
+      { return GetKind() == Variable; }
+    bool IsReference() const
+      { return GetKind() == Reference; }
+    bool IsArray() const
+      { return GetKind() == Array; }
+    bool IsArrayRef() const
+      { return GetKind() == ArrayRef; }
+    bool IsFunction() const
+      { return GetKind() == Function; }
+    bool IsFunctionRef() const
+      { return GetKind() == FunctionRef; }
 
-    cell        GetAddress() const   { return symbol_->address; }
-    int16_t     GetTag() const       { return symbol_->tag; }
-    cell        GetCodeStart() const { return symbol_->codestart; }
-    cell        GetCodeEnd() const   { return symbol_->codeend; }
-    Kind        GetKind() const      { return static_cast<Kind>(symbol_->ident); }
-    VClass      GetVClass() const    { return static_cast<VClass>(symbol_->vclass); }
-    int16_t     GetArrayDim() const  { return symbol_->dim; }
-    std::string GetName() const      { return symbol_->name; }
-    int16_t     GetNumDims() const   { return symbol_->dim; }
+    cell GetAddress() const
+      { return symbol_->address; }
+    int16_t GetTag() const
+      { return symbol_->tag; }
+    cell GetCodeStart() const
+      { return symbol_->codestart; }
+    cell GetCodeEnd() const
+      { return symbol_->codeend; }
+    Kind GetKind() const
+      { return static_cast<Kind>(symbol_->ident); }
+    VClass GetVClass() const
+      { return static_cast<VClass>(symbol_->vclass); }
+    int16_t GetArrayDim() const
+      { return symbol_->dim; }
+    std::string GetName() const
+      { return symbol_->name; }
+    int16_t GetNumDims() const
+      { return symbol_->dim; }
 
     std::vector<SymbolDim> GetDims() const;
 
@@ -227,10 +263,12 @@ class AMXDebugInfo {
     SymbolDim() : symdim_(0) {}
     SymbolDim(const AMX_DBG_SYMDIM *symdim) : symdim_(symdim) {}
 
-    int16_t GetTag() const  { return symdim_->tag; }
-    cell    GetSize() const { return symdim_->size; }
-
-    operator bool() const { return symdim_ != 0; }
+    int16_t GetTag() const
+      { return symdim_->tag; }
+    cell GetSize() const
+      { return symdim_->size; }
+    operator bool() const
+      { return symdim_ != 0; }
 
    private:
     const AMX_DBG_SYMDIM *symdim_;
@@ -244,20 +282,21 @@ class AMXDebugInfo {
   bool IsLoaded() const;
   void Free();
 
-  Line      GetLine(cell address) const;
-  File      GetFile(cell address) const;
-  Symbol    GetFunction(cell address) const;
-  Symbol    GetExactFunction(cell address) const;
-  Tag       GetTag(int32_t tag_id) const;  
+  Line GetLine(cell address) const;
+  File GetFile(cell address) const;
+  Symbol GetFunction(cell address) const;
+  Symbol GetExactFunction(cell address) const;
+  Tag GetTag(int32_t tag_id) const;  
   Automaton GetAutomaton(cell address) const;
-  State     GetState(int16_t automaton_id, int16_t state_id) const;
+  State GetState(int16_t automaton_id, int16_t state_id) const;
 
-  int32_t     GetLineNumber(cell addrss) const;
+  int32_t GetLineNumber(cell addrss) const;
   std::string GetFileName(cell address) const;
   std::string GetFunctionName(cell address) const;
   std::string GetTagName(int32_t tag_id) const;
 
-  cell GetFunctionAddress(const std::string &func, const std::string &file) const;
+  cell GetFunctionAddress(const std::string &func,
+                          const std::string &file) const;
   cell GetLineAddress(long line, const std::string &file) const;
 
   #define AMXDEBUGINFO_TABLE_TYPEDEF(type, name) \
@@ -300,16 +339,17 @@ class AMXDebugInfo {
   AMX_DBG *amxdbg_;
 };
 
-typedef AMXDebugInfo::File      AMXDebugFile;
-typedef AMXDebugInfo::Line      AMXDebugLine;
-typedef AMXDebugInfo::Tag       AMXDebugTag;
-typedef AMXDebugInfo::Symbol    AMXDebugSymbol;
+typedef AMXDebugInfo::File AMXDebugFile;
+typedef AMXDebugInfo::Line AMXDebugLine;
+typedef AMXDebugInfo::Tag AMXDebugTag;
+typedef AMXDebugInfo::Symbol AMXDebugSymbol;
 typedef AMXDebugInfo::SymbolDim AMXDebugSymbolDim;
 typedef AMXDebugInfo::Automaton AMXDebugAutomaton;
-typedef AMXDebugInfo::State     AMXDebugState;
+typedef AMXDebugInfo::State AMXDebugState;
 
-static inline bool operator<(const AMXDebugSymbol &left, const AMXDebugSymbol &right) {
-  return left.GetAddress() < right.GetAddress();
+static inline bool operator<(const AMXDebugSymbol &lhs,
+                             const AMXDebugSymbol &rhs) {
+  return lhs.GetAddress() < rhs.GetAddress();
 }
 
 #endif // !AMXDEBUGINFO_H

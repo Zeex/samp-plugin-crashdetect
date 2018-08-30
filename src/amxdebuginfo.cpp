@@ -169,7 +169,9 @@ AMXDebugAutomaton AMXDebugInfo::GetAutomaton(cell address) const {
   return automaton;
 }
 
-AMXDebugState AMXDebugInfo::GetState(int16_t automaton_id, int16_t state_id) const {
+AMXDebugState AMXDebugInfo::GetState(
+  int16_t automaton_id, int16_t state_id) const
+{
   State state;
   StateTable states = GetStates();
   for (StateTable::const_iterator it = states.begin();
