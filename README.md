@@ -5,34 +5,59 @@
 [![Build Status][build_status]][build]
 [![Build Status - Windows][build_status_win]][build_win]
 
-This plugin helps you debug runtime errors and server crashes. When something
-goes wrong you see a more or less detailed error message that contains a
-description of the error and a stack trace.
+CrashDetect helps you debug runtime errors and server crashes. When something
+goes wrong you see a detailed error message with error description, stack trace
+and other information that makes it easier to quickly find and fix the bug.
 
-Installing
-----------
+Installation
+------------
 
-1. Download a compiled plugin form the [Releases][download] page on Github or
+1. Download a binary package from the [Releases][download] page on Github or
 build it yourself from source code (see below).
 2. Extract/copy `crashdetect.so` or `crashdetect.dll` to `<sever>/plugins/`.
-3. Add `crashdetect` (Windows) or `crashdetect.so` (Linux) to the `plugins` line of your server.cfg.
+3. Add `crashdetect` (Windows) or `crashdetect.so` (Linux) to the `plugins`
+   line of your server.cfg.
 
-Building on Linux
------------------
+Binary archives come with an include file (`crashdetect.inc`) that contains
+some helper functions that you may find useful. But **you don't need to
+include** it to be able to use CrashDetect, it's not required.
 
-Install gcc and g++, make and cmake. On Ubuntu you would do that with:
+Usage
+-----
+
+Apart from installing the plugin you don't have to do anything further to
+start receiving errors reports. By default, all the errors will be saved in 
+your `server_log.txt` but this can be changed 
+(see [Configuration](#configuration)).
+
+Please be aware that when using this plugin your code WILL run slower due
+to the overhead associated with detecting errors and providing accurate
+error information (for exmaple, some runtime optimizations are diasbled).
+Usually this is fine during development, but it's not recommended to load
+CrashDetect on a production (live) server with many players.
+
+Build instructions
+------------------
+
+If you want to compile CrashDetect from source code, e.g. to fix a bug and
+submit a pull request, simply follow the steps below.
+
+### Linux
+
+Install gcc and g++, make and cmake. On Ubuntu you would do that like so:
 
 ```
 sudo apt-get install gcc g++ make cmake
 ```
 
-If you're building on a 64-bit system you'll need multilib packages for gcc and g++:
+If you're on a 64-bit system you'll need additional packages for compiling
+for 32-bit:
 
 ```
 sudo apt-get install gcc-multilib g++-multilib
 ```
 
-If you're building on CentOS, install the following packages:
+For CentOS:
 
 ```
 yum install gcc gcc-c++ cmake28 make
@@ -47,8 +72,7 @@ cmake ../ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 make
 ```
 
-Building on Windows
--------------------
+### Windows
 
 You'll need to install CMake and Visual Studio (Express edition will suffice).
 After that, either run cmake from the command line:
@@ -68,14 +92,17 @@ To build the project:
 path/to/cmake.exe --build . --config Release
 ```
 
-You can also build it from within Visual Studio: open build/crashdetect.sln and
-go to menu -> Build -> Build Solution (or just press F7).
+You can also build it from within Visual Studio: open build/crashdetect.sln
+and go to menu -> Build -> Build Solution (or just press F7).
 
 Configuration
 -------------
 
-CrashDetect reads settings from server.cfg, the server configuration file.
-Below is the list of available settings along with some examples.
+CrashDetect reads settings from server.cfg, the server configuration file. This
+is done during plugin loading, so if you change any settings you will probably
+need to restart your server.
+
+Available settings:
 
 * `trace <flags>`
 
@@ -100,26 +127,28 @@ Below is the list of available settings along with some examples.
 
   Examples:
 
-  * `trace_filter Player`     - output functions whose name contains `Player`
+  * `trace_filter Player` - output functions whose name contains `Player`
   * `trace_filter playerid=0` - show functions whose `playerid` parameter is 0
 
 * `crashdetect_log <filename>`
-  
+
   Use a custom log file for output.
 
-  By default all diagnostic information is printed to the server log. This option
-  lets you redirect output to a separate file.
+  By default all diagnostic information is printed to the server log. This
+  option lets you redirect output to a separate file.
 
 Debug info
 ----------
 
-To get as much useful information as possible in crash and runtime error reports
-during debugging [compile your script(s) with debug info][debug-info].
+For best debugging experience, make sure you
+[compile your script with debug info enabled][debug-info]. Doing this will let
+you see more information in stack traces such as function names, prameter names
+and values, source file names and line numbers.
 
 License
 -------
 
-Licensed under the 2-clause BSD license. See the LICENSE.txt file.
+Licensed under the 2-clause BSD license. See [LICENSE.txt](LICENSE.txt).
 
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [version]: http://badge.fury.io/gh/Zeex%2Fsamp-plugin-crashdetect
