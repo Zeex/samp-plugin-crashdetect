@@ -399,13 +399,15 @@ void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
   AMXRef amx = call_stack_.Top().amx();
   AMXRef top_amx = amx;
 
-  stream << "AMX backtrace:";
-
   AMXCallStack calls = call_stack_;
 
   cell cip = top_amx.GetCip();
   cell frm = top_amx.GetFrm();
   int level = 0;
+
+  if (!calls.IsEmpty() && cip != 0) {
+    stream << "AMX backtrace:";
+  }
 
   while (!calls.IsEmpty() && cip != 0 && amx == top_amx) {
     AMXCall call = calls.Pop();
