@@ -61,8 +61,8 @@ bool IsMain(AMXRef amx, cell address) {
 }
 
 cell GetReturnAddress(AMXRef amx, cell frame_address) {
-  return *reinterpret_cast<cell*>(amx.GetData() + frame_address
-                                  + sizeof(cell));
+  return *reinterpret_cast<cell*>(
+    amx.GetData() + frame_address + sizeof(cell));
 }
 
 cell GetReturnAddressSafe(AMXRef amx, cell frame_address) {
@@ -592,62 +592,62 @@ void AMXStackFramePrinter::PrintVariableArguments(int number) {
 void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
   AMXStackFrame prev_frame = frame.GetPrevious();
 
-  if (prev_frame.address() != 0) {
-    // Although the symbol's code start address points at the state
-    // switch code block, function arguments actually use the real
-    // function address for the code start because in different states
-    // they may be not the same.
-    cell func_address = frame.caller_address();
-    if (UsesAutomata(frame)) {
-      func_address = GetRealFunctionAddress(frame.amx(),
-                                            frame.caller_address(),
-                                            frame.return_address());
+  if (prev_frame.address() == 0) {
+    return;
+  }
+
+  // Despite that the symbol's code start address points at the state switch
+  // code block, function arguments actually use the real function address
+  // for the code start because in different states they may be not the same.
+  // So we start by determining the address of the function.
+  cell func_address = frame.caller_address();
+  if (UsesAutomata(frame)) {
+    func_address = GetRealFunctionAddress(frame.amx(),
+                                          frame.caller_address(),
+                                          frame.return_address());
+  }
+
+  std::vector<AMXDebugSymbol> args;
+  cell num_named_args = 0;
+  cell num_actual_args = GetNumArguments(frame.amx(), prev_frame.address());
+
+  if (debug_info_.IsLoaded()) {
+    std::remove_copy_if(debug_info_.GetSymbols().begin(),
+                        debug_info_.GetSymbols().end(),
+                        std::back_inserter(args),
+                        std::not1(IsArgumentOf(func_address)));
+    std::sort(args.begin(), args.end());
+    num_named_args = static_cast<int>(args.size());
+  } else {
+    static const int kMaxRawArgs = 10;
+    num_named_args = std::min(kMaxRawArgs, num_actual_args);
+  }
+
+  // Print a comma-separated list of arguments and their values. If debug
+  // info is not available argument names are omitted (only their values
+  // are printed).
+  for (cell i = 0; i < num_named_args; i++) {
+    if (i > 0) {
+      stream_ << ", ";
     }
-
-    std::vector<AMXDebugSymbol> args;
-    int num_actual_args = 0;
-
     if (debug_info_.IsLoaded()) {
-      std::remove_copy_if(debug_info_.GetSymbols().begin(),
-                          debug_info_.GetSymbols().end(),
-                          std::back_inserter(args),
-                          std::not1(IsArgumentOf(func_address)));
-      std::sort(args.begin(), args.end());
-      num_actual_args = static_cast<int>(args.size());
+      PrintArgument(prev_frame, args[i], i);
     } else {
-      static const int kMaxRawArgs = 10;
-      num_actual_args = std::min(kMaxRawArgs,
-                                 GetNumArgs(frame.amx(),
-                                 prev_frame.address()));
+      PrintArgument(prev_frame, i);
     }
+  }
 
-    // Print a comma-separated list of arguments and their values.
-    // If debug info is not available argument names are omitted,
-    // so only the values are printed.
-    for (int i = 0; i < num_actual_args; i++) {
-      if (i > 0) {
-        stream_ << ", ";
-      }
-      if (debug_info_.IsLoaded()) {
-        PrintArgument(prev_frame, args[i], i);
-      } else {
-        PrintArgument(prev_frame, i);
-      }
+  // If the number of actual arguments passed to the function exceeds the
+  // number of arguments that we know of from debug info, it's probably a
+  // variadic function (uses the ... syntax). We don't evaluate such
+  // arguments simply say that they are present as we can't show anything
+  // useful about their names and types.
+  cell num_var_args = num_actual_args - num_named_args;
+  if (num_var_args > 0) {
+    if (num_named_args != 0) {
+      stream_ << ", ";
     }
-
-    // If the number of actual arguments passed to the function exceeds
-    // that obtained via debug info the function may take a variable
-    // number of arguments. In this case we don't evaluate them but just
-    // just say that they are present as we can't say anything about
-    // their names and types.
-    int num_var_args =
-      GetNumArgs(frame.amx(), prev_frame.address()) - num_actual_args;
-    if (num_var_args > 0) {
-      if (num_actual_args != 0) {
-        stream_ << ", ";
-      }
-      PrintVariableArguments(num_var_args);
-    }
+    PrintVariableArguments(num_var_args);
   }
 }
 
