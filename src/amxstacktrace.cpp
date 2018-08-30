@@ -230,7 +230,7 @@ cell GetNumArguments(AMXRef amx, cell frame_address) {
   // work correctly we need to make sure num_bytes is not converted to an
   // unsigned integer (size_t) by explicitly casting the sizeof part to a
   // signed type (cell).
-  return num_bytes / (cell)sizeof(cell);
+  return num_bytes / static_cast<cell>(sizeof(cell));
 }
 
 bool IsPrintableChar(char c) {
@@ -587,13 +587,6 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
   }
 }
 
-void AMXStackFramePrinter::PrintVariableArguments(int number) {
-  assert(number > 0);
-  stream_ << "... <" << number << " more "
-          << (number == 1 ? "argument" : "arguments")
-          << ">";
-}
-
 void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
   AMXStackFrame prev_frame = frame.GetPrevious();
 
@@ -613,8 +606,14 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
   }
 
   std::vector<AMXDebugSymbol> args;
-  cell num_named_args = 0;
   cell num_actual_args = GetNumArguments(frame.amx(), prev_frame.address());
+  if (num_actual_args < 0) {
+    // For better compatibility with YSI, if the the count is negative use
+    // the count from the previous frame.
+    num_actual_args =
+      GetNumArguments(frame.amx(), prev_frame.GetPrevious().address());
+  }
+  cell num_printed_args = std::min(10, num_actual_args);
 
   if (debug_info_.IsLoaded()) {
     std::remove_copy_if(debug_info_.GetSymbols().begin(),
@@ -622,37 +621,31 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
                         std::back_inserter(args),
                         std::not1(IsArgumentOf(func_address)));
     std::sort(args.begin(), args.end());
-    num_named_args = static_cast<int>(args.size());
-  } else {
-    static const int kMaxRawArgs = 10;
-    num_named_args = std::min(kMaxRawArgs, num_actual_args);
   }
 
   // Print a comma-separated list of arguments and their values. If debug
   // info is not available argument names are omitted (only their values
   // are printed).
-  for (cell i = 0; i < num_named_args; i++) {
+  for (cell i = 0; i < num_printed_args; i++) {
     if (i > 0) {
       stream_ << ", ";
     }
-    if (debug_info_.IsLoaded()) {
+    if (debug_info_.IsLoaded() && i < static_cast<cell>(args.size())) {
       PrintArgument(prev_frame, args[i], i);
     } else {
       PrintArgument(prev_frame, i);
     }
   }
 
-  // If the number of actual arguments passed to the function exceeds the
-  // number of arguments that we know of from debug info, it's probably a
-  // variadic function (uses the ... syntax). We don't evaluate such
-  // arguments simply say that they are present as we can't show anything
-  // useful about their names and types.
-  cell num_var_args = num_actual_args - num_named_args;
-  if (num_var_args > 0) {
-    if (num_named_args != 0) {
+  cell num_more_args = num_actual_args - num_printed_args;
+  if (num_more_args > 0) {
+    if (num_more_args != 0) {
       stream_ << ", ";
     }
-    PrintVariableArguments(num_var_args);
+    stream_ << "... <"
+            << num_more_args
+            << " more " << (num_more_args == 1 ? "argument" : "arguments")
+            << ">";
   }
 }
 
