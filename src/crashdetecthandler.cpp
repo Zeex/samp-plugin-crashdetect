@@ -30,7 +30,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <configreader.h>
 #include <amx/amxaux.h>
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
@@ -41,6 +40,7 @@
 #include "crashdetecthandler.h"
 #include "fileutils.h"
 #include "log.h"
+#include "options.h"
 #include "os.h"
 #include "stacktrace.h"
 #include "stringutils.h"
@@ -49,8 +49,6 @@
 #define AMX_EXEC_GDK_42 (-10000)
 
 namespace {
-
-ConfigReader server_cfg("server.cfg");
 
 template<typename Printer>
 class PrintLine : public std::unary_function<const std::string &, void> {
@@ -71,11 +69,6 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 }
 
 } // anonymous namespace
-
-unsigned int CrashDetectHandler::trace_flags_(
-  TraceFlagsFromString(server_cfg.GetValueWithDefault("trace")));
-RegExp CrashDetectHandler::trace_filter_(
-  server_cfg.GetValueWithDefault("trace_filter", ".*"));
 
 AMXCallStack CrashDetectHandler::call_stack_;
 
@@ -114,23 +107,9 @@ int CrashDetectHandler::Unload() {
   return AMX_ERR_NONE;
 }
 
-unsigned int CrashDetectHandler::TraceFlagsFromString(const std::string &s) {
-  unsigned int flags = 0;
-  for (std::size_t i = 0; i < s.length(); i++) {
-    switch (s[i]) {
-      case 'n':
-        flags |= CrashDetectHandler::TRACE_NATIVES;
-      case 'p':
-        flags |= CrashDetectHandler::TRACE_PUBLICS;
-      case 'f':
-        flags |= CrashDetectHandler::TRACE_FUNCTIONS;
-    }
-  }
-  return flags;
-}
-
 int CrashDetectHandler::ProcessDebugHook() {
-  if (amx_.GetFrm() < last_frame_ && (trace_flags_ & TRACE_FUNCTIONS)
+  if (amx_.GetFrm() < last_frame_
+      && (Options::global_options().trace_flags() & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
     AMXStackTrace trace = GetAMXStackTrace(
       amx_,
@@ -150,11 +129,12 @@ int CrashDetectHandler::ProcessCallback(cell index,
                                         cell *params) {
   call_stack_.Push(AMXCall::Native(amx_, index));
 
-  if (trace_flags_ & TRACE_NATIVES) {
+  if (Options::global_options().trace_flags() & TRACE_NATIVES) {
     std::stringstream stream;
     const char *name = amx_.GetNativeName(index);
     stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
-    if (trace_filter_.Test(stream.str())) {
+    if (Options::global_options().trace_filter() == 0
+        || Options::global_options().trace_filter()->Test(stream.str())) {
       PrintStream(LogTracePrint, stream);
     }
   }
@@ -168,10 +148,10 @@ int CrashDetectHandler::ProcessCallback(cell index,
 int CrashDetectHandler::ProcessExec(cell *retval, int index) {
   call_stack_.Push(AMXCall::Public(amx_, index));
 
-  if (trace_flags_ & TRACE_FUNCTIONS) {
+  if (Options::global_options().trace_flags() & TRACE_FUNCTIONS) {
     last_frame_ = 0;
   }
-  if (trace_flags_ & TRACE_PUBLICS) {
+  if (Options::global_options().trace_flags() & TRACE_PUBLICS) {
     if (cell address = amx_.GetPublicAddress(index)) {
       AMXStackTrace trace = GetAMXStackTrace(
         amx_,
@@ -321,7 +301,8 @@ void CrashDetectHandler::PrintTraceFrame(const AMXStackFrame &frame,
   std::stringstream stream;
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
-  if (trace_filter_.Test(stream.str())) {
+  if (Options::global_options().trace_filter() == 0
+      || Options::global_options().trace_filter()->Test(stream.str())) {
     PrintStream(LogTracePrint, stream);
   }
 }

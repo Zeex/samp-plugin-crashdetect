@@ -37,6 +37,8 @@ set(CRASHDETECT_SOURCES
   logprintf.h
   natives.cpp
   natives.h
+  options.cpp
+  options.h
   os.h
   plugin.cpp
   plugin.def

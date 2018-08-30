@@ -45,13 +45,6 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
  friend class AMXHandler<CrashDetectHandler>; // for accessing private ctor
 
  public:
-  enum TraceFlags {
-    TRACE_NONE = 0x00,
-    TRACE_NATIVES = 0x01,
-    TRACE_PUBLICS = 0x02,
-    TRACE_FUNCTIONS = 0x04
-  };
-
   void set_amx_path_finder(AMXPathFinder *finder) {
     amx_path_finder_ = finder;
   }
@@ -103,8 +96,6 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   bool block_exec_errors_;
 
  private:
-  static unsigned int trace_flags_;
-  static RegExp trace_filter_;
   static AMXCallStack call_stack_;
 };
 

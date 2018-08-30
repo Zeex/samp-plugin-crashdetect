@@ -24,24 +24,22 @@
 
 #include <ctime>
 #include <cstdio>
-#include <configreader.h>
 #include "log.h"
 #include "logprintf.h"
+#include "options.h"
 
 namespace {
 
 class Log {
  public:
   Log(): file_(0) {
-    ConfigReader server_cfg("server.cfg");
-    std::string filename = server_cfg.GetValueWithDefault("crashdetect_log");
+    const std::string &filename = Options::global_options().log_path();
     if (!filename.empty()) {
       file_ = std::fopen(filename.c_str(), "a");
       std::setbuf(file_, 0);
     }
     if (file_ != 0) {
-      time_format_ =
-        server_cfg.GetValueWithDefault("logtimeformat", "[%H:%M:%S]");
+      time_format_ = Options::global_options().log_time_format();
     }
   }
 
@@ -51,14 +49,11 @@ class Log {
     }
   }
 
-  void PrintV(const char *prefix,
-              const char *format,
-              std::va_list va) {
-    std::string new_format;
-
+  void PrintV(const char *prefix, const char *format, std::va_list va) {
     if (file_ != 0) {
+      std::string new_format;
       if (!time_format_.empty()) {
-        char time_buffer[128];
+        char time_buffer[64];
         std::time_t time = std::time(0);
         std::strftime(time_buffer,
                       sizeof(time_buffer),
@@ -67,16 +62,12 @@ class Log {
         new_format.append(time_buffer);
         new_format.append(" ");
       }
-    } else {
-      new_format.append(prefix);
-    }
-
-    new_format.append(format);
-
-    if (file_ != 0) {
+      new_format.append(format);
       new_format.append("\n");
       vfprintf(file_, new_format.c_str(), va);
     } else {
+      std::string new_format(prefix);
+      new_format.append(format);
       vlogprintf(new_format.c_str(), va);
     }
   }
@@ -86,11 +77,10 @@ class Log {
   std::string time_format_;
 };
 
-Log global_log;
-
 } // namespace
 
 void LogPrintV(const char *prefix, const char *format, std::va_list va) {
+  static Log global_log;
   global_log.PrintV(prefix, format, va);
 }
 
