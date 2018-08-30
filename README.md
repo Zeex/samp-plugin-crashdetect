@@ -84,11 +84,12 @@ Available settings:
   By default all diagnostic information is printed to the server log. This
   option lets you redirect output to a separate file.
 
-Build instructions
-------------------
+Building from source code
+-------------------------
 
-If you want to compile CrashDetect from source code, e.g. to fix a bug and
-submit a pull request, simply follow the steps below.
+If you want to build CrashDetect from source code, e.g. to fix a bug and 
+submit a pull request, simply follow the steps below. You will need a C++ 
+compiler and CMake.
 
 ### Linux
 
