@@ -107,8 +107,8 @@ Below is the list of available settings along with some examples.
   
   Use a custom log file for output.
 
-  By default crashes and errors are printed to the server log. This options
-  allows you to set a different file for that.
+  By default all diagnostic information is printed to the server log. This option
+  lets you redirect output to a separate file.
 
 Debug info
 ----------
