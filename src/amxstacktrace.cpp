@@ -213,19 +213,24 @@ class IsArgumentOf : public std::unary_function<AMXDebugSymbol, bool> {
 };
 
 cell GetArgumentValue(AMXRef amx, cell frame_address, int index) {
-  cell data = reinterpret_cast<cell>(amx.GetData());
-  cell arg_offset = data + frame_address + (3 + index) * sizeof(cell);
-  return *reinterpret_cast<cell*>(arg_offset);
+  cell arg_address = frame_address + (3 + index) * sizeof(cell);
+  return *reinterpret_cast<cell*>(amx.GetData() + arg_address);
 }
 
 cell GetArgumentValue(const AMXStackFrame &frame, int index) {
   return GetArgumentValue(frame.amx(), frame.address(), index);
 }
 
-cell GetNumArgs(AMXRef amx, cell frame_address) {
-  cell data = reinterpret_cast<cell>(amx.GetData());
-  cell num_args_offset = data + frame_address + 2 * sizeof(cell);
-  return *reinterpret_cast<cell*>(num_args_offset) / sizeof(cell);
+cell GetNumArguments(AMXRef amx, cell frame_address) {
+  cell num_args_address = frame_address + 2 * sizeof(cell);
+  cell num_bytes =
+    *reinterpret_cast<cell*>(amx.GetData() + num_args_address);
+  // Mote: num_bytes can be negative! e.g. YSI puts a negative count onto
+  // the stack to do its magic. Therefore, to get the below arithmetic to
+  // work correctly we need to make sure num_bytes is not converted to an
+  // unsigned integer (size_t) by explicitly casting the sizeof part to a
+  // signed type (cell).
+  return num_bytes / (cell)sizeof(cell);
 }
 
 bool IsPrintableChar(char c) {
