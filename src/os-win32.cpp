@@ -78,7 +78,8 @@ std::string GetModuleName(void *address) {
       DWORD size = filename.size();
       do {
         size = GetModuleFileName((HMODULE)mbi.AllocationBase,
-                                 &filename[0], filename.size());
+                                 &filename[0],
+                                 filename.size());
         if (size < filename.size() ||
             GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
           break;

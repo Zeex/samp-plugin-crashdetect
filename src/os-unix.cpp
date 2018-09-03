@@ -87,9 +87,10 @@ void GetLoadedModules(std::vector<Module> &modules) {
 std::string GetModuleName(void *address) {
   std::string filename;
   if (address != 0) {
-    Dl_info info;
-    dladdr(address, &info);
-    filename.assign(info.dli_fname);
+    Dl_info info = {0};
+    if (dladdr(address, &info) && info.dli_fname != 0) {
+      filename.assign(info.dli_fname);
+    }
   }
   return filename;
 }
