@@ -28,7 +28,6 @@
 #include <vector>
 #include <windows.h>
 #include <tlhelp32.h>
-
 #include "os.h"
 
 namespace os {
@@ -181,8 +180,9 @@ DWORD GetMainThreadId() {
                            &info.kernel_time,   &info.user_time);
   }
 
-  threads.erase(std::remove_if(threads.begin(), threads.end(),
-                               IsInvalidThread()), threads.end());
+  threads.erase(
+    std::remove_if(threads.begin(), threads.end(), IsInvalidThread()),
+    threads.end());
   if (!threads.empty()) {
     return std::min_element(threads.begin(), threads.end(),
                             CompareThreads())->id;
@@ -193,8 +193,8 @@ DWORD GetMainThreadId() {
 BOOL GetMainThreadContext(PCONTEXT context) {
   DWORD thread_id = GetMainThreadId();
   if (thread_id != 0) {
-    HANDLE thread_handle = GetThreadHandle(thread_id, THREAD_GET_CONTEXT |
-                                                      THREAD_SUSPEND_RESUME);
+    HANDLE thread_handle =
+      GetThreadHandle(thread_id, THREAD_GET_CONTEXT | THREAD_SUSPEND_RESUME);
     if (thread_handle != NULL) {
       if (SuspendThread(thread_handle) != (DWORD)-1) {
         BOOL ok = GetThreadContext(thread_handle, context) != 0;
@@ -207,14 +207,11 @@ BOOL GetMainThreadContext(PCONTEXT context) {
 }
 
 BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
-  switch (dwCtrlType) {
-  case CTRL_C_EVENT:
-    if (interrupt_handler != 0) {
-      CONTEXT context = {0};
-      context.ContextFlags = CONTEXT_FULL;
-      GetMainThreadContext(&context);
-      interrupt_handler(Context(&context));
-    }
+  if (dwCtrlType == CTRL_C_EVENT && interrupt_handler != 0) {
+    CONTEXT context = {0};
+    context.ContextFlags = CONTEXT_FULL;
+    GetMainThreadContext(&context);
+    interrupt_handler(Context(&context));
   }
   return FALSE;
 }

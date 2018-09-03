@@ -24,14 +24,13 @@
 
 #include <algorithm>
 #include <cctype>
-#include "stringutils.h"
-
 #if defined LINUX
   #include <strings.h>
 #elif defined _MSC_VER
   #include <string.h>
   #define strcasecmp _stricmp
 #endif
+#include "stringutils.h"
 
 namespace stringutils {
 

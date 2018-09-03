@@ -25,12 +25,10 @@
 #include <cassert>
 #include <cstring>
 #include <vector>
-
 #include <dlfcn.h>
 #include <link.h>
 #include <signal.h>
 #include <ucontext.h>
-
 #include "os.h"
 
 extern const char *__progname;
