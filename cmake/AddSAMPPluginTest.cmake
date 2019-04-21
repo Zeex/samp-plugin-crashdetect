@@ -16,28 +16,18 @@ function(add_samp_plugin_test)
   set(options TARGET OUTPUT_FILE SCRIPT TIMEOUT CONFIG WORKING_DIRECTORY)
   cmake_parse_arguments(ARG "" "${options}" "" ${ARGN})
 
-  find_package(SAMPServerCLI REQUIRED)
-  set(command ${SAMPServerCLI_EXECUTABLE})
+  find_package(PluginRunner REQUIRED)
+  set(command ${PluginRunner_EXECUTABLE})
 
-  if(ARG_SCRIPT)
-    list(APPEND args --gamemode ${ARG_SCRIPT})
+  if(NOT ARG_SCRIPT)
+    message(FATAL_ERROR "SCRIPT argument is required")
   endif()
 
-  if(ARG_TIMEOUT)
-    list(APPEND args --timeout ${ARG_TIMEOUT})
-  endif()
+  add_test(NAME ${name} COMMAND ${command}
+           $<TARGET_FILE:${ARG_TARGET}> ${ARG_SCRIPT})
 
-  if(ARG_WORKING_DIRECTORY)
-    list(APPEND args --workdir ${ARG_WORKING_DIRECTORY})
-  endif()
-
-  add_test(NAME ${name} COMMAND ${command} ${args} --output
-           --plugin $<TARGET_FILE:${ARG_TARGET}>)
-
-  if(ARG_SCRIPT)
-    get_filename_component(AMX_PATH ${ARG_SCRIPT} DIRECTORY)
-    set_tests_properties(${name} PROPERTIES ENVIRONMENT AMX_PATH=${AMX_PATH})
-  endif()
+  get_filename_component(AMX_PATH ${ARG_SCRIPT} DIRECTORY)
+  set_tests_properties(${name} PROPERTIES ENVIRONMENT AMX_PATH=${AMX_PATH})
 
   if(ARG_OUTPUT_FILE)
     file(READ ${ARG_OUTPUT_FILE} output)

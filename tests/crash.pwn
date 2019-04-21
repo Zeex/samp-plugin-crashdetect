@@ -1,4 +1,4 @@
-#include <a_samp>
+#include "test"
 
 main() {
     function1();

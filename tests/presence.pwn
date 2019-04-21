@@ -1,6 +1,5 @@
 // OUTPUT: CrashDetect is running: yes
 
-#include <a_samp>
 #include <crashdetect>
 #include "test"
 
@@ -11,5 +10,4 @@ Test() {
 
 main() {
 	Test();
-	TestExit();
 }

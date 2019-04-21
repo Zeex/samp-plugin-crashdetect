@@ -2,19 +2,17 @@
 // OUTPUT: Foo:on
 // OUTPUT: \[debug\] Run time error 2: "Assertion failed"
 // OUTPUT: \[debug\] AMX backtrace:
-// OUTPUT: \[debug\] #0 000001f8 in foo \(x=2\) <Foo:on, undefined> at .*states\.pwn:33
-// OUTPUT: \[debug\] #1 0000013c in public test \(\) at .*states\.pwn:23
-// OUTPUT: \[debug\] #2 native CallLocalFunction \(\) in (samp03svr|samp-server\.exe)
-// OUTPUT: \[debug\] #3 000000dc in main \(\) at .*states\.pwn:16
+// OUTPUT: \[debug\] #0 000001ac in foo \(x=2\) <Foo:on, undefined> at .*states\.pwn:31
+// OUTPUT: \[debug\] #1 000000f0 in public test \(\) at .*states\.pwn:21
+// OUTPUT: \[debug\] #2 native CallLocalFunction \(\) in plugin-runner(\.exe)?
+// OUTPUT: \[debug\] #3 000000a4 in main \(\) at .*states\.pwn:15
 
-#include <a_samp>
 #include "test"
 
 public test();
 
 main() {
 	CallLocalFunction("test", "");
-	TestExit();
 }
 
 public test() {

@@ -8,12 +8,9 @@ install:
   - 7z x pawnc-3.10.20150412-windows.zip
   - set PATH=%PATH%;%CD%\pawnc-3.10.20150412-windows\bin
 
-  - appveyor DownloadFile https://www.dropbox.com/s/9b5wca29x8uc9yi/samp03z_svr_R4_win32.zip?dl=1
-  - 7z x samp03z_svr_R4_win32.zip
-  - set SAMP_SERVER_ROOT=%CD%
-
-  - set PATH=%PATH%;C:\Python27\Scripts
-  - pip install samp-server-cli
+  - appveyor DownloadFile https://github.com/Zeex/plugin-runner/releases/download/v1.1.1/plugin-runner-1.1.1-win32.zip
+  - 7z x plugin-runner-1.1.1-win32.zip
+  - set PATH=%PATH%;%CD%\plugin-runner-1.1.1-win32
 
 before_build:
   - cmake . -G "Visual Studio 10 2010"
