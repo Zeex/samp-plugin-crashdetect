@@ -19,7 +19,7 @@ install:
 
 before_script:
   - cmake . -DCMAKE_BUILD_TYPE=Release
-            -DCMAKE_COMPILER=gcc-4.4
+            -DCMAKE_C_COMPILER=gcc-4.4
             -DCMAKE_CXX_COMPILER=g++-4.4
 
 script:
