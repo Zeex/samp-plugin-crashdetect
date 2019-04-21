@@ -8,9 +8,9 @@ install:
   - 7z x pawnc-3.10.20150412-windows.zip
   - set PATH=%PATH%;%CD%\pawnc-3.10.20150412-windows\bin
 
-  - appveyor DownloadFile https://github.com/Zeex/plugin-runner/releases/download/v1.1.1/plugin-runner-1.1.1-win32.zip
-  - 7z x plugin-runner-1.1.1-win32.zip
-  - set PATH=%PATH%;%CD%\plugin-runner-1.1.1-win32
+  - appveyor DownloadFile https://github.com/Zeex/plugin-runner/releases/download/v1.1.2/plugin-runner-1.1.2-win32.zip
+  - 7z x plugin-runner-1.1.2-win32.zip
+  - set PATH=%PATH%;%CD%\plugin-runner-1.1.2-win32
 
 before_build:
   - cmake . -G "Visual Studio 10 2010"

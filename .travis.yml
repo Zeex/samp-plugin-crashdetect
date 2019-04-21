@@ -3,7 +3,7 @@ compiler: gcc
 
 env:
   global:
-    - PATH=$PATH:$TRAVIS_BUILD_DIR/plugin-runner-1.1.1-linux
+    - PATH=$PATH:$TRAVIS_BUILD_DIR/plugin-runner-1.1.2-linux
 
 install:
   - sudo apt-add-repository -y ppa:kubuntu-ppa/backports
@@ -14,8 +14,8 @@ install:
   - sudo tar xvf pawnc-3.10.20150412-linux.tar.gz --strip-components=1 -C /usr/local
   - sudo ldconfig
 
-  - wget https://github.com/Zeex/plugin-runner/releases/download/v1.1.1/plugin-runner-1.1.1-linux.tar.gz
-  - tar xvf plugin-runner-1.1.1-linux.tar.gz
+  - wget https://github.com/Zeex/plugin-runner/releases/download/v1.1.2/plugin-runner-1.1.2-linux.tar.gz
+  - tar xvf plugin-runner-1.1.2-linux.tar.gz
 
 before_script:
   - cmake . -DCMAKE_BUILD_TYPE=Release
