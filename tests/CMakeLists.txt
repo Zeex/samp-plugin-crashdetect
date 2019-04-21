@@ -15,8 +15,8 @@ macro(test target name)
     endif()
   endforeach()
 
-  string(REPLACE "<TEST_OUTPUT>" "\n${_test_output}" _full_test_output "\
-Loaded plugin: .*\n\
+  string(REPLACE "<TEST_OUTPUT>" "\n${_test_output}" _full_test_output "
+Loaded plugin: .*
 Loaded script: .*<TEST_OUTPUT>"
   )
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${name}.out" ${_full_test_output})
