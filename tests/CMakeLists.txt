@@ -1,4 +1,4 @@
-include(AddSAMPPluginTest)
+include(AddSAMPPluginTestPR)
 
 find_package(PawnCC REQUIRED)
 find_package(PluginRunner REQUIRED)
@@ -38,6 +38,7 @@ Loaded script: .*<TEST_OUTPUT>"
     "-i${PROJECT_SOURCE_DIR}/include"
     "-o${CMAKE_CURRENT_BINARY_DIR}/${name}"
   )
+  string(REPLACE ";" " " _compile_flags_str "${_compile_flags}")
 
   if(UNIX)
     string(REPLACE "\;" "\\$<SEMICOLON>" _compile_flags "${_compile_flags}")
@@ -47,7 +48,7 @@ Loaded script: .*<TEST_OUTPUT>"
   add_custom_command(
     OUTPUT            ${CMAKE_CURRENT_BINARY_DIR}/${name}.amx
     COMMAND           ${PawnCC_EXECUTABLE} ${_compile_flags}
-    COMMENT           "Compiling test ${name}"
+    COMMENT           "Compiling test ${name}: ${PawnCC_EXECUTABLE} ${_compile_flags_str}"
     DEPENDS           ${name}.pwn test.inc
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
