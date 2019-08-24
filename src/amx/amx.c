@@ -1857,45 +1857,45 @@ static const void * const amx_opcodelist[] = {
     ABORT(amx,AMX_ERR_INVINSTR);
   op_load_pri:
     GETPARAM(offs);
-    pri= * (cell *)(data+(int)offs);
+    pri=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_load_alt:
     GETPARAM(offs);
-    alt= * (cell *)(data+(int)offs);
+    alt=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_load_s_pri:
     GETPARAM(offs);
-    pri= * (cell *)(data+(int)frm+(int)offs);
+    pri=*(cell *)(data+(int)frm+(int)offs);
     NEXT(cip);
   op_load_s_alt:
     GETPARAM(offs);
-    alt= * (cell *)(data+(int)frm+(int)offs);
+    alt=*(cell *)(data+(int)frm+(int)offs);
     NEXT(cip);
   op_lref_pri:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)offs);
-    pri= * (cell *)(data+(int)offs);
+    offs=*(cell *)(data+(int)offs);
+    pri=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_lref_alt:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)offs);
-    alt= * (cell *)(data+(int)offs);
+    offs=*(cell *)(data+(int)offs);
+    alt=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_lref_s_pri:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)frm+(int)offs);
-    pri= * (cell *)(data+(int)offs);
+    offs=*(cell *)(data+(int)frm+(int)offs);
+    pri=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_lref_s_alt:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)frm+(int)offs);
-    alt= * (cell *)(data+(int)offs);
+    offs=*(cell *)(data+(int)frm+(int)offs);
+    alt=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_load_i:
     /* verify address */
     if (pri>=hea && pri<stk || (ucell)pri>=(ucell)amx->stp)
       ABORT(amx,AMX_ERR_MEMACCESS);
-    pri= * (cell *)(data+(int)pri);
+    pri=*(cell *)(data+(int)pri);
     NEXT(cip);
   op_lodb_i:
     GETPARAM(offs);
@@ -1904,13 +1904,13 @@ static const void * const amx_opcodelist[] = {
       ABORT(amx,AMX_ERR_MEMACCESS);
     switch (offs) {
     case 1:
-      pri= * (data+(int)pri);
+      pri=*(data+(int)pri);
       break;
     case 2:
-      pri= * (uint16_t *)(data+(int)pri);
+      pri=*(uint16_t *)(data+(int)pri);
       break;
     case 4:
-      pri= * (uint32_t *)(data+(int)pri);
+      pri=*(uint32_t *)(data+(int)pri);
       break;
     } /* switch */
     NEXT(cip);
@@ -1946,22 +1946,22 @@ static const void * const amx_opcodelist[] = {
     NEXT(cip);
   op_sref_pri:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)offs);
+    offs=*(cell *)(data+(int)offs);
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_sref_alt:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)offs);
+    offs=*(cell *)(data+(int)offs);
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_sref_s_pri:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)frm+(int)offs);
+    offs=*(cell *)(data+(int)frm+(int)offs);
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_sref_s_alt:
     GETPARAM(offs);
-    offs= * (cell *)(data+(int)frm+(int)offs);
+    offs=*(cell *)(data+(int)frm+(int)offs);
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_stor_i:
@@ -1992,7 +1992,7 @@ static const void * const amx_opcodelist[] = {
     /* verify address */
     if (offs>=hea && offs<stk || (ucell)offs>=(ucell)amx->stp)
       ABORT(amx,AMX_ERR_MEMACCESS);
-    pri= * (cell *)(data+(int)offs);
+    pri=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_lidx_b:
     GETPARAM(offs);
@@ -2000,7 +2000,7 @@ static const void * const amx_opcodelist[] = {
     /* verify address */
     if (offs>=hea && offs<stk || (ucell)offs>=(ucell)amx->stp)
       ABORT(amx,AMX_ERR_MEMACCESS);
-    pri= * (cell *)(data+(int)offs);
+    pri=*(cell *)(data+(int)offs);
     NEXT(cip);
   op_idxaddr:
     pri=pri*sizeof(cell)+alt;
@@ -2827,55 +2827,55 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 
 #else
 
-  for ( ;; ) {	
-    amx->cip=(cell)cip-(cell)code;
+  for (;;) {
+    amx->cip=(cell)((unsigned char *)cip-code);
     op=(OPCODE) *cip++;
     switch (op) {
     case OP_LOAD_PRI:
       GETPARAM(offs);
-      pri= * (cell *)(data+(int)offs);
+      pri=*(cell *)(data+(int)offs);
       break;
     case OP_LOAD_ALT:
       GETPARAM(offs);
-      alt= * (cell *)(data+(int)offs);
+      alt=*(cell *)(data+(int)offs);
       break;
     case OP_LOAD_S_PRI:
       GETPARAM(offs);
-      pri= * (cell *)(data+(int)frm+(int)offs);
+      pri=*(cell *)(data+(int)frm+(int)offs);
       break;
     case OP_LOAD_S_ALT:
       GETPARAM(offs);
-      alt= * (cell *)(data+(int)frm+(int)offs);
+      alt=*(cell *)(data+(int)frm+(int)offs);
       break;
     case OP_LREF_PRI:
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)offs);
-      pri= * (cell *)(data+(int)offs);
+      offs=*(cell *)(data+(int)offs);
+      pri=*(cell *)(data+(int)offs);
       break;
     case OP_LREF_ALT:
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)offs);
-      alt= * (cell *)(data+(int)offs);
+      offs=*(cell *)(data+(int)offs);
+      alt=*(cell *)(data+(int)offs);
       break;
     case OP_LREF_S_PRI:
       amx->frm=frm;
       amx->stk=stk;
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)frm+(int)offs);
-      pri= * (cell *)(data+(int)offs);
+      offs=*(cell *)(data+(int)frm+(int)offs);
+      pri=*(cell *)(data+(int)offs);
       break;
     case OP_LREF_S_ALT:
       amx->frm=frm;
       amx->stk=stk;  
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)frm+(int)offs);
-      alt= * (cell *)(data+(int)offs);
+      offs=*(cell *)(data+(int)frm+(int)offs);
+      alt=*(cell *)(data+(int)offs);
       break;
     case OP_LOAD_I:
       /* verify address */
       if (pri>=hea && pri<stk || (ucell)pri>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
-      pri= * (cell *)(data+(int)pri);
+      pri=*(cell *)(data+(int)pri);
       break;
     case OP_LODB_I:
       GETPARAM(offs);
@@ -2884,13 +2884,13 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         ABORT(amx,AMX_ERR_MEMACCESS);
       switch (offs) {
       case 1:
-        pri= * (data+(int)pri);
+        pri=*(data+(int)pri);
         break;
       case 2:
-        pri= * (uint16_t *)(data+(int)pri);
+        pri=*(uint16_t *)(data+(int)pri);
         break;
       case 4:
-        pri= * (uint32_t *)(data+(int)pri);
+        pri=*(uint32_t *)(data+(int)pri);
         break;
       } /* switch */
       break;
@@ -2928,24 +2928,24 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->frm=frm;
       amx->stk=stk;
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)offs);
+      offs=*(cell *)(data+(int)offs);
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_ALT:
       amx->frm = frm;
       amx->stk = stk;
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)offs);
+      offs=*(cell *)(data+(int)offs);
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_SREF_S_PRI:
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)frm+(int)offs);
+      offs=*(cell *)(data+(int)frm+(int)offs);
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_S_ALT:
       GETPARAM(offs);
-      offs= * (cell *)(data+(int)frm+(int)offs);
+      offs=*(cell *)(data+(int)frm+(int)offs);
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_STOR_I:
@@ -2976,7 +2976,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       /* verify address */
       if (offs>=hea && offs<stk || (ucell)offs>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
-      pri= * (cell *)(data+(int)offs);
+      pri=*(cell *)(data+(int)offs);
       break;
     case OP_LIDX_B:
       GETPARAM(offs);
@@ -2984,7 +2984,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       /* verify address */
       if (offs>=hea && offs<stk || (ucell)offs>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
-      pri= * (cell *)(data+(int)offs);
+      pri=*(cell *)(data+(int)offs);
       break;
     case OP_IDXADDR:
       pri=pri*sizeof(cell)+alt;
