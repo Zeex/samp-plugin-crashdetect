@@ -54,7 +54,7 @@ Loaded script: .*<TEST_OUTPUT>"
   )
 
   add_samp_plugin_test(${name}
-    TARGET             ${target}
+    TARGETS            ${target}
     SCRIPT             ${CMAKE_CURRENT_BINARY_DIR}/${name}
     OUTPUT_FILE        ${CMAKE_CURRENT_BINARY_DIR}/${name}.out
     TIMEOUT            1
