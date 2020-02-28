@@ -34,25 +34,28 @@ const int kMaxSymbolNameLength = 128;
 
 class DbgHelp {
  public:
-  DbgHelp(HANDLE process = NULL)
+  DbgHelp(HANDLE process = nullptr)
    : module_(LoadLibrary("DbgHelp.dll")),
      process_(process),
      initialized_(false)
   {
-    if (process_ == NULL) {
+    if (process_ == nullptr) {
       process_ = GetCurrentProcess();
     }
-    if (module_ != NULL) {
+    if (module_ != nullptr) {
       InitFunctions();
-      if (SymInitialize != 0) {
-        initialized_ = SymInitialize(process_, NULL, TRUE) != FALSE;
+      if (SymInitialize != nullptr) {
+        initialized_ = SymInitialize(process_, nullptr, TRUE) != FALSE;
       }
     }
   }
 
+  DbgHelp(const DbgHelp &) = delete;
+  DbgHelp &operator=(const DbgHelp &) = delete;
+
   ~DbgHelp() {
-    if (module_ != NULL) {
-      if (initialized_ && SymCleanup != 0) {
+    if (module_ != nullptr) {
+      if (initialized_ && SymCleanup != nullptr) {
         SymCleanup(process_);
       }
       FreeLibrary(module_);
@@ -104,16 +107,12 @@ class DbgHelp {
   StackWalk64Ptr StackWalk64;
 
   bool is_loaded() const {
-    return module_ != NULL;
+    return module_ != nullptr;
   }
 
   bool is_initialized() const {
     return initialized_;
   }
-
- private:
-  DbgHelp(const DbgHelp &);
-  void operator=(const DbgHelp &);
 
   void InitFunctions() {
     #define INIT_FUNC(Name) Name = (Name##Ptr)GetProcAddress(module_, #Name);
@@ -135,12 +134,12 @@ class DbgHelp {
 
 } // anonymous namespace
 
-void GetStackTrace(std::vector<StackFrame> &frames, void *their_context) {
-  PCONTEXT context = reinterpret_cast<PCONTEXT>(their_context);
-  CONTEXT current_context;
-  if (their_context == NULL) {
-    RtlCaptureContext(&current_context);
-    context = &current_context;
+void GetStackTrace(std::vector<StackFrame> &frames, void *context_ptr) {
+  CONTEXT context = {0};
+  if (context_ptr != nullptr) {
+    context = *reinterpret_cast<PCONTEXT>(context_ptr);
+  } else {
+    RtlCaptureContext(&context);
   }
 
   HANDLE process = GetCurrentProcess();
@@ -153,19 +152,19 @@ void GetStackTrace(std::vector<StackFrame> &frames, void *their_context) {
   ZeroMemory(&stack_frame, sizeof(stack_frame));
 
   // http://stackoverflow.com/a/136942/249230
-  stack_frame.AddrPC.Offset = context->Eip;
-  stack_frame.AddrReturn.Offset = context->Eip;
+  stack_frame.AddrPC.Offset = context.Eip;
+  stack_frame.AddrReturn.Offset = context.Eip;
   stack_frame.AddrPC.Mode = AddrModeFlat;
-  stack_frame.AddrFrame.Offset = context->Ebp;
+  stack_frame.AddrFrame.Offset = context.Ebp;
   stack_frame.AddrFrame.Mode = AddrModeFlat;
-  stack_frame.AddrStack.Offset = context->Esp;
+  stack_frame.AddrStack.Offset = context.Esp;
   stack_frame.AddrStack.Mode = AddrModeFlat;
 
-  if (!dbghelp.StackWalk64 != 0) {
+  if (dbghelp.StackWalk64 == nullptr) {
     return;
   }
 
-  SYMBOL_INFO *symbol = NULL;
+  SYMBOL_INFO *symbol = nullptr;
 
   if (dbghelp.is_initialized()) {
     SIZE_T size = sizeof(SYMBOL_INFO) + kMaxSymbolNameLength + 1;
@@ -173,10 +172,14 @@ void GetStackTrace(std::vector<StackFrame> &frames, void *their_context) {
     SYMBOL_INFO *symbol = static_cast<SYMBOL_INFO*>(HeapAlloc(GetProcessHeap(),
                                                               flags,
                                                               size));
+    if (symbol == nullptr) {
+      return;
+    }
+
     symbol->SizeOfStruct = sizeof(*symbol);
     symbol->MaxNameLen = kMaxSymbolNameLength;
 
-    if (dbghelp.SymGetOptions != 0 && dbghelp.SymSetOptions != 0) {
+    if (dbghelp.SymGetOptions != nullptr && dbghelp.SymSetOptions != nullptr) {
       DWORD options = dbghelp.SymGetOptions();
       options |= SYMOPT_FAIL_CRITICAL_ERRORS;
       dbghelp.SymSetOptions(options);
@@ -204,9 +207,9 @@ void GetStackTrace(std::vector<StackFrame> &frames, void *their_context) {
     const char *name = "";
     if (have_symbols) {
       if (dbghelp.is_initialized()
-          && dbghelp.SymFromAddr != 0
-          && symbol != 0) {
-        if (dbghelp.SymFromAddr(process, address, NULL, symbol)) {
+          && dbghelp.SymFromAddr != nullptr
+          && symbol != nullptr) {
+        if (dbghelp.SymFromAddr(process, address, nullptr, symbol)) {
           name = symbol->Name;
         }
       }
@@ -218,11 +221,11 @@ void GetStackTrace(std::vector<StackFrame> &frames, void *their_context) {
                              process,
                              GetCurrentThread(),
                              &stack_frame,
-                             (PVOID)context,
-                             NULL,
-                             NULL,
-                             NULL,
-                             NULL)) {
+                             (PVOID)&context,
+                             nullptr,
+                             nullptr,
+                             nullptr,
+                             nullptr)) {
       break;
     }
   }

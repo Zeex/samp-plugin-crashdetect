@@ -59,8 +59,8 @@ std::string GetFileExtension(const std::string &path) {
 
 const char *GetFileExtensionPtr(const char *path) {
   const char *period = std::strrchr(path, '.');
-  if (period == 0) {
-    return 0;
+  if (period == nullptr) {
+    return nullptr;
   }
   return period + 1;
 }

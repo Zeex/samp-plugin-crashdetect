@@ -44,9 +44,9 @@ void GetDirectoryFiles(const std::string &directory, const std::string &pattern,
                        std::vector<std::string> &files) 
 {
   DIR *dp;
-  if ((dp = opendir(directory.c_str())) != 0) {
+  if ((dp = opendir(directory.c_str())) != nullptr) {
     struct dirent *dirp;
-    while ((dirp = readdir(dp)) != 0) {
+    while ((dirp = readdir(dp)) != nullptr) {
       if (!fnmatch(pattern.c_str(), dirp->d_name, FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
         files.push_back(dirp->d_name);
       }

@@ -43,31 +43,39 @@
 
 namespace {
 
+//
+// We hook amx_Exec() to intercept calls to AMX entry points (public functions).
+// It's installed at plugin load time.
+//
 subhook::Hook amx_exec_hook;
 
+//
 // Path to the last loaded AMX file. This is used to make a connection between
 // *.amx files and their corresponding AMX instances.
+//
 std::string last_amx_path;
 
+//
 // Stores paths to loaded AMX files and is able to find a path by a pointer to
 // an AMX instance.
+//
 AMXPathFinder amx_path_finder;
 
 #ifdef _WIN32
   subhook::Hook create_file_hook;
 
   HANDLE WINAPI CreateFileAHook(
-    _In_ LPCSTR lpFileName,
-    _In_ DWORD dwDesiredAccess,
-    _In_ DWORD dwShareMode,
-    _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-    _In_ DWORD dwCreationDisposition,
-    _In_ DWORD dwFlagsAndAttributes,
-    _In_opt_ HANDLE hTemplateFile)
+    LPCSTR lpFileName,
+    DWORD dwDesiredAccess,
+    DWORD dwShareMode,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+    DWORD dwCreationDisposition,
+    DWORD dwFlagsAndAttributes,
+    HANDLE hTemplateFile)
   {
     subhook::ScopedHookRemove _(&create_file_hook);
     const char *ext = fileutils::GetFileExtensionPtr(lpFileName);
-    if (ext != 0 && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
+    if (ext != nullptr && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
       last_amx_path = lpFileName;
     }
     return CreateFileA(
@@ -85,7 +93,7 @@ AMXPathFinder amx_path_finder;
   FILE *FopenHook(const char *filename, const char *mode) {
     subhook::ScopedHookRemove _(&fopen_hook);
     const char *ext = fileutils::GetFileExtensionPtr(filename);
-    if (ext != 0 && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
+    if (ext != nullptr && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
       last_amx_path = filename;
     }
     return fopen(filename, mode);
@@ -106,7 +114,7 @@ int AMXAPI ProcessExec(AMX *amx, cell *retval, int index) {
     return amx_Exec(amx, retval, index);
   }
   CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
-  if (handler == 0) {
+  if (handler == nullptr) {
     return amx_Exec(amx, retval, index);
   }
   return handler->ProcessExec(retval, index);
@@ -130,7 +138,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
   void *amx_Exec_sub = subhook::Hook::ReadDst(amx_Exec_ptr);
 
-  if (amx_Exec_sub == 0) {
+  if (amx_Exec_sub == nullptr) {
     amx_exec_hook.Install(amx_Exec_ptr, (void*)ProcessExec);
   } else {
     std::string module =
@@ -151,7 +159,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   amx_path_finder.AddSearchPath("filterscripts");
 
   const char *amx_path_var = getenv("AMX_PATH");
-  if (amx_path_var != 0) {
+  if (amx_path_var != nullptr) {
     stringutils::SplitString(
       amx_path_var,
       fileutils::kNativePathListSepChar,
@@ -167,7 +175,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-  if (last_amx_path.length() != 0) {
+  if (!last_amx_path.empty()) {
     amx_path_finder.AddKnownFile(amx, last_amx_path);
   }
 

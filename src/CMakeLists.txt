@@ -27,6 +27,8 @@ set(CRASHDETECT_SOURCES
   amxref.h
   amxstacktrace.cpp
   amxstacktrace.h
+  crashdetect.cpp
+  crashdetect.h
   crashdetecthandler.cpp
   crashdetecthandler.h
   fileutils.cpp

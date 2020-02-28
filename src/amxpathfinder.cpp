@@ -36,16 +36,16 @@ AMXPathFinder::AMXFile::AMXFile(const std::string &name)
    name_(name),
    mtime_(fileutils::GetModificationTime(name))
 {
-  if (amx_ != 0) {
-    if (aux_LoadProgram(amx_, name.c_str(), 0) != AMX_ERR_NONE) {
+  if (amx_ != nullptr) {
+    if (aux_LoadProgram(amx_, name.c_str(), nullptr) != AMX_ERR_NONE) {
       std::free(amx_);
-      amx_ = 0;
+      amx_ = nullptr;
     }
   }
 }
 
 AMXPathFinder::AMXFile::~AMXFile() {
-  if (amx_ != 0) {
+  if (amx_ != nullptr) {
     aux_FreeProgram(amx_);
     std::free(amx_);
   }
@@ -100,7 +100,7 @@ std::string AMXPathFinder::Find(AMX *amx) {
           string_to_amx_file_.erase(script_it);
         }
         AMXFile *script = new AMXFile(filename);
-        if (script != 0 && script->IsLoaded()) {
+        if (script != nullptr && script->IsLoaded()) {
           string_to_amx_file_.insert(std::make_pair(filename, script));
         }
       }

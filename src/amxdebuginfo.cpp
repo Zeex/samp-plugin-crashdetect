@@ -27,7 +27,7 @@
 #include <cstring>
 #include "amxdebuginfo.h"
 
-std::vector<AMXDebugSymbolDim> AMXDebugSymbol::GetDims() const {
+std::vector<AMXDebugInfo::SymbolDim> AMXDebugInfo::Symbol::GetDims() const {
   std::vector<AMXDebugSymbolDim> dims;
   if ((IsArray() || IsArrayRef()) && GetNumDims() > 0) {
     const char *dimPtr = symbol_->name + std::strlen(symbol_->name) + 1;
@@ -40,12 +40,12 @@ std::vector<AMXDebugSymbolDim> AMXDebugSymbol::GetDims() const {
 }
 
 AMXDebugInfo::AMXDebugInfo()
- : amxdbg_(0)
+  : amxdbg_(nullptr)
 {
 }
 
 AMXDebugInfo::AMXDebugInfo(const std::string &filename)
- : amxdbg_(0)
+  : amxdbg_(nullptr)
 {
   Load(filename);
 }
@@ -55,12 +55,12 @@ AMXDebugInfo::~AMXDebugInfo() {
 }
 
 bool AMXDebugInfo::IsLoaded() const {
-  return (amxdbg_ != 0);
+  return amxdbg_ != nullptr;
 }
 
 void AMXDebugInfo::Load(const std::string &filename) {
   std::FILE* fp = std::fopen(filename.c_str(), "rb");
-  if (fp != 0) {
+  if (fp != nullptr) {
     AMX_DBG amxdbg;
     if (dbg_LoadInfo(&amxdbg, fp) == AMX_ERR_NONE) {
       amxdbg_ = new AMX_DBG(amxdbg);
@@ -70,7 +70,7 @@ void AMXDebugInfo::Load(const std::string &filename) {
 }
 
 void AMXDebugInfo::Free() {
-  if (amxdbg_ != 0) {
+  if (amxdbg_ != nullptr) {
     dbg_FreeInfo(amxdbg_);
     delete amxdbg_;
   }
@@ -240,5 +240,5 @@ cell AMXDebugInfo::GetLineAddress(long line, const std::string &file) const {
 bool AMXDebugInfo::IsPresent(AMX *amx) {
   uint16_t flags;
   amx_Flags(amx, &flags);
-  return ((flags & AMX_FLAG_DEBUG) != 0);
+  return (flags & AMX_FLAG_DEBUG) != 0;
 }

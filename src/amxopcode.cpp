@@ -33,7 +33,7 @@ static cell *GetOpcodeMap() {
     amx.flags &= ~AMX_FLAG_BROWSE;
     return opcode_map;
   #else
-    return 0;
+    return nullptr;
   #endif
 }
 

@@ -63,18 +63,16 @@ class Context {
     uint32_t eflags;
   };
 
-  Context(): native_context_(0) {}
+  Context(): native_context_(nullptr) {}
   Context(void *native_context): native_context_(native_context) {}
+  Context(const Context &) = delete;
+  Context &operator=(const Context &) = delete;
 
   void *native_context() const {
     return native_context_;
   }
 
   Registers GetRegisters() const;
-
- private:
-  Context(const Context &);
-  void operator=(const Context &);
 
  private:
   void *native_context_;

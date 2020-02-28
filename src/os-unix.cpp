@@ -37,7 +37,7 @@ namespace os {
 
 Context::Registers Context::GetRegisters() const {
   Registers registers = {0};
-  if (native_context_ != 0) {
+  if (native_context_ != nullptr) {
     ucontext_t *const context = static_cast<ucontext_t *>(native_context_);
     registers.eax = context->uc_mcontext.gregs[REG_EAX];
     registers.ebx = context->uc_mcontext.gregs[REG_EBX];
@@ -84,9 +84,9 @@ void GetLoadedModules(std::vector<Module> &modules) {
 
 std::string GetModuleName(void *address) {
   std::string filename;
-  if (address != 0) {
+  if (address != nullptr) {
     Dl_info info = {0};
-    if (dladdr(address, &info) && info.dli_fname != 0) {
+    if (dladdr(address, &info) && info.dli_fname != nullptr) {
       filename.assign(info.dli_fname);
     }
   }
@@ -99,7 +99,7 @@ typedef void (*SignalHandler)(int signal, siginfo_t *info, void *context);
 
 void SetSignalHandler(int signal,
                      SignalHandler handler,
-                     struct sigaction *prev_action = 0) {
+                     struct sigaction *prev_action = nullptr) {
   struct sigaction action;
   sigemptyset(&action.sa_mask);
   action.sa_sigaction = handler;
@@ -108,17 +108,17 @@ void SetSignalHandler(int signal,
 }
 
 void CallPreviousSignalHandler(int signal,
-                               struct sigaction *prev_action = 0) {
-  sigaction(signal, prev_action, 0);
+                               struct sigaction *prev_action = nullptr) {
+  sigaction(signal, prev_action, nullptr);
   raise(signal);
 }
 
-CrashHandler crash_handler = 0;
+CrashHandler crash_handler = nullptr;
 struct sigaction prev_sigsegv_action;
 
 static void HandleSIGSEGV(int signal, siginfo_t *info, void *context) {
   assert(signal == SIGSEGV || signal == SIGABRT);
-  if (crash_handler != 0) {
+  if (crash_handler != nullptr) {
     crash_handler(Context(context));
   }
   CallPreviousSignalHandler(signal, &prev_sigsegv_action);
@@ -139,7 +139,7 @@ struct sigaction prev_sigint_action;
 
 void HandleSIGINT(int signal, siginfo_t *info, void *context) {
   assert(signal == SIGINT);
-  if (interrupt_handler != 0) {
+  if (interrupt_handler != nullptr) {
     interrupt_handler(Context(context));
   }
   CallPreviousSignalHandler(signal, &prev_sigint_action);

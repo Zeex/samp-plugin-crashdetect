@@ -36,7 +36,7 @@ AMX_HEADER *AMXRef::GetHeader() const {
 
 unsigned char *AMXRef::GetData() const {
   unsigned char *data = amx_->data;
-  if (data == 0) {
+  if (data == nullptr) {
     AMX_HEADER *hdr = reinterpret_cast<AMX_HEADER*>(amx_->base);
     data = amx_->base + hdr->dat;
   }
@@ -68,7 +68,7 @@ const char *AMXRef::FindPublic(cell address) const {
       return GetString(publics[i].nameofs);
     }
   }
-  return 0;
+  return nullptr;
 }
 
 const char *AMXRef::FindNative(cell address) const {
@@ -79,7 +79,7 @@ const char *AMXRef::FindNative(cell address) const {
       return GetString(natives[i].nameofs);
     }
   }
-  return 0;
+  return nullptr;
 }
 
 int AMXRef::GetNumNatives() const {
@@ -141,7 +141,7 @@ const char *AMXRef::GetNativeName(int index) const {
   if (index >= 0 && index < n) {
     return GetString(natives[index].nameofs);
   }
-  return 0;
+  return nullptr;
 }
 
 const char *AMXRef::GetPublicName(int index) const {
@@ -152,7 +152,7 @@ const char *AMXRef::GetPublicName(int index) const {
   } else if (index == AMX_EXEC_MAIN) {
     return "main";
   }
-  return 0;
+  return nullptr;
 }
 
 const char *AMXRef::GetString(uint32_t offset) const {

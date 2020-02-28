@@ -66,7 +66,7 @@ T *AMXHandler<T>::GetHandler(AMX *amx) {
   if (iterator != handlers_.end()) {
     return iterator->second;
   }
-  return 0;
+  return nullptr;
 }
 
 // static

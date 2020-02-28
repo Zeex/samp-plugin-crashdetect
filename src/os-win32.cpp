@@ -33,8 +33,8 @@
 namespace os {
 
 Context::Registers Context::GetRegisters() const {
-  Registers registers;
-  if (native_context_ != 0) {
+  Registers registers = {0};
+  if (native_context_ != nullptr) {
     PCONTEXT context = (PCONTEXT)native_context_;
     registers.eax = context->Eax;
     registers.ebx = context->Ebx;
@@ -71,7 +71,7 @@ void GetLoadedModules(std::vector<Module> &modules) {
 
 std::string GetModuleName(void *address) {
   std::vector<char> filename(MAX_PATH);
-  if (address != 0) {
+  if (address != nullptr) {
     MEMORY_BASIC_INFORMATION mbi;
     if (VirtualQuery(address, &mbi, sizeof(mbi)) != 0) {
       DWORD size = filename.size();
@@ -92,14 +92,14 @@ std::string GetModuleName(void *address) {
 
 namespace {
 
-CrashHandler crash_handler = 0;
+CrashHandler crash_handler = nullptr;
 LPTOP_LEVEL_EXCEPTION_FILTER prev_except_handler;
 
 LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
-  if (crash_handler != 0) {
+  if (crash_handler != nullptr) {
     crash_handler(Context(exception->ContextRecord));
   }
-  if (prev_except_handler != 0) {
+  if (prev_except_handler != nullptr) {
     return prev_except_handler(exception);
   }
   return EXCEPTION_CONTINUE_SEARCH;
@@ -109,7 +109,7 @@ LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS exception) {
 
 void SetCrashHandler(CrashHandler handler) {
   crash_handler = handler;
-  if (handler != 0) {
+  if (handler != nullptr) {
     prev_except_handler = SetUnhandledExceptionFilter(ExceptionFilter);
   } else {
     SetUnhandledExceptionFilter(prev_except_handler);
@@ -131,7 +131,7 @@ struct ThreadInfo {
 class IsInvalidThread: std::unary_function<ThreadInfo, bool> {
  public:
   bool operator()(const ThreadInfo &thread) {
-    return thread.creation_time.dwHighDateTime == 0 &&
+    return thread.creation_time.dwLowDateTime == 0 &&
            thread.creation_time.dwHighDateTime == 0;
   }
 };
@@ -195,9 +195,9 @@ BOOL GetMainThreadContext(PCONTEXT context) {
   if (thread_id != 0) {
     HANDLE thread_handle =
       GetThreadHandle(thread_id, THREAD_GET_CONTEXT | THREAD_SUSPEND_RESUME);
-    if (thread_handle != NULL) {
+    if (thread_handle != nullptr) {
       if (SuspendThread(thread_handle) != (DWORD)-1) {
-        BOOL ok = GetThreadContext(thread_handle, context) != 0;
+        BOOL ok = GetThreadContext(thread_handle, context);
         ResumeThread(thread_handle);
         return ok;
       }
@@ -207,7 +207,7 @@ BOOL GetMainThreadContext(PCONTEXT context) {
 }
 
 BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
-  if (dwCtrlType == CTRL_C_EVENT && interrupt_handler != 0) {
+  if (dwCtrlType == CTRL_C_EVENT && interrupt_handler != nullptr) {
     CONTEXT context = {0};
     context.ContextFlags = CONTEXT_FULL;
     GetMainThreadContext(&context);

@@ -105,7 +105,7 @@ class AMXDebugInfo {
 
   class File {
    public:
-    File() : file_(0) {}
+    File() : file_(nullptr) {}
     File(const AMX_DBG_FILE *file) : file_(file) {}
 
     std::string GetName() const
@@ -113,7 +113,7 @@ class AMXDebugInfo {
     cell GetAddress() const
       { return file_->address; }
     operator bool() const
-      { return file_ != 0; }
+      { return file_ != nullptr; }
 
    private:
     const AMX_DBG_FILE *file_;
@@ -137,7 +137,7 @@ class AMXDebugInfo {
 
   class Tag {
    public:
-    Tag() : tag_(0) {}
+    Tag() : tag_(nullptr) {}
     Tag(const AMX_DBG_TAG *tag) : tag_(tag) {}
 
     int32_t GetID() const
@@ -145,7 +145,7 @@ class AMXDebugInfo {
     std::string GetName() const
       { return tag_->name; }    
     operator bool() const
-      { return tag_ != 0; }
+      { return tag_ != nullptr; }
 
    private:
     const AMX_DBG_TAG *tag_;
@@ -153,7 +153,7 @@ class AMXDebugInfo {
 
   class Automaton {
    public:
-    Automaton() : automaton_(0) {}
+    Automaton() : automaton_(nullptr) {}
     Automaton(const AMX_DBG_MACHINE *automaton) : automaton_(automaton) {}
 
     int16_t GetID() const
@@ -163,7 +163,7 @@ class AMXDebugInfo {
     std::string GetName() const
       { return automaton_->name; }
     operator bool() const
-      { return automaton_ != 0; }
+      { return automaton_ != nullptr; }
 
    private:
     const AMX_DBG_MACHINE *automaton_;
@@ -171,7 +171,7 @@ class AMXDebugInfo {
 
   class State {
    public:
-    State() : state_(0) {}
+    State() : state_(nullptr) {}
     State(const AMX_DBG_STATE *state) : state_(state) {}
 
     int16_t GetID() const
@@ -181,7 +181,7 @@ class AMXDebugInfo {
     std::string GetName() const
       { return state_->name; }
     operator bool() const
-      { return state_ != 0; }
+      { return state_ != nullptr; }
 
    private:
      const AMX_DBG_STATE *state_;
@@ -206,7 +206,7 @@ class AMXDebugInfo {
       FunctionRef = 10
     };
 
-    Symbol() : symbol_(0) {}
+    Symbol() : symbol_(nullptr) {}
     Symbol(const AMX_DBG_SYMBOL *symbol) : symbol_(symbol) {}
 
     const AMX_DBG_SYMBOL *GetPOD() const { return symbol_; }
@@ -252,7 +252,7 @@ class AMXDebugInfo {
 
     std::vector<SymbolDim> GetDims() const;
 
-    operator bool() const { return symbol_ != 0; }
+    operator bool() const { return symbol_ != nullptr; }
 
    private:
     const AMX_DBG_SYMBOL *symbol_;
@@ -260,7 +260,7 @@ class AMXDebugInfo {
 
   class SymbolDim {
    public:
-    SymbolDim() : symdim_(0) {}
+    SymbolDim() : symdim_(nullptr) {}
     SymbolDim(const AMX_DBG_SYMDIM *symdim) : symdim_(symdim) {}
 
     int16_t GetTag() const
@@ -268,7 +268,7 @@ class AMXDebugInfo {
     cell GetSize() const
       { return symdim_->size; }
     operator bool() const
-      { return symdim_ != 0; }
+      { return symdim_ != nullptr; }
 
    private:
     const AMX_DBG_SYMDIM *symdim_;

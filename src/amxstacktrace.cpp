@@ -52,7 +52,7 @@ bool IsCodeAddress(AMXRef amx, cell address) {
 }
 
 bool IsPublicFunction(AMXRef amx, cell address) {
-  return amx.FindPublic(address) != 0;
+  return amx.FindPublic(address) != nullptr;
 }
 
 bool IsMain(AMXRef amx, cell address) {
@@ -245,7 +245,7 @@ cell *GetDataPtr(AMXRef amx, cell address) {
   if (IsDataAddress(amx, address)) {
     return reinterpret_cast<cell*>(amx.GetData() + address);
   }
-  return 0;
+  return nullptr;
 }
 
 bool IsPackedString(const cell *string) {
@@ -286,10 +286,10 @@ void GetStringContents(AMXRef amx, cell address, std::size_t size,
                        std::string &string, bool &packed) {
 
   cell *ptr = GetDataPtr(amx, address);
-  if (ptr != 0) {
+  if (ptr != nullptr) {
     packed = IsPackedString(ptr);
     if (size == 0) {
-     size = GetMaxStringSize(amx, address);
+      size = GetMaxStringSize(amx, address);
     }
     if (packed) {
       string = GetPackedString(ptr, size);
@@ -473,11 +473,11 @@ void AMXStackFramePrinter::PrintCallerName(const AMXStackFrame &frame) {
     }
   }
 
-  const char *name = 0;
+  const char *name = nullptr;
   if (frame.caller_address() != 0) {
     name = frame.amx().FindPublic(frame.caller_address());
   }
-  if (name != 0) {
+  if (name != nullptr) {
     stream_ << "public " << name;
   } else {
     stream_ << "??";
@@ -642,7 +642,7 @@ void AMXStackFramePrinter::PrintArgumentList(const AMXStackFrame &frame) {
 
   cell num_more_args = num_actual_args - num_printed_args;
   if (num_more_args > 0) {
-    if (num_more_args != 0) {
+    if (num_printed_args != 0) {
       stream_ << ", ";
     }
     stream_ << "... <"

@@ -50,10 +50,10 @@ class Options {
   static const Options &global_options();
 
  private:
-  Options();
   Options(const Options &options);
+  Options();
+  Options &operator=(const Options &options) = delete;
   ~Options();
-  void operator=(const Options &options);
 
  private:
   unsigned int trace_flags_;

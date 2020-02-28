@@ -65,7 +65,7 @@ cell AMX_NATIVE_CALL GetNativeBacktrace(AMX *amx, cell *params) {
   cell *string_ptr;
   if (amx_GetAddr(amx, string, &string_ptr) == AMX_ERR_NONE) {
     std::stringstream stream;
-    CrashDetectHandler::PrintNativeBacktrace(stream, 0);
+    CrashDetectHandler::PrintNativeBacktrace(stream, nullptr);
     return amx_SetString(string_ptr, stream.str().c_str(),
                          0, 0, size) == AMX_ERR_NONE;
   }

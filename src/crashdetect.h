@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Zeex
+// Copyright (c) 2020 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -21,34 +21,3 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-
-#include <cstring>
-#include "regexp.h"
-
-RegExp::RegExp(const std::string &pattern)
-  : pcre_(nullptr)
-{
-  const char *errorptr;
-  int erroroffset = 0;
-  pcre_ = pcre_compile(pattern.c_str(),
-                       0,
-                       &errorptr,
-                       &erroroffset,
-                       nullptr);
-}
-
-RegExp::~RegExp() {
-  pcre_free(pcre_);
-}
-
-bool RegExp::Test(const std::string &string) const {
-  int result = pcre_exec(pcre_,
-                         nullptr,
-                         string.c_str(),
-                         string.length(),
-                         0,
-                         0,
-                         nullptr,
-                         0);
-  return result >= 0;
-}

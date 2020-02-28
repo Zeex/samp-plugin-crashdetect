@@ -48,7 +48,7 @@ class AMXPathFinder {
     explicit AMXFile(const std::string &name);
     ~AMXFile();
 
-    bool IsLoaded() const { return amx_ != 0; }
+    bool IsLoaded() const { return amx_ != nullptr; }
 
     const AMX *amx() const {
       return amx_;

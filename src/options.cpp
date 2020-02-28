@@ -47,7 +47,7 @@ unsigned int TraceFlagsFromString(const std::string &s) {
 
 Options::Options():
   trace_flags_(0),
-  trace_filter_(0)
+  trace_filter_(nullptr)
 {
   ConfigReader server_cfg("server.cfg");
 

@@ -32,29 +32,32 @@ namespace {
 
 class Log {
  public:
-  Log(): file_(0) {
+  Log(): file_(nullptr) {
     const std::string &filename = Options::global_options().log_path();
     if (!filename.empty()) {
       file_ = std::fopen(filename.c_str(), "a");
-      std::setbuf(file_, 0);
+      std::setbuf(file_, nullptr);
     }
-    if (file_ != 0) {
+    if (file_ != nullptr) {
       time_format_ = Options::global_options().log_time_format();
     }
   }
 
+  Log(const Log &) = delete;
+  Log &operator=(const Log &) = delete;
+
   ~Log() {
-    if (file_ != 0) {
+    if (file_ != nullptr) {
       std::fclose(file_);
     }
   }
 
   void PrintV(const char *prefix, const char *format, std::va_list va) {
-    if (file_ != 0) {
+    if (file_ != nullptr) {
       std::string new_format;
       if (!time_format_.empty()) {
         char time_buffer[64];
-        std::time_t time = std::time(0);
+        std::time_t time = std::time(nullptr);
         std::strftime(time_buffer,
                       sizeof(time_buffer),
                       time_format_.c_str(),

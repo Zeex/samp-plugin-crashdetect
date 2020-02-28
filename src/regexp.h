@@ -31,13 +31,11 @@
 class RegExp {
  public:
   RegExp(const std::string &pattern);
+  RegExp(const RegExp &) = delete;
+  RegExp &operator=(const RegExp &) = delete;
   ~RegExp();
 
   bool Test(const std::string &string) const;
-
- private:
-  RegExp(const RegExp &);
-  void operator=(const RegExp &);
 
  private:
   pcre *pcre_;

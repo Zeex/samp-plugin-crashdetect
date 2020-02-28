@@ -57,13 +57,13 @@ void GetDirectoryFiles(const std::string &directory, const std::string &pattern,
     if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
         files.push_back(findFileData.cFileName);
     }
-  } while (FindNextFile(hFindFile, &findFileData) != 0);
+  } while (FindNextFile(hFindFile, &findFileData));
 
   FindClose(hFindFile);
 }
 
 std::string GetCurrentWorkingtDirectory() {
-  DWORD size = GetCurrentDirectoryA(0, NULL);
+  DWORD size = GetCurrentDirectoryA(0, nullptr);
   std::vector<char> buffer(size);
   GetCurrentDirectoryA(buffer.size(), &buffer[0]);
   return std::string(&buffer[0]);

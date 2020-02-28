@@ -42,9 +42,9 @@ namespace os {
 }
 
 class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
- friend class AMXHandler<CrashDetectHandler>; // for accessing private ctor
-
  public:
+  friend class AMXHandler<CrashDetectHandler>; // for accessing private ctor
+
   void set_amx_path_finder(AMXPathFinder *finder) {
     amx_path_finder_ = finder;
   }
@@ -57,6 +57,7 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   int ProcessExec(cell *retval, int index);
   void ProcessExecError(int index, cell *retval, int error);
 
+ public:
   static void OnCrash(const os::Context &context);
   static void OnInterrupt(const os::Context &context);
 
@@ -68,12 +69,6 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
                                    const os::Context &context);
 
  private:
-  void HandleException();
-  void HandleInterrupt();
-
-  static unsigned int TraceFlagsFromString(const std::string &s);
-  static bool IsInsideAMX();
-
   static void PrintTraceFrame(const AMXStackFrame &frame,
                               const AMXDebugInfo &debug_info);
   static void PrintRuntimeError(AMXRef amx, const AMX &amx_state, int error);

@@ -73,12 +73,13 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 AMXCallStack CrashDetectHandler::call_stack_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
- : AMXHandler<CrashDetectHandler>(amx),
-   amx_(amx),
-   prev_debug_(0),
-   prev_callback_(0),
-   last_frame_(amx->stp),
-   block_exec_errors_(false)
+  : AMXHandler<CrashDetectHandler>(amx),
+    amx_(amx),
+    amx_path_finder_(nullptr),
+    prev_debug_(nullptr),
+    prev_callback_(nullptr),
+    last_frame_(amx->stp),
+    block_exec_errors_(false)
 {
 }
 
@@ -121,7 +122,7 @@ int CrashDetectHandler::ProcessDebugHook() {
     }
   }
   last_frame_ = amx_.GetFrm();
-  return prev_debug_ != 0 ? prev_debug_(amx_) : AMX_ERR_NONE;
+  return prev_debug_ != nullptr ? prev_debug_(amx_) : AMX_ERR_NONE;
 }
 
 int CrashDetectHandler::ProcessCallback(cell index,
@@ -132,8 +133,8 @@ int CrashDetectHandler::ProcessCallback(cell index,
   if (Options::global_options().trace_flags() & TRACE_NATIVES) {
     std::stringstream stream;
     const char *name = amx_.GetNativeName(index);
-    stream << "native " << (name != 0 ? name : "<unknown>") << " ()";
-    if (Options::global_options().trace_filter() == 0
+    stream << "native " << (name != nullptr ? name : "<unknown>") << " ()";
+    if (Options::global_options().trace_filter() == nullptr
         || Options::global_options().trace_filter()->Test(stream.str())) {
       PrintStream(LogTracePrint, stream);
     }
@@ -256,29 +257,19 @@ void CrashDetectHandler::ProcessExecError(int index, cell *retval, int error) {
   block_exec_errors_ = false;
 }
 
-void CrashDetectHandler::HandleException() {
-  LogDebugPrint("Server crashed while executing %s", amx_name_.c_str());
-  PrintAMXBacktrace();
-}
-
-void CrashDetectHandler::HandleInterrupt() {
-  LogDebugPrint("Server received interrupt signal while executing %s",
-                amx_name_.c_str());
-  PrintAMXBacktrace();
-}
-
-// static
-bool CrashDetectHandler::IsInsideAMX() {
-  return !call_stack_.IsEmpty();
-}
-
 // static
 void CrashDetectHandler::OnCrash(const os::Context &context) {
-  if (IsInsideAMX()) {
-    CrashDetectHandler::GetHandler(call_stack_.Top().amx())->HandleException();
+  CrashDetectHandler *instance = nullptr;
+  if (!call_stack_.IsEmpty()) {
+    instance = GetHandler(call_stack_.Top().amx());
+  }
+  if (instance != nullptr) {
+    LogDebugPrint("Server crashed while executing %s",\
+                  instance->amx_name_.c_str());
   } else {
     LogDebugPrint("Server crashed due to an unknown error");
   }
+  PrintAMXBacktrace();
   PrintNativeBacktrace(context.native_context());
   PrintRegisters(context);
   PrintStack(context);
@@ -287,11 +278,17 @@ void CrashDetectHandler::OnCrash(const os::Context &context) {
 
 // static
 void CrashDetectHandler::OnInterrupt(const os::Context &context) {
-  if (IsInsideAMX()) {
-    CrashDetectHandler::GetHandler(call_stack_.Top().amx())->HandleInterrupt();
+  CrashDetectHandler *instance = nullptr;
+  if (!call_stack_.IsEmpty()) {
+    instance = GetHandler(call_stack_.Top().amx());
+  }
+  if (instance != nullptr) {
+    LogDebugPrint("Server received interrupt signal while executing %s",
+                  instance->amx_name_.c_str());
   } else {
     LogDebugPrint("Server received interrupt signal");
   }
+  PrintAMXBacktrace();
   PrintNativeBacktrace(context.native_context());
 }
 
@@ -301,7 +298,7 @@ void CrashDetectHandler::PrintTraceFrame(const AMXStackFrame &frame,
   std::stringstream stream;
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
-  if (Options::global_options().trace_filter() == 0
+  if (Options::global_options().trace_filter() == nullptr
       || Options::global_options().trace_filter()->Test(stream.str())) {
     PrintStream(LogTracePrint, stream);
   }
@@ -377,6 +374,10 @@ void CrashDetectHandler::PrintAMXBacktrace() {
 
 // static
 void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
+  if (call_stack_.IsEmpty()) {
+    return;
+  }
+
   AMXRef amx = call_stack_.Top().amx();
   AMXRef top_amx = amx;
 
@@ -398,7 +399,7 @@ void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
       const char *name = amx.GetNativeName(call.index());
       stream << "\n#" << level++
              << " native "
-             << (name != 0 ? name : "<unknown>") << " ()";
+             << (name != nullptr ? name : "<unknown>") << " ()";
       std::string module = os::GetModuleName(
         reinterpret_cast<void*>(amx.GetNativeAddress(call.index())));
       if (!module.empty()) {
@@ -408,7 +409,7 @@ void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
 
     // public function
     else if (call.IsPublic()) {
-      CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
+      CrashDetectHandler *handler = GetHandler(amx);
 
       AMXStackTrace trace = GetAMXStackTrace(amx, frm, cip, 100);
       std::deque<AMXStackFrame> frames;
@@ -470,7 +471,7 @@ void CrashDetectHandler::PrintRegisters(const os::Context &context) {
 void CrashDetectHandler::PrintStack(const os::Context &context) {
   os::Context::Registers registers = context.GetRegisters();
   os::uint32_t *stack_ptr = reinterpret_cast<os::uint32_t *>(registers.esp);
-  if (stack_ptr == 0) {
+  if (stack_ptr == nullptr) {
     return;
   }
 
