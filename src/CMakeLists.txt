@@ -77,6 +77,10 @@ endif()
 
 add_samp_plugin(crashdetect ${CRASHDETECT_SOURCES})
 
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+  set_property(TARGET crashdetect APPEND_STRING PROPERTY COMPILE_FLAGS " -Wall")
+endif()
+
 add_subdirectory(amx)
 target_link_Libraries(crashdetect amx configreader pcre subhook)
 
