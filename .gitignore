@@ -1,1 +1,7 @@
+.clang_complete
+.kdev4
+.vscode
+CMakeLists.txt.user
+CMakeLists.txt.user*
+*.kdev4
 /tests/*.amx
