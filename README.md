@@ -6,8 +6,9 @@
 [![Build Status - Windows][build_status_win]][build_win]
 
 CrashDetect helps you debug runtime errors and server crashes. When something
-goes wrong you see a detailed error message with error description, stack trace
-and other information that makes it easier to quickly find and fix the bug.
+goes wrong you will get a detailed error message with error description, stack
+trace, and other useful information that will makes it easier to quickly find
+and fix the issue.
 
 Installation
 ------------
@@ -15,30 +16,30 @@ Installation
 1. Download a binary package from the [Releases][download] page on Github or
    build it yourself from source code (see 
    [Building from source code](#building-from-source-code)).
-2. Extract/copy `crashdetect.so` or `crashdetect.dll` to `<sever>/plugins/`.
+2. Extract and copy `crashdetect.so` or `crashdetect.dll` to `<sever>/plugins/`.
 3. Add `crashdetect` (Windows) or `crashdetect.so` (Linux) to the `plugins`
    line of your server.cfg.
 
-Binary archives come with an include file (`crashdetect.inc`) that contains
-some helper functions that you may find useful. But **you don't need to
-include** it to be able to use CrashDetect, it's not required.
+Binary packages come with an include file (`crashdetect.inc`) that contains
+some helper functions that you may find useful. But **you don't have to
+include** it to be able to use CrashDetect.
 
 Usage
 -----
 
 Apart from installing the plugin you don't have to do anything further to
-start receiving errors reports. By default, all the errors will be saved in 
-your `server_log.txt` but this can be changed 
+start receiving errors reports. By default all errors will be saved in your
+`server_log.txt`, but this can be changed 
 (see [Configuration](#configuration)).
 
-For best debugging experience, make sure you
+For better debugging experience, make sure that you
 [compile your script with debug info enabled][debug-info]. Doing this will let
 you see more information in stack traces such as function names, prameter names
 and values, source file names and line numbers.
 
 Please be aware that when using this plugin your code WILL run slower due
 to the overhead associated with detecting errors and providing accurate
-error information (for exmaple, some runtime optimizations are diasbled).
+error information (for example, some runtime optimizations are diasbled).
 Usually this is fine during development, but it's not recommended to load
 CrashDetect on a production (live) server with many players.
 
