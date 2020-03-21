@@ -71,6 +71,9 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 } // anonymous namespace
 
 AMXCallStack CrashDetectHandler::call_stack_;
+std::thread CrashDetectHandler::hang_thread_;
+std::atomic<int> CrashDetectHandler::run_thread_ = 0;
+std::mutex CrashDetectHandler::mutex_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
   : AMXHandler<CrashDetectHandler>(amx),
@@ -81,6 +84,33 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
     last_frame_(amx->stp),
     block_exec_errors_(false)
 {
+  int count = 0;
+  if (run_thread_.compare_exchange_strong(count, 1)) {
+    // Count was 0, now is 1.  Start the thread.
+    hang_thread_ = std::thread(&CrashDetectHandler::HangThread, *this);
+  }
+  else while (!run_thread_.compare_exchange_weak(count, count + 1)) {
+  }
+}
+
+CrashDetectHandler::~CrashDetectHandler() {
+  const std::lock_guard<std::mutex> lock(mutex_);
+  int count = 1;
+  if (run_thread_.compare_exchange_strong(count, 0)) {
+  }
+}
+
+void CrashDetectHandler::HangThread() {
+  using namespace std::chrono_literals;
+  for ( ; run_thread_; std::this_thread::sleep_for(1ms)) {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    if (call_stack_.IsEmpty) {
+      continue;
+    }
+
+    // Got exclusive access to the call stack, and it isn't empty.
+
+  }
 }
 
 int CrashDetectHandler::Load() {
@@ -374,6 +404,7 @@ void CrashDetectHandler::PrintAMXBacktrace() {
 
 // static
 void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
+  const std::lock_guard<std::mutex> lock(mutex_);
   if (call_stack_.IsEmpty()) {
     return;
   }

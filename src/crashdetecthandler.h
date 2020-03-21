@@ -27,12 +27,15 @@
 
 #include <cstdarg>
 #include <cstdio>
-#include <string>
+#include <cstdio>
+#include <thread>
+#include <atomic>
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxhandler.h"
 #include "amxref.h"
 #include "regexp.h"
+#include <mutex>
 
 class AMXPathFinder;
 class AMXStackFrame;
@@ -78,6 +81,8 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
 
  private:
   CrashDetectHandler(AMX *amx);
+  ~CrashDetectHandler();
+  static void HangThread();
 
  private:
   AMXRef amx_;
@@ -89,6 +94,10 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   std::string amx_path_;
   std::string amx_name_;
   bool block_exec_errors_;
+
+  static std::thread hang_thread_;
+  static std::atomic<int> run_thread_;
+  static std::mutex mutex_;
 
  private:
   static AMXCallStack call_stack_;
