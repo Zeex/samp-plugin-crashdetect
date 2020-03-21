@@ -26,10 +26,13 @@
 #define AMXCALLSTACK_H
 
 #include <stack>
+#include <chrono>
 #include "amxref.h"
 
 class AMXCall {
  public:
+  using time_point = std::chrono::high_resolution_clock::time_point;
+
   enum Type {
     NATIVE,
     PUBLIC
@@ -43,10 +46,11 @@ class AMXCall {
 
   AMXRef amx() const { return amx_; }
 
-  Type type()  const { return type_;  }
-  cell index() const { return index_; }
-  cell frm()   const { return frm_;   }
-  cell cip()   const { return cip_;   }
+  Type       type()  const { return type_;  }
+  cell       index() const { return index_; }
+  cell       frm()   const { return frm_;   }
+  cell       cip()   const { return cip_;   }
+  time_point start() const { return start_;   }
 
   bool IsPublic() const { return type_ == PUBLIC; }
   bool IsNative() const { return type_ == NATIVE; }
@@ -57,6 +61,7 @@ class AMXCall {
   cell frm_;
   cell cip_;
   cell index_;
+  time_point start_;
 };
 
 class AMXCallStack {
