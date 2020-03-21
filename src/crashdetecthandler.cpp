@@ -72,7 +72,7 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 
 AMXCallStack CrashDetectHandler::call_stack_;
 std::thread CrashDetectHandler::hang_thread_;
-std::atomic<unsigned int> CrashDetectHandler::run_thread_ = 0;
+std::atomic<unsigned int> CrashDetectHandler::amx_count_ = 0;
 std::mutex CrashDetectHandler::mutex_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
@@ -84,28 +84,29 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
     last_frame_(amx->stp),
     block_exec_errors_(false)
 {
-  if (run_thread_ == 0) {
-    // Start the thread with the first AMX.
-    run_thread_ = 1;
-    hang_thread_ = std::thread(&CrashDetectHandler::HangThread, *this);
-  } else {
-    run_thread_ = run_thread_ + 1;
+  unsigned int count = 0;
+  if (amx_count_.compare_exchange_strong(count, 1)) {
+    // Count was 0, now is 1.  Start the thread.
+    auto thread = std::thread(&CrashDetectHandler::HangThread, *this);
+    hang_thread_ = std::move(thread);
+  }
+  else while (!amx_count_.compare_exchange_weak(count, count + 1)) {
   }
 }
 
 CrashDetectHandler::~CrashDetectHandler() {
-  if (run_thread_ == 1) {
-    // When all AMX instances are closed, end the thread.
-    run_thread_ = 0;
-    hang_thread_.join()
-  } else {
-    run_thread_ = run_thread_ - 1;
+  unsigned int count = 1;
+  if (amx_count_.compare_exchange_strong(count, 0)) {
+    auto thread = std::move(hang_thread_);
+    thread.join();
+  }
+  else while (!amx_count_.compare_exchange_weak(count, count - 1)) {
   }
 }
 
 void CrashDetectHandler::HangThread() {
   using namespace std::chrono_literals;
-  for ( ; run_thread_; std::this_thread::sleep_for(1ms)) {
+  for ( ; amx_count_; std::this_thread::sleep_for(1ms)) {
     const std::lock_guard<std::mutex> lock(mutex_);
     if (call_stack_.IsEmpty) {
       continue;
