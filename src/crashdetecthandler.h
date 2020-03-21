@@ -61,6 +61,8 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   void ProcessExecError(int index, cell *retval, int error);
 
  public:
+  static void StartThread();
+  static void StopThread();
   static void OnCrash(const os::Context &context);
   static void OnInterrupt(const os::Context &context);
 
@@ -81,7 +83,6 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
 
  private:
   CrashDetectHandler(AMX *amx);
-  ~CrashDetectHandler();
   static void HangThread();
 
  private:
@@ -95,11 +96,10 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   std::string amx_name_;
   bool block_exec_errors_;
 
-  static std::thread hang_thread_;
-  static std::atomic<unsigned int> run_thread_;
-  static std::mutex mutex_;
-
  private:
+  static std::thread hang_thread_;
+  static std::atomic<bool> running_;
+  static std::mutex mutex_;
   static AMXCallStack call_stack_;
 };
 

@@ -169,9 +169,15 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 
   os::SetCrashHandler(CrashDetectHandler::OnCrash);
   os::SetInterruptHandler(CrashDetectHandler::OnInterrupt);
+  CrashDetectHandler::StartThread();
 
   logprintf("  CrashDetect plugin " PROJECT_VERSION_STRING);
   return true;
+}
+
+PLUGIN_EXPORT void PLUGIN_CALL Unload()
+{
+  CrashDetectHandler::StopThread();
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
