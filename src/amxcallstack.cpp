@@ -30,8 +30,7 @@ AMXCall::AMXCall(Type type, AMXRef amx, cell index)
    type_(type),
    frm_(amx.GetFrm()),
    cip_(amx.GetCip()),
-   index_(index),
-   start_(std::chrono::high_resolution_clock::now())
+   index_(index)
 {
 }
 
@@ -40,8 +39,7 @@ AMXCall::AMXCall(Type type, AMXRef amx, cell index, cell frm, cell cip)
    type_(type),
    frm_(frm),
    cip_(cip),
-   index_(index),
-   start_(std::chrono::high_resolution_clock::now())
+   index_(index)
 {
 }
 
@@ -70,6 +68,10 @@ const AMXCall &AMXCallStack::Top() const {
 }
 
 void AMXCallStack::Push(AMXCall call) {
+  // We only care about the start time of the whole stack, not every call within in.
+  if (IsEmpty()) {
+    start_ = std::chrono::high_resolution_clock::now();
+  }
   call_stack_.push(call);
 }
 
