@@ -40,6 +40,8 @@ class Options {
  public:
   unsigned int trace_flags()
     const { return trace_flags_; }
+  unsigned int long_call_time()
+    const { return long_call_time_; }
   const RegExp *trace_filter()
     const { return trace_filter_; }
   const std::string &log_path()
@@ -57,6 +59,7 @@ class Options {
 
  private:
   unsigned int trace_flags_;
+  unsigned int long_call_time_;
   RegExp *trace_filter_;
   std::string log_path_;
   std::string log_time_format_;
