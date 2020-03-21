@@ -97,14 +97,26 @@ void CrashDetectHandler::StopThread() {
 
 void CrashDetectHandler::HangThread() {
   using namespace std::chrono_literals;
+  AMXCallStack::time_point last_warning = std::chrono::high_resolution_clock::now();
+  AMXCallStack::time_point start;
+  AMXCallStack::time_point cmp;
+  auto us = std::chrono::microseconds(Options::global_options().long_call_time());
   for ( ; running_; std::this_thread::sleep_for(1ms)) {
     const std::lock_guard<std::mutex> lock(mutex_);
-    if (call_stack_.IsEmpty) {
+    if (call_stack_.IsEmpty()) {
       continue;
     }
 
     // Got exclusive access to the call stack, and it isn't empty.
+    start = call_stack_.Start();
+    cmp = std::chrono::high_resolution_clock::now() - us;
+    if (start != last_warning && start < cmp) {
+      last_warning = start;
 
+      // A call has being going on for more than `long_call_time` microseconds.
+      LogDebugPrint("Long callback execution detected (hang or performance issue)");
+      PrintAMXBacktrace();
+    }
   }
 }
 

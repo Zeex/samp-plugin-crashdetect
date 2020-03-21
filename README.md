@@ -89,9 +89,9 @@ Available settings:
 
   How long a top-level callback call should last before crashdetect prints a
   warning.  This can be set very high (for example `1000000`) to only detect
-  functions that have totally hung, or very low (`500`) to detect functions
-  that complete, but are just slow (thus affecting overall server execution
-  and sync).  Default value is `5000` (5 milliseconds).
+  functions that have totally hung, or very low (`500`) to detect functions that
+  complete, but are just slow (thus affecting overall server execution and
+  sync).  Default value is `5000` (5 milliseconds).
 
 Building from source code
 -------------------------
