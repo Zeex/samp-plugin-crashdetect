@@ -80,6 +80,8 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   static void PrintRegisters(const os::Context &context);
   static void PrintStack(const os::Context &context);
   static void PrintLoadedModules();
+  static void Push(AMXCall call);
+  static AMXCall Pop();
 
  private:
   CrashDetectHandler(AMX *amx);

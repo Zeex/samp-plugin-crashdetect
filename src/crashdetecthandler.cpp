@@ -153,7 +153,7 @@ int CrashDetectHandler::ProcessDebugHook() {
 int CrashDetectHandler::ProcessCallback(cell index,
                                         cell *result,
                                         cell *params) {
-  call_stack_.Push(AMXCall::Native(amx_, index));
+  Push(AMXCall::Native(amx_, index));
 
   if (Options::global_options().trace_flags() & TRACE_NATIVES) {
     std::stringstream stream;
@@ -167,12 +167,12 @@ int CrashDetectHandler::ProcessCallback(cell index,
 
   int error = prev_callback_(amx_, index, result, params);
 
-  call_stack_.Pop();
+  Pop();
   return error;
 }
 
 int CrashDetectHandler::ProcessExec(cell *retval, int index) {
-  call_stack_.Push(AMXCall::Public(amx_, index));
+  Push(AMXCall::Public(amx_, index));
 
   if (Options::global_options().trace_flags() & TRACE_FUNCTIONS) {
     last_frame_ = 0;
@@ -212,7 +212,7 @@ int CrashDetectHandler::ProcessExec(cell *retval, int index) {
     ProcessExecError(index, retval, error);
   }
 
-  call_stack_.Pop();
+  Pop();
   return error;
 }
 
@@ -399,7 +399,6 @@ void CrashDetectHandler::PrintAMXBacktrace() {
 
 // static
 void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
-  const std::lock_guard<std::mutex> lock(mutex_);
   if (call_stack_.IsEmpty()) {
     return;
   }
@@ -531,6 +530,18 @@ void CrashDetectHandler::PrintLoadedModules() {
 }
 
 // static
+void CrashDetectHandler::Push(AMXCall call)
+{
+  const std::lock_guard<std::mutex> lock(mutex_);
+  call_stack_.Push(call);
+}
+
+AMXCall CrashDetectHandler::Pop()
+{
+  const std::lock_guard<std::mutex> lock(mutex_);
+  return call_stack_.Pop();
+}
+
 void CrashDetectHandler::PrintNativeBacktrace(const os::Context &context) {
   std::stringstream stream;
   PrintNativeBacktrace(stream, context);
