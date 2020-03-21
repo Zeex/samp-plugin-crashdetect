@@ -96,7 +96,7 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   bool block_exec_errors_;
 
   static std::thread hang_thread_;
-  static std::atomic<int> run_thread_;
+  static std::atomic<unsigned int> run_thread_;
   static std::mutex mutex_;
 
  private:
