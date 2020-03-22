@@ -22,6 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#define _GLIBCXX_USE_NANOSLEEP
+
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -72,7 +74,7 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 
 AMXCallStack CrashDetectHandler::call_stack_;
 std::thread CrashDetectHandler::hang_thread_;
-std::atomic<bool> CrashDetectHandler::running_ = true;
+std::atomic<bool> CrashDetectHandler::running_;
 std::mutex CrashDetectHandler::mutex_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
@@ -87,6 +89,7 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
 }
 
 void CrashDetectHandler::StartThread() {
+  running_ = true;
   hang_thread_ = std::thread(&CrashDetectHandler::HangThread);
 }
 
