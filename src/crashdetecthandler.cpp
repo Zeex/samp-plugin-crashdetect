@@ -96,12 +96,12 @@ void CrashDetectHandler::StopThread() {
 }
 
 void CrashDetectHandler::HangThread() {
-  using namespace std::chrono_literals;
   AMXCallStack::time_point last_warning = std::chrono::high_resolution_clock::now();
   AMXCallStack::time_point start;
   AMXCallStack::time_point cmp;
   auto us = std::chrono::microseconds(Options::global_options().long_call_time());
-  for ( ; running_; std::this_thread::sleep_for(1ms)) {
+  auto delay = us / 2;
+  for ( ; running_; std::this_thread::sleep_for(delay)) {
     const std::lock_guard<std::mutex> lock(mutex_);
     if (call_stack_.IsEmpty()) {
       continue;
