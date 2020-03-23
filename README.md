@@ -85,6 +85,14 @@ Available settings:
   By default all diagnostic information is printed to the server log. This
   option lets you redirect output to a separate file.
 
+* `long_call_time <us>`
+
+  How long a top-level callback call should last before crashdetect prints a
+  warning.  This can be set very high (for example `1000000`) to only detect
+  functions that have totally hung, or very low (`500`) to detect functions that
+  complete, but are just slow (thus affecting overall server execution and
+  sync).  Default value is `5000` (5 milliseconds).
+
 Building from source code
 -------------------------
 

@@ -68,6 +68,10 @@ const AMXCall &AMXCallStack::Top() const {
 }
 
 void AMXCallStack::Push(AMXCall call) {
+  // We only care about the start time of the whole stack, not every call within in.
+  if (IsEmpty()) {
+    start_ = std::chrono::high_resolution_clock::now();
+  }
   call_stack_.push(call);
 }
 

@@ -22,6 +22,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+#define _GLIBCXX_USE_NANOSLEEP
+
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -71,6 +73,9 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 } // anonymous namespace
 
 AMXCallStack CrashDetectHandler::call_stack_;
+std::thread CrashDetectHandler::hang_thread_;
+std::atomic<bool> CrashDetectHandler::running_;
+std::mutex CrashDetectHandler::mutex_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
   : AMXHandler<CrashDetectHandler>(amx),
@@ -81,6 +86,41 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
     last_frame_(amx->stp),
     block_exec_errors_(false)
 {
+}
+
+void CrashDetectHandler::StartThread() {
+  running_ = true;
+  hang_thread_ = std::thread(&CrashDetectHandler::HangThread);
+}
+
+void CrashDetectHandler::StopThread() {
+  running_ = false;
+  hang_thread_.join();
+}
+
+void CrashDetectHandler::HangThread() {
+  AMXCallStack::time_point last_warning = std::chrono::high_resolution_clock::now();
+  AMXCallStack::time_point start;
+  AMXCallStack::time_point cmp;
+  auto us = std::chrono::microseconds(Options::global_options().long_call_time());
+  auto delay = us / 2;
+  for ( ; running_; std::this_thread::sleep_for(delay)) {
+    const std::lock_guard<std::mutex> lock(mutex_);
+    if (call_stack_.IsEmpty()) {
+      continue;
+    }
+
+    // Got exclusive access to the call stack, and it isn't empty.
+    start = call_stack_.Start();
+    cmp = std::chrono::high_resolution_clock::now() - us;
+    if (start != last_warning && start < cmp) {
+      last_warning = start;
+
+      // A call has being going on for more than `long_call_time` microseconds.
+      LogDebugPrint("Long callback execution detected (hang or performance issue)");
+      PrintAMXBacktrace();
+    }
+  }
 }
 
 int CrashDetectHandler::Load() {
@@ -128,7 +168,7 @@ int CrashDetectHandler::ProcessDebugHook() {
 int CrashDetectHandler::ProcessCallback(cell index,
                                         cell *result,
                                         cell *params) {
-  call_stack_.Push(AMXCall::Native(amx_, index));
+  Push(AMXCall::Native(amx_, index));
 
   if (Options::global_options().trace_flags() & TRACE_NATIVES) {
     std::stringstream stream;
@@ -142,12 +182,12 @@ int CrashDetectHandler::ProcessCallback(cell index,
 
   int error = prev_callback_(amx_, index, result, params);
 
-  call_stack_.Pop();
+  Pop();
   return error;
 }
 
 int CrashDetectHandler::ProcessExec(cell *retval, int index) {
-  call_stack_.Push(AMXCall::Public(amx_, index));
+  Push(AMXCall::Public(amx_, index));
 
   if (Options::global_options().trace_flags() & TRACE_FUNCTIONS) {
     last_frame_ = 0;
@@ -187,7 +227,7 @@ int CrashDetectHandler::ProcessExec(cell *retval, int index) {
     ProcessExecError(index, retval, error);
   }
 
-  call_stack_.Pop();
+  Pop();
   return error;
 }
 
@@ -505,6 +545,18 @@ void CrashDetectHandler::PrintLoadedModules() {
 }
 
 // static
+void CrashDetectHandler::Push(AMXCall call)
+{
+  const std::lock_guard<std::mutex> lock(mutex_);
+  call_stack_.Push(call);
+}
+
+AMXCall CrashDetectHandler::Pop()
+{
+  const std::lock_guard<std::mutex> lock(mutex_);
+  return call_stack_.Pop();
+}
+
 void CrashDetectHandler::PrintNativeBacktrace(const os::Context &context) {
   std::stringstream stream;
   PrintNativeBacktrace(stream, context);
