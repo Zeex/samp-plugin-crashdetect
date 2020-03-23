@@ -575,7 +575,7 @@ void AMXStackFramePrinter::PrintArgumentValue(const AMXStackFrame &frame,
         && debug_info_.GetTagName(dims[0].GetTag()) == "_")
     {
       std::string string;
-      bool packed;
+      bool packed = false;
 
       GetStringContents(frame.amx(), value, dims[0].GetSize(), string, packed);
       stream_ << (packed ? " !" : " ");
