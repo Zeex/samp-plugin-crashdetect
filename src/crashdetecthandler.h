@@ -99,10 +99,20 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   bool block_exec_errors_;
 
  private:
+  static std::chrono::microseconds long_call_time_original_;
+  static std::chrono::microseconds long_call_time_current_;
+  static std::chrono::microseconds long_call_time_delay_;
+
   static std::thread hang_thread_;
   static std::atomic<bool> running_;
   static std::mutex mutex_;
   static AMXCallStack call_stack_;
+
+public:
+  static unsigned int GetDefaultLongCallTime() { return (unsigned int)long_call_time_original_.count(); }
+  static unsigned int GetLongCallTime() { return (unsigned int)long_call_time_current_.count(); }
+  static void SetLongCallTime(unsigned int time);
+  static void ResetLongCall();
 };
 
 #endif // !CRASHDETECTHANDLER_H

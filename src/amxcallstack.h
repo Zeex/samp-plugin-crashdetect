@@ -69,7 +69,8 @@ class AMXCallStack {
   AMXCall &Top();
   const AMXCall &Top() const;
 
-  time_point Start() const { return start_;   }
+  time_point Start() const { return start_; }
+  void Reset(time_point t) { start_ = t; }
 
   void Push(AMXCall call);
   AMXCall Pop();

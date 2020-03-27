@@ -77,6 +77,10 @@ std::thread CrashDetectHandler::hang_thread_;
 std::atomic<bool> CrashDetectHandler::running_;
 std::mutex CrashDetectHandler::mutex_;
 
+std::chrono::microseconds CrashDetectHandler::long_call_time_original_;
+std::chrono::microseconds CrashDetectHandler::long_call_time_current_;
+std::chrono::microseconds CrashDetectHandler::long_call_time_delay_;
+
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
   : AMXHandler<CrashDetectHandler>(amx),
     amx_(amx),
@@ -90,6 +94,10 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
 
 void CrashDetectHandler::StartThread() {
   running_ = true;
+  unsigned int time = Options::global_options().long_call_time();
+  long_call_time_original_ = std::chrono::microseconds(time);
+  long_call_time_current_ = std::chrono::microseconds(time);
+  long_call_time_delay_ = std::chrono::microseconds(time / 2);
   hang_thread_ = std::thread(&CrashDetectHandler::HangThread);
 }
 
@@ -98,18 +106,30 @@ void CrashDetectHandler::StopThread() {
   hang_thread_.join();
 }
 
+void CrashDetectHandler::SetLongCallTime(unsigned int time) {
+  long_call_time_current_ = std::chrono::microseconds(time);
+  if (time) {
+    long_call_time_delay_ = std::chrono::microseconds(time / 2);
+  }
+}
+
+void CrashDetectHandler::ResetLongCall() {
+  call_stack_.Reset(std::chrono::high_resolution_clock::now());
+}
+
 void CrashDetectHandler::HangThread() {
   AMXCallStack::time_point last_warning = std::chrono::high_resolution_clock::now();
   AMXCallStack::time_point start;
   AMXCallStack::time_point cmp;
-  unsigned int long_call_time = Options::global_options().long_call_time();
   // disable the check by setting `long_call_time` to `0`.
-  if (long_call_time == 0) {
+  if (long_call_time_original_.count() == 0) {
     return;
   }
-  auto us = std::chrono::microseconds(long_call_time);
-  auto delay = us / 2;
-  for ( ; running_; std::this_thread::sleep_for(delay)) {
+  for ( ; running_; std::this_thread::sleep_for(long_call_time_delay_)) {
+    if (long_call_time_current_.count() == 0) {
+      continue;
+    }
+
     const std::lock_guard<std::mutex> lock(mutex_);
     if (call_stack_.IsEmpty()) {
       continue;
@@ -117,7 +137,7 @@ void CrashDetectHandler::HangThread() {
 
     // Got exclusive access to the call stack, and it isn't empty.
     start = call_stack_.Start();
-    cmp = std::chrono::high_resolution_clock::now() - us;
+    cmp = std::chrono::high_resolution_clock::now() - long_call_time_current_;
     if (start != last_warning && start < cmp) {
       last_warning = start;
 
