@@ -106,15 +106,25 @@ void CrashDetectHandler::StopThread() {
   hang_thread_.join();
 }
 
-void CrashDetectHandler::SetLongCallTime(unsigned int time) {
-  long_call_time_current_ = std::chrono::microseconds(time);
-  if (time) {
-    long_call_time_delay_ = std::chrono::microseconds(time / 2);
+extern "C" {
+  unsigned int GetDefaultLongCallTime() {
+    return (unsigned int)CrashDetectHandler::long_call_time_original_.count();
   }
-}
 
-void CrashDetectHandler::ResetLongCall() {
-  call_stack_.Reset(std::chrono::high_resolution_clock::now());
+  unsigned int GetLongCallTime() {
+    return (unsigned int)CrashDetectHandler::long_call_time_current_.count();
+  }
+
+  void SetLongCallTime(unsigned int time) {
+    CrashDetectHandler::long_call_time_current_ = std::chrono::microseconds(time);
+    if (time) {
+      CrashDetectHandler::long_call_time_delay_ = std::chrono::microseconds(time / 2);
+    }
+  }
+
+  void ResetLongCall() {
+    CrashDetectHandler::call_stack_.Reset(std::chrono::high_resolution_clock::now());
+  }
 }
 
 void CrashDetectHandler::HangThread() {

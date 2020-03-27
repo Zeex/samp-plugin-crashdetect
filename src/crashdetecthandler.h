@@ -44,6 +44,11 @@ namespace os {
   class Context;
 }
 
+extern "C" unsigned int GetDefaultLongCallTime();
+extern "C" unsigned int GetLongCallTime();
+extern "C" void SetLongCallTime(unsigned int time);
+extern "C" void ResetLongCall();
+
 class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
  public:
   friend class AMXHandler<CrashDetectHandler>; // for accessing private ctor
@@ -109,10 +114,10 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   static AMXCallStack call_stack_;
 
 public:
-  static unsigned int GetDefaultLongCallTime() { return (unsigned int)long_call_time_original_.count(); }
-  static unsigned int GetLongCallTime() { return (unsigned int)long_call_time_current_.count(); }
-  static void SetLongCallTime(unsigned int time);
-  static void ResetLongCall();
+  friend unsigned int ::GetDefaultLongCallTime();
+  friend unsigned int ::GetLongCallTime();
+  friend void ::SetLongCallTime(unsigned int time);
+  friend void ::ResetLongCall();
 };
 
 #endif // !CRASHDETECTHANDLER_H
