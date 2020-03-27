@@ -73,6 +73,8 @@
   #include <windows.h>
 #endif
 
+void SetLongCallTime(unsigned int time);
+unsigned int LongCallOption(int option);
 
 /* When one or more of the AMX_funcname macris are defined, we want
  * to compile only those functions. However, when none of these macros
@@ -3031,8 +3033,11 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       case 6:
         pri=(cell)((unsigned char *)cip - code);
         break;
+      case 0xFE:
+        pri=LongCallOption(0);
+        break;
       case 0xFF:
-        pri=1;
+        pri=1|(LongCallOption(2)<<1);
         break;
       } /* switch */
       break;
@@ -3055,6 +3060,24 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         break;
       case 6:
         cip=(cell *)(code + (int)pri);
+        break;
+      case 0xFE:
+        /* set long_call_time */
+        if (pri)
+          SetLongCallTime((unsigned int)pri);
+        else
+          LongCallOption(4);
+        break;
+      case 0xFF:
+        if (pri&2)
+          /* enable long_call_time check */
+          LongCallOption(5);
+        if (pri&4)
+          /* reset long_call_time */
+          LongCallOption(6);
+        if (pri&8)
+          /* restart long_call_time check */
+          LongCallOption(3);
         break;
       } /* switch */
       break;

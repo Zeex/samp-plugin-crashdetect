@@ -77,7 +77,7 @@ std::thread CrashDetectHandler::hang_thread_;
 std::atomic<bool> CrashDetectHandler::running_;
 std::mutex CrashDetectHandler::mutex_;
 
-std::chrono::microseconds CrashDetectHandler::long_call_time_original_;
+unsigned int CrashDetectHandler::long_call_time_original_;
 std::chrono::microseconds CrashDetectHandler::long_call_time_current_;
 std::chrono::microseconds CrashDetectHandler::long_call_time_delay_;
 
@@ -94,10 +94,9 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
 
 void CrashDetectHandler::StartThread() {
   running_ = true;
-  unsigned int time = Options::global_options().long_call_time();
-  long_call_time_original_ = std::chrono::microseconds(time);
-  long_call_time_current_ = std::chrono::microseconds(time);
-  long_call_time_delay_ = std::chrono::microseconds(time / 2);
+  long_call_time_original_ = Options::global_options().long_call_time();
+  long_call_time_current_ = std::chrono::microseconds(long_call_time_original_);
+  long_call_time_delay_ = std::chrono::microseconds(long_call_time_original_ / 2);
   hang_thread_ = std::thread(&CrashDetectHandler::HangThread);
 }
 
@@ -107,23 +106,47 @@ void CrashDetectHandler::StopThread() {
 }
 
 extern "C" {
-  unsigned int GetDefaultLongCallTime() {
-    return (unsigned int)CrashDetectHandler::long_call_time_original_.count();
-  }
+  unsigned int LongCallOption(int option) {
+    switch (option)
+    {
+    case 0:
+      // Current time.
+      return (unsigned int)CrashDetectHandler::long_call_time_current_.count();
+    //case 1:
+    //  // Original time.
+    //  return CrashDetectHandler::long_call_time_original_;
+    case 2:
+      // Is active?
+      return CrashDetectHandler::long_call_time_original_ && CrashDetectHandler::long_call_time_delay_ != CrashDetectHandler::long_call_time_current_;
+    case 3:
+      // Reset start time.
+      CrashDetectHandler::call_stack_.Reset(std::chrono::high_resolution_clock::now());
+      break;
+    case 4:
+      // Disable.
+      CrashDetectHandler::long_call_time_delay_ = CrashDetectHandler::long_call_time_current_;
+      break;
+    case 5:
+      // Enable.
+      CrashDetectHandler::long_call_time_delay_ = CrashDetectHandler::long_call_time_current_ / 2;
+      break;
+    case 6:
+      // Reset.
+      SetLongCallTime(CrashDetectHandler::long_call_time_original_);
+      break;
+    }
 
-  unsigned int GetLongCallTime() {
-    return (unsigned int)CrashDetectHandler::long_call_time_current_.count();
+    return 0;
   }
 
   void SetLongCallTime(unsigned int time) {
-    CrashDetectHandler::long_call_time_current_ = std::chrono::microseconds(time);
-    if (time) {
+    if (CrashDetectHandler::long_call_time_delay_ == CrashDetectHandler::long_call_time_current_) {
+      CrashDetectHandler::long_call_time_current_ = std::chrono::microseconds(time);
+      CrashDetectHandler::long_call_time_delay_ = CrashDetectHandler::long_call_time_current_;
+    } else {
+      CrashDetectHandler::long_call_time_current_ = std::chrono::microseconds(time);
       CrashDetectHandler::long_call_time_delay_ = std::chrono::microseconds(time / 2);
     }
-  }
-
-  void ResetLongCall() {
-    CrashDetectHandler::call_stack_.Reset(std::chrono::high_resolution_clock::now());
   }
 }
 
@@ -131,12 +154,13 @@ void CrashDetectHandler::HangThread() {
   AMXCallStack::time_point last_warning = std::chrono::high_resolution_clock::now();
   AMXCallStack::time_point start;
   AMXCallStack::time_point cmp;
-  // disable the check by setting `long_call_time` to `0`.
-  if (long_call_time_original_.count() == 0) {
+  // disable the check by setting `long_call_time 0`.
+  if (long_call_time_original_ == 0) {
     return;
   }
   for ( ; running_; std::this_thread::sleep_for(long_call_time_delay_)) {
-    if (long_call_time_current_.count() == 0) {
+    // if the checks are running, these are different.
+    if (long_call_time_current_ == long_call_time_delay_) {
       continue;
     }
 

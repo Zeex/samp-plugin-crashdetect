@@ -44,10 +44,8 @@ namespace os {
   class Context;
 }
 
-extern "C" unsigned int GetDefaultLongCallTime();
-extern "C" unsigned int GetLongCallTime();
 extern "C" void SetLongCallTime(unsigned int time);
-extern "C" void ResetLongCall();
+extern "C" unsigned int LongCallOption(int option);
 
 class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
  public:
@@ -104,7 +102,7 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   bool block_exec_errors_;
 
  private:
-  static std::chrono::microseconds long_call_time_original_;
+  static unsigned int long_call_time_original_;
   static std::chrono::microseconds long_call_time_current_;
   static std::chrono::microseconds long_call_time_delay_;
 
@@ -114,10 +112,8 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   static AMXCallStack call_stack_;
 
 public:
-  friend unsigned int ::GetDefaultLongCallTime();
-  friend unsigned int ::GetLongCallTime();
   friend void ::SetLongCallTime(unsigned int time);
-  friend void ::ResetLongCall();
+  friend unsigned int ::LongCallOption(int option);
 };
 
 #endif // !CRASHDETECTHANDLER_H

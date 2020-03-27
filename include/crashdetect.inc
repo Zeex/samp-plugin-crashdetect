@@ -56,13 +56,14 @@ stock bool:IsCrashDetectPresent() {
 }
 
 stock SetCrashDetectLongCallTime(us_time) {
+	// Setting this to `0` doesn't change the internal time, merely disables the check.
 	#emit load.s.pri us_time
 	#emit sctrl 0xFE
 }
 
 stock DisableCrashDetectLongCall() {
 	#emit const.pri 0
-	#emit sctrl 0xFF
+	#emit sctrl 0xFE
 }
 
 stock EnableCrashDetectLongCall() {
