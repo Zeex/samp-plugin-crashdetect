@@ -77,6 +77,25 @@ void SetLongCallTime(unsigned int time);
 unsigned int LongCallOption(int option);
 void CheckLongCallTime(void);
 
+// CheckLongCallTime uses the values in `amx`, but while we're in `Exec` they aren't accurate.
+#define CHECK_LONG_CALL_TIME() \
+  do {                                                      \
+    static unsigned int long_call_delay_ = 5000;            \
+    if (--long_call_delay_ == 0) {                          \
+      cell tmp_frm = amx->frm;                              \
+      cell tmp_hea = amx->hea;                              \
+      cell tmp_stk = amx->stk;                              \
+      amx->frm = frm;                                       \
+      amx->hea = hea;                                       \
+      amx->stk = stk;                                       \
+      CheckLongCallTime();                                  \
+      long_call_delay_ = 5000;                              \
+      amx->frm = tmp_frm;                                   \
+      amx->hea = tmp_hea;                                   \
+      amx->stk = tmp_stk;                                   \
+    }                                                       \
+  } while (0)
+
 /* When one or more of the AMX_funcname macris are defined, we want
  * to compile only those functions. However, when none of these macros
  * is present, we want to compile everything.
@@ -1716,7 +1735,7 @@ int AMXAPI amx_SetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR handler) {
      * fast "indirect threaded" interpreter.
      */
 
-#define NEXT(cip)       do { (amx)->cip=(cell)cip-(cell)code; goto **cip++; } while (0)
+#define NEXT(cip)       do { (amx)->cip=(cell)cip-(cell)code; CHECK_LONG_CALL_TIME(); goto **cip++; } while (0)
 
 int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 {
@@ -2605,7 +2624,6 @@ static const void * const amx_opcodelist[] = {
   op_nop:
     NEXT(cip);
   op_break:
-      CheckLongCallTime();
       if (amx->debug!=NULL) {
       /* store status */
       amx->frm=frm;
@@ -2833,6 +2851,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 
   for (;;) {
     amx->cip=(cell)((unsigned char *)cip-code);
+    CHECK_LONG_CALL_TIME();
     op=(OPCODE) *cip++;
     switch (op) {
     case OP_LOAD_PRI:
@@ -3598,7 +3617,6 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
     case OP_NOP:
       break;
     case OP_BREAK:
-      CheckLongCallTime();
       assert((amx->flags & AMX_FLAG_BROWSE)==0);
       if (amx->debug!=NULL) {
         /* store status */
