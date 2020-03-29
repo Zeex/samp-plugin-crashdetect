@@ -74,7 +74,8 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 
 AMXCallStack CrashDetectHandler::call_stack_;
 std::thread CrashDetectHandler::hang_thread_;
-std::atomic<bool> CrashDetectHandler::running_;
+std::atomic<int> CrashDetectHandler::running_;
+AMXRef CrashDetectHandler::top_amx_(nullptr);
 std::mutex CrashDetectHandler::mutex_;
 
 unsigned int CrashDetectHandler::long_call_time_original_;
@@ -93,7 +94,7 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
 }
 
 void CrashDetectHandler::StartThread() {
-  running_ = true;
+  running_ = 1;
   long_call_time_original_ = Options::global_options().long_call_time();
   long_call_time_current_ = std::chrono::microseconds(long_call_time_original_);
   long_call_time_delay_ = std::chrono::microseconds(long_call_time_original_ / 2);
@@ -101,12 +102,13 @@ void CrashDetectHandler::StartThread() {
 }
 
 void CrashDetectHandler::StopThread() {
-  running_ = false;
+  running_ = -1;
   hang_thread_.join();
 }
 
 extern "C" {
   unsigned int LongCallOption(int option) {
+    std::lock_guard<std::mutex> const lock(CrashDetectHandler::mutex_);
     switch (option)
     {
     case 0:
@@ -148,6 +150,16 @@ extern "C" {
       CrashDetectHandler::long_call_time_delay_ = std::chrono::microseconds(time / 2);
     }
   }
+
+  unsigned int Paused(AMX * amx) {
+    if (amx == CrashDetectHandler::top_amx_.amx()) {
+      if (CrashDetectHandler::running_ == 0) {
+        CrashDetectHandler::running_ = 2;
+      }
+      return CrashDetectHandler::running_ == 2;
+    }
+    return false;
+  }
 }
 
 void CrashDetectHandler::HangThread() {
@@ -158,13 +170,14 @@ void CrashDetectHandler::HangThread() {
   if (long_call_time_original_ == 0) {
     return;
   }
-  for ( ; running_; std::this_thread::sleep_for(long_call_time_delay_)) {
+  for ( ; running_ >= 0; std::this_thread::sleep_for(long_call_time_delay_)) {
     // if the checks are running, these are different.
     if (long_call_time_current_ == long_call_time_delay_) {
       continue;
     }
 
-    const std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> const lock(mutex_);
+
     if (call_stack_.IsEmpty()) {
       continue;
     }
@@ -175,9 +188,18 @@ void CrashDetectHandler::HangThread() {
     if (start != last_warning && start < cmp) {
       last_warning = start;
 
+      AMXRef amx = call_stack_.Top().amx();
+      top_amx_ = amx;
+
+      running_ = 0;
+      // Spin wait.
+      while (running_ == 0) { }
+
       // A call has being going on for more than `long_call_time` microseconds.
       LogDebugPrint("Long callback execution detected (hang or performance issue)");
       PrintAMXBacktrace();
+
+      running_ = 1;
     }
   }
 }
@@ -323,7 +345,11 @@ void CrashDetectHandler::ProcessExecError(int index, cell *retval, int error) {
   // other things too. This also should protect from cases where something
   // hooks logprintf (like fixes2).
   std::stringstream bt_stream;
-  PrintAMXBacktrace(bt_stream);
+
+  {
+    std::lock_guard<std::mutex> const lock(mutex_);
+    PrintAMXBacktrace(bt_stream);
+  }
 
   // Remember values of AMX registers before calling OnRuntimeError().
   AMX amx_state = *amx_.amx();
@@ -358,6 +384,8 @@ void CrashDetectHandler::ProcessExecError(int index, cell *retval, int error) {
 
 // static
 void CrashDetectHandler::OnCrash(const os::Context &context) {
+  std::lock_guard<std::mutex> const lock(mutex_);
+
   CrashDetectHandler *instance = nullptr;
   if (!call_stack_.IsEmpty()) {
     instance = GetHandler(call_stack_.Top().amx());
@@ -368,6 +396,7 @@ void CrashDetectHandler::OnCrash(const os::Context &context) {
   } else {
     LogDebugPrint("Server crashed due to an unknown error");
   }
+
   PrintAMXBacktrace();
   PrintNativeBacktrace(context.native_context());
   PrintRegisters(context);
@@ -377,6 +406,8 @@ void CrashDetectHandler::OnCrash(const os::Context &context) {
 
 // static
 void CrashDetectHandler::OnInterrupt(const os::Context &context) {
+  std::lock_guard<std::mutex> const lock(mutex_);
+
   CrashDetectHandler *instance = nullptr;
   if (!call_stack_.IsEmpty()) {
     instance = GetHandler(call_stack_.Top().amx());
@@ -387,6 +418,7 @@ void CrashDetectHandler::OnInterrupt(const os::Context &context) {
   } else {
     LogDebugPrint("Server received interrupt signal");
   }
+
   PrintAMXBacktrace();
   PrintNativeBacktrace(context.native_context());
 }
@@ -478,19 +510,19 @@ void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
   }
 
   AMXRef amx = call_stack_.Top().amx();
-  AMXRef top_amx = amx;
+  top_amx_ = amx;
 
   AMXCallStack calls = call_stack_;
 
-  cell cip = top_amx.GetCip();
-  cell frm = top_amx.GetFrm();
+  cell cip = top_amx_.GetCip();
+  cell frm = top_amx_.GetFrm();
   int level = 0;
 
   if (!calls.IsEmpty() && cip != 0) {
     stream << "AMX backtrace:";
   }
 
-  while (!calls.IsEmpty() && cip != 0 && amx == top_amx) {
+  while (!calls.IsEmpty() && cip != 0 && amx == top_amx_) {
     AMXCall call = calls.Pop();
 
     // native function
@@ -606,13 +638,13 @@ void CrashDetectHandler::PrintLoadedModules() {
 // static
 void CrashDetectHandler::Push(AMXCall call)
 {
-  const std::lock_guard<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> const lock(mutex_);
   call_stack_.Push(call);
 }
 
 AMXCall CrashDetectHandler::Pop()
 {
-  const std::lock_guard<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> const lock(mutex_);
   return call_stack_.Pop();
 }
 

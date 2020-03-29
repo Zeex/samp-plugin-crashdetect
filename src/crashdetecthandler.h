@@ -46,6 +46,7 @@ namespace os {
 
 extern "C" void SetLongCallTime(unsigned int time);
 extern "C" unsigned int LongCallOption(int option);
+extern "C" unsigned int Paused(AMX * amx);
 
 class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
  public:
@@ -107,13 +108,15 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
   static std::chrono::microseconds long_call_time_delay_;
 
   static std::thread hang_thread_;
-  static std::atomic<bool> running_;
+  static std::atomic<int> running_;
+  static AMXRef top_amx_;
   static std::mutex mutex_;
   static AMXCallStack call_stack_;
 
 public:
   friend void ::SetLongCallTime(unsigned int time);
   friend unsigned int ::LongCallOption(int option);
+  friend unsigned int ::Paused(AMX * amx);
 };
 
 #endif // !CRASHDETECTHANDLER_H

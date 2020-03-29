@@ -75,6 +75,7 @@
 
 void SetLongCallTime(unsigned int time);
 unsigned int LongCallOption(int option);
+unsigned int Paused(AMX * amx);
 
 /* When one or more of the AMX_funcname macris are defined, we want
  * to compile only those functions. However, when none of these macros
@@ -1715,7 +1716,7 @@ int AMXAPI amx_SetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR handler) {
      * fast "indirect threaded" interpreter.
      */
 
-#define NEXT(cip)       do { (amx)->cip=(cell)cip-(cell)code; goto **cip++; } while (0)
+#define NEXT(cip)       do { while (Paused(amx)) { } (amx)->cip=(cell)cip-(cell)code; goto **cip++; } while (0)
 
 int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 {
@@ -2830,6 +2831,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
 #else
 
   for (;;) {
+    /* halt here while crashdetect dumps information about us */
+    while (Paused(amx)) {}
     amx->cip=(cell)((unsigned char *)cip-code);
     op=(OPCODE) *cip++;
     switch (op) {
