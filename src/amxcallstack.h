@@ -26,7 +26,6 @@
 #define AMXCALLSTACK_H
 
 #include <stack>
-#include <chrono>
 #include "amxref.h"
 
 class AMXCall {
@@ -62,22 +61,16 @@ class AMXCall {
 
 class AMXCallStack {
  public:
-  using time_point = std::chrono::high_resolution_clock::time_point;
-
   bool IsEmpty() const;
 
   AMXCall &Top();
   const AMXCall &Top() const;
-
-  time_point Start() const { return start_; }
-  void Reset(time_point t) { start_ = t; }
 
   void Push(AMXCall call);
   AMXCall Pop();
 
  private:
   std::stack<AMXCall> call_stack_;
-  time_point start_;
 };
 
 #endif // !AMXCALLSTACK_H

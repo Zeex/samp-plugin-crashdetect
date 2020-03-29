@@ -28,14 +28,12 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdio>
-#include <thread>
-#include <atomic>
+#include <chrono>
 #include "amxcallstack.h"
 #include "amxdebuginfo.h"
 #include "amxhandler.h"
 #include "amxref.h"
 #include "regexp.h"
-#include <mutex>
 
 class AMXPathFinder;
 class AMXStackFrame;
@@ -46,7 +44,7 @@ namespace os {
 
 extern "C" void SetLongCallTime(unsigned int time);
 extern "C" unsigned int LongCallOption(int option);
-extern "C" unsigned int Paused(AMX * amx);
+extern "C" void CheckLongCallTime(void);
 
 class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
  public:
@@ -89,7 +87,6 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
 
  private:
   CrashDetectHandler(AMX *amx);
-  static void HangThread();
 
  private:
   AMXRef amx_;
@@ -105,18 +102,15 @@ class CrashDetectHandler: public AMXHandler<CrashDetectHandler> {
  private:
   static unsigned int long_call_time_original_;
   static std::chrono::microseconds long_call_time_current_;
-  static std::chrono::microseconds long_call_time_delay_;
+  static std::chrono::high_resolution_clock::time_point long_call_time_next_;
 
-  static std::thread hang_thread_;
-  static std::atomic<int> running_;
-  static AMXRef top_amx_;
-  static std::mutex mutex_;
+  static bool running_;
   static AMXCallStack call_stack_;
 
 public:
   friend void ::SetLongCallTime(unsigned int time);
   friend unsigned int ::LongCallOption(int option);
-  friend unsigned int ::Paused(AMX * amx);
+  friend void ::CheckLongCallTime(void);
 };
 
 #endif // !CRASHDETECTHANDLER_H

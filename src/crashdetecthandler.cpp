@@ -22,8 +22,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#define _GLIBCXX_USE_NANOSLEEP
-
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -73,14 +71,11 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 } // anonymous namespace
 
 AMXCallStack CrashDetectHandler::call_stack_;
-std::thread CrashDetectHandler::hang_thread_;
-std::atomic<int> CrashDetectHandler::running_;
-AMXRef CrashDetectHandler::top_amx_(nullptr);
-std::mutex CrashDetectHandler::mutex_;
+bool CrashDetectHandler::running_;
 
 unsigned int CrashDetectHandler::long_call_time_original_;
 std::chrono::microseconds CrashDetectHandler::long_call_time_current_;
-std::chrono::microseconds CrashDetectHandler::long_call_time_delay_;
+std::chrono::high_resolution_clock::time_point CrashDetectHandler:: long_call_time_next_;
 
 CrashDetectHandler::CrashDetectHandler(AMX *amx)
   : AMXHandler<CrashDetectHandler>(amx),
@@ -94,23 +89,19 @@ CrashDetectHandler::CrashDetectHandler(AMX *amx)
 }
 
 void CrashDetectHandler::StartThread() {
-  running_ = 1;
+  running_ = long_call_time_original_ != 0;
   long_call_time_original_ = Options::global_options().long_call_time();
   long_call_time_current_ = std::chrono::microseconds(long_call_time_original_);
-  long_call_time_delay_ = std::chrono::microseconds(long_call_time_original_ / 2);
-  hang_thread_ = std::thread(&CrashDetectHandler::HangThread);
+  long_call_time_next_ = std::chrono::high_resolution_clock::time_point::max();
 }
 
 void CrashDetectHandler::StopThread() {
-  running_ = -1;
-  hang_thread_.join();
+  running_ = false;
 }
 
 extern "C" {
   unsigned int LongCallOption(int option) {
-    std::lock_guard<std::mutex> const lock(CrashDetectHandler::mutex_);
-    switch (option)
-    {
+    switch (option) {
     case 0:
       // Current time.
       return (unsigned int)CrashDetectHandler::long_call_time_current_.count();
@@ -119,18 +110,18 @@ extern "C" {
     //  return CrashDetectHandler::long_call_time_original_;
     case 2:
       // Is active?
-      return CrashDetectHandler::long_call_time_original_ && CrashDetectHandler::long_call_time_delay_ != CrashDetectHandler::long_call_time_current_;
+      return CrashDetectHandler::running_;
     case 3:
       // Reset start time.
-      CrashDetectHandler::call_stack_.Reset(std::chrono::high_resolution_clock::now());
+      CrashDetectHandler::long_call_time_next_ = std::chrono::high_resolution_clock::now() + CrashDetectHandler::long_call_time_current_;
       break;
     case 4:
       // Disable.
-      CrashDetectHandler::long_call_time_delay_ = CrashDetectHandler::long_call_time_current_;
+      CrashDetectHandler::running_ = false;
       break;
     case 5:
       // Enable.
-      CrashDetectHandler::long_call_time_delay_ = CrashDetectHandler::long_call_time_current_ / 2;
+      CrashDetectHandler::running_ = CrashDetectHandler::long_call_time_original_ != 0;
       break;
     case 6:
       // Reset.
@@ -142,64 +133,18 @@ extern "C" {
   }
 
   void SetLongCallTime(unsigned int time) {
-    if (CrashDetectHandler::long_call_time_delay_ == CrashDetectHandler::long_call_time_current_) {
-      CrashDetectHandler::long_call_time_current_ = std::chrono::microseconds(time);
-      CrashDetectHandler::long_call_time_delay_ = CrashDetectHandler::long_call_time_current_;
-    } else {
-      CrashDetectHandler::long_call_time_current_ = std::chrono::microseconds(time);
-      CrashDetectHandler::long_call_time_delay_ = std::chrono::microseconds(time / 2);
-    }
+    CrashDetectHandler::long_call_time_current_ = std::chrono::microseconds(time);
   }
 
-  unsigned int Paused(AMX * amx) {
-    if (amx == CrashDetectHandler::top_amx_.amx()) {
-      if (CrashDetectHandler::running_ == 0) {
-        CrashDetectHandler::running_ = 2;
-      }
-      return CrashDetectHandler::running_ == 2;
+  void CheckLongCallTime(void) {
+    if (!CrashDetectHandler::running_) {
+      return;
     }
-    return false;
-  }
-}
-
-void CrashDetectHandler::HangThread() {
-  AMXCallStack::time_point last_warning = std::chrono::high_resolution_clock::now();
-  AMXCallStack::time_point start;
-  AMXCallStack::time_point cmp;
-  // disable the check by setting `long_call_time 0`.
-  if (long_call_time_original_ == 0) {
-    return;
-  }
-  for ( ; running_ >= 0; std::this_thread::sleep_for(long_call_time_delay_)) {
-    // if the checks are running, these are different.
-    if (long_call_time_current_ == long_call_time_delay_) {
-      continue;
-    }
-
-    std::lock_guard<std::mutex> const lock(mutex_);
-
-    if (call_stack_.IsEmpty()) {
-      continue;
-    }
-
-    // Got exclusive access to the call stack, and it isn't empty.
-    start = call_stack_.Start();
-    cmp = std::chrono::high_resolution_clock::now() - long_call_time_current_;
-    if (start != last_warning && start < cmp) {
-      last_warning = start;
-
-      AMXRef amx = call_stack_.Top().amx();
-      top_amx_ = amx;
-
-      running_ = 0;
-      // Spin wait.
-      while (running_ == 0) { }
-
-      // A call has being going on for more than `long_call_time` microseconds.
+    if (CrashDetectHandler::long_call_time_next_ < std::chrono::high_resolution_clock::now()) {
+      // Disable repeat stack dumps by setting this WAY in the future.
+      CrashDetectHandler::long_call_time_next_ = std::chrono::high_resolution_clock::time_point::max();
       LogDebugPrint("Long callback execution detected (hang or performance issue)");
-      PrintAMXBacktrace();
-
-      running_ = 1;
+      CrashDetectHandler::PrintAMXBacktrace();
     }
   }
 }
@@ -345,11 +290,7 @@ void CrashDetectHandler::ProcessExecError(int index, cell *retval, int error) {
   // other things too. This also should protect from cases where something
   // hooks logprintf (like fixes2).
   std::stringstream bt_stream;
-
-  {
-    std::lock_guard<std::mutex> const lock(mutex_);
-    PrintAMXBacktrace(bt_stream);
-  }
+  PrintAMXBacktrace(bt_stream);
 
   // Remember values of AMX registers before calling OnRuntimeError().
   AMX amx_state = *amx_.amx();
@@ -384,8 +325,6 @@ void CrashDetectHandler::ProcessExecError(int index, cell *retval, int error) {
 
 // static
 void CrashDetectHandler::OnCrash(const os::Context &context) {
-  std::lock_guard<std::mutex> const lock(mutex_);
-
   CrashDetectHandler *instance = nullptr;
   if (!call_stack_.IsEmpty()) {
     instance = GetHandler(call_stack_.Top().amx());
@@ -396,7 +335,6 @@ void CrashDetectHandler::OnCrash(const os::Context &context) {
   } else {
     LogDebugPrint("Server crashed due to an unknown error");
   }
-
   PrintAMXBacktrace();
   PrintNativeBacktrace(context.native_context());
   PrintRegisters(context);
@@ -406,8 +344,6 @@ void CrashDetectHandler::OnCrash(const os::Context &context) {
 
 // static
 void CrashDetectHandler::OnInterrupt(const os::Context &context) {
-  std::lock_guard<std::mutex> const lock(mutex_);
-
   CrashDetectHandler *instance = nullptr;
   if (!call_stack_.IsEmpty()) {
     instance = GetHandler(call_stack_.Top().amx());
@@ -418,7 +354,6 @@ void CrashDetectHandler::OnInterrupt(const os::Context &context) {
   } else {
     LogDebugPrint("Server received interrupt signal");
   }
-
   PrintAMXBacktrace();
   PrintNativeBacktrace(context.native_context());
 }
@@ -510,19 +445,19 @@ void CrashDetectHandler::PrintAMXBacktrace(std::ostream &stream) {
   }
 
   AMXRef amx = call_stack_.Top().amx();
-  top_amx_ = amx;
+  AMXRef top_amx = amx;
 
   AMXCallStack calls = call_stack_;
 
-  cell cip = top_amx_.GetCip();
-  cell frm = top_amx_.GetFrm();
+  cell cip = top_amx.GetCip();
+  cell frm = top_amx.GetFrm();
   int level = 0;
 
   if (!calls.IsEmpty() && cip != 0) {
     stream << "AMX backtrace:";
   }
 
-  while (!calls.IsEmpty() && cip != 0 && amx == top_amx_) {
+  while (!calls.IsEmpty() && cip != 0 && amx == top_amx) {
     AMXCall call = calls.Pop();
 
     // native function
@@ -636,16 +571,18 @@ void CrashDetectHandler::PrintLoadedModules() {
 }
 
 // static
-void CrashDetectHandler::Push(AMXCall call)
-{
-  std::lock_guard<std::mutex> const lock(mutex_);
+void CrashDetectHandler::Push(AMXCall call) {
+  if (call_stack_.IsEmpty()) {
+    long_call_time_next_ = std::chrono::high_resolution_clock::now() + long_call_time_current_;
+  }
   call_stack_.Push(call);
 }
 
-AMXCall CrashDetectHandler::Pop()
-{
-  std::lock_guard<std::mutex> const lock(mutex_);
+AMXCall CrashDetectHandler::Pop() {
   return call_stack_.Pop();
+  if (call_stack_.IsEmpty()) {
+    long_call_time_next_ = std::chrono::high_resolution_clock::time_point::max();
+  }
 }
 
 void CrashDetectHandler::PrintNativeBacktrace(const os::Context &context) {
