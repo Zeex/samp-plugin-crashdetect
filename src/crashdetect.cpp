@@ -54,7 +54,7 @@ using std::chrono::high_resolution_clock;
 using std::chrono::microseconds;
 
 template<typename Printer>
-class PrintLine : public std::unary_function<const std::string &, void> {
+class PrintLine: public std::unary_function<const std::string &, void> {
  public:
   PrintLine(Printer printer) : printer_(printer) {}
   void operator()(const std::string &line) {
@@ -78,7 +78,7 @@ bool CrashDetect::running_;
 
 unsigned int CrashDetect::long_call_time_original_;
 microseconds CrashDetect::long_call_time_current_;
-high_resolution_clock::time_point CrashDetect:: long_call_time_next_;
+high_resolution_clock::time_point CrashDetect::long_call_time_next_;
 
 CrashDetect::CrashDetect(AMX *amx)
   : AMXHandler<CrashDetect>(amx),
@@ -193,9 +193,7 @@ int CrashDetect::ProcessDebugHook() {
   return prev_debug_ != nullptr ? prev_debug_(amx_) : AMX_ERR_NONE;
 }
 
-int CrashDetect::ProcessCallback(cell index,
-                                        cell *result,
-                                        cell *params) {
+int CrashDetect::ProcessCallback(cell index, cell *result, cell *params) {
   Push(AMXCall::Native(amx_, index));
 
   if (Options::global_options().trace_flags() & TRACE_NATIVES) {
@@ -244,12 +242,11 @@ int CrashDetect::ProcessExec(cell *retval, int index) {
   }
 
   int error = ::amx_Exec(amx_, retval, index);
-  if (error == AMX_ERR_CALLBACK ||
-      error == AMX_ERR_NOTFOUND ||
-      error == AMX_ERR_INIT     ||
-      error == AMX_ERR_INDEX    ||
-      error == AMX_ERR_SLEEP)
-  {
+  if (error == AMX_ERR_CALLBACK
+      || error == AMX_ERR_NOTFOUND
+      || error == AMX_ERR_INIT
+      || error == AMX_ERR_INDEX
+      || error == AMX_ERR_SLEEP) {
     // For these types of errors amx_Error() is not called because of
     // early return from amx_Exec().
     ProcessExecError(index, retval, error);
@@ -314,10 +311,10 @@ void CrashDetect::ProcessExecError(int index, cell *retval, int error) {
 
   if (suppress == 0) {
     PrintRuntimeError(amx_, amx_state, error);
-    if (error != AMX_ERR_NOTFOUND &&
-        error != AMX_ERR_INDEX    &&
-        error != AMX_ERR_CALLBACK &&
-        error != AMX_ERR_INIT) {
+    if (error != AMX_ERR_NOTFOUND
+        && error != AMX_ERR_INDEX
+        && error != AMX_ERR_CALLBACK
+        && error != AMX_ERR_INIT) {
       PrintStream(LogDebugPrint, bt_stream);
     }
   }
@@ -362,7 +359,7 @@ void CrashDetect::OnInterrupt(const os::Context &context) {
 
 // static
 void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
-                                         const AMXDebugInfo &debug_info) {
+                                  const AMXDebugInfo &debug_info) {
   std::stringstream stream;
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
@@ -374,8 +371,8 @@ void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
 
 // static
 void CrashDetect::PrintRuntimeError(AMXRef amx,
-                                           const AMX &amx_state,
-                                           int error) {
+                                    const AMX &amx_state,
+                                    int error) {
   LogDebugPrint("Run time error %d: \"%s\"", error, aux_StrError(error));
   cell *ip = reinterpret_cast<cell*>(amx.GetCode() + amx_state.cip);
   switch (error) {
@@ -598,7 +595,7 @@ void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
 
 // static
 void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
-                                              const os::Context &context) {
+                                       const os::Context &context) {
   std::vector<StackFrame> frames;
   GetStackTrace(frames, context.native_context());
 
