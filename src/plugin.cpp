@@ -32,7 +32,7 @@
   #include <stdio.h>
 #endif
 #include "amxpathfinder.h"
-#include "crashdetecthandler.h"
+#include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"
 #include "natives.h"
@@ -101,11 +101,11 @@ AMXPathFinder amx_path_finder;
 #endif
 
 int AMXAPI ProcessDebugHook(AMX *amx) {
-  return CrashDetectHandler::GetHandler(amx)->ProcessDebugHook();
+  return CrashDetect::GetHandler(amx)->ProcessDebugHook();
 }
 
 int AMXAPI ProcessCallback(AMX *amx, cell index, cell *result, cell *params) {
-  CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
+  CrashDetect *handler = CrashDetect::GetHandler(amx);
   return handler->ProcessCallback(index, result, params);
 }
 
@@ -113,7 +113,7 @@ int AMXAPI ProcessExec(AMX *amx, cell *retval, int index) {
   if (amx->flags & AMX_FLAG_BROWSE) {
     return amx_Exec(amx, retval, index);
   }
-  CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
+  CrashDetect *handler = CrashDetect::GetHandler(amx);
   if (handler == nullptr) {
     return amx_Exec(amx, retval, index);
   }
@@ -121,7 +121,7 @@ int AMXAPI ProcessExec(AMX *amx, cell *retval, int index) {
 }
 
 void AMXAPI ProcessExecError(AMX *amx, cell index, cell *retval, int error) {
-  CrashDetectHandler *handler = CrashDetectHandler::GetHandler(amx);
+  CrashDetect *handler = CrashDetect::GetHandler(amx);
   handler->ProcessExecError(index, retval, error);
 }
 
@@ -167,17 +167,16 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
                    &amx_path_finder));
   }
 
-  os::SetCrashHandler(CrashDetectHandler::OnCrash);
-  os::SetInterruptHandler(CrashDetectHandler::OnInterrupt);
-  CrashDetectHandler::StartThread();
+  os::SetCrashHandler(CrashDetect::OnCrash);
+  os::SetInterruptHandler(CrashDetect::OnInterrupt);
+  CrashDetect::PluginLoad();
 
   logprintf("  CrashDetect plugin " PROJECT_VERSION_STRING);
   return true;
 }
 
-PLUGIN_EXPORT void PLUGIN_CALL Unload()
-{
-  CrashDetectHandler::StopThread();
+PLUGIN_EXPORT void PLUGIN_CALL Unload() {
+  CrashDetect::PluginUnload();
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
@@ -185,7 +184,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
     amx_path_finder.AddKnownFile(amx, last_amx_path);
   }
 
-  CrashDetectHandler *handler = CrashDetectHandler::CreateHandler(amx);
+  CrashDetect *handler = CrashDetect::CreateHandler(amx);
   handler->set_amx_path_finder(&amx_path_finder);
   handler->Load();
 
@@ -198,7 +197,7 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxUnload(AMX *amx) {
-  CrashDetectHandler::GetHandler(amx)->Unload();
-  CrashDetectHandler::DestroyHandler(amx);
+  CrashDetect::GetHandler(amx)->Unload();
+  CrashDetect::DestroyHandler(amx);
   return AMX_ERR_NONE;
 }
