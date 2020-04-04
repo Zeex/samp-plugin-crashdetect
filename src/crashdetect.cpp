@@ -92,10 +92,10 @@ CrashDetect::CrashDetect(AMX *amx)
 }
 
 void CrashDetect::PluginLoad() {
-  running_ = long_call_time_original_ != 0;
   long_call_time_original_ = Options::global_options().long_call_time();
   long_call_time_current_ = microseconds(long_call_time_original_);
   long_call_time_next_ = high_resolution_clock::time_point::max();
+  running_ = long_call_time_original_ != 0;
 }
 
 void CrashDetect::PluginUnload() {
