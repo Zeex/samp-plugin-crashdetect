@@ -581,11 +581,13 @@ void CrashDetect::Push(AMXCall call) {
   call_stack_.Push(call);
 }
 
+// static
 AMXCall CrashDetect::Pop() {
-  return call_stack_.Pop();
+  AMXCall call = call_stack_.Pop();
   if (call_stack_.IsEmpty()) {
     long_call_time_next_ = high_resolution_clock::time_point::max();
   }
+  return call;
 }
 
 void CrashDetect::PrintNativeBacktrace(const os::Context &context) {
