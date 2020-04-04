@@ -40,8 +40,78 @@ native GetNativeBacktrace(string[], size = sizeof(string));
 forward OnRuntimeError(code, &bool:suppress);
 
 stock bool:IsCrashDetectPresent() {
+	// 0xFF is roughly flags, but some are mutually exclusive:
+	//
+	//   1 - Present (read only, write always 0).
+	//   2 - long_call_time checks enabled (write ignored when `server.cfg` has `long_call_time 0`).
+	//   4 - long_call_time reset to default time (write only, read always 0).
+	//   8 - long_call_time restart check from now (write only, read always 0).
+	//
 	#emit zero.pri
 	#emit lctrl 0xFF
+	#emit not
+	#emit not
 	#emit retn
 	return false;
 }
+
+stock SetCrashDetectLongCallTime(us_time) {
+	// Setting this to `0` doesn't change the internal time, merely disables the check.
+	#emit load.s.pri us_time
+	#emit sctrl 0xFE
+}
+
+stock DisableCrashDetectLongCall() {
+	#emit const.pri 0
+	#emit sctrl 0xFE
+}
+
+stock EnableCrashDetectLongCall() {
+	#emit const.pri 2
+	#emit sctrl 0xFF
+}
+
+stock ResetCrashDetectLongCallTime() {
+	#emit const.pri 4
+	#emit sctrl 0xFF
+}
+
+stock RestartCrashDetectLongCall() {
+	#emit const.pri 8
+	#emit sctrl 0xFF
+}
+
+stock bool:IsCrashDetectLongCallEnabled() {
+	#emit zero.pri
+	#emit lctrl 0xFF
+	#emit shr.c.pri 1
+	#emit retn
+	return false;
+}
+
+stock GetCrashDetectLongCallTime() {
+	#emit zero.pri
+	#emit lctrl 0xFE
+	#emit retn
+	return 0;
+}
+
+// `GetCrashDetectDefaultLongCallTime` is too long.
+stock GetCrashDetectDefaultTime() {
+	// store the current value
+	#emit zero.pri
+	#emit lctrl 0xFE
+	#emit move.alt
+	// reset to and read the default
+	#emit const.pri 4
+	#emit sctrl 0xFF
+	#emit zero.pri
+	#emit lctrl 0xFE
+	// put the current value back
+	#emit xchg
+	#emit sctrl 0xFE
+	#emit move.pri
+	#emit retn
+	return 0;
+}
+

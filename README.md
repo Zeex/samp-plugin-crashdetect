@@ -93,6 +93,8 @@ Available settings:
   complete, but are just slow (thus affecting overall server execution and
   sync).  Default value is `5000` (5 milliseconds).
 
+  Use `0` to disable this check.
+
 Building from source code
 -------------------------
 
