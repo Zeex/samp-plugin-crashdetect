@@ -33,7 +33,7 @@ deploy:
   description: '<Put release description here>'
   provider: GitHub
   auth_token:
-    secure: ++mk9GhXTpN/hdVjIIi/nHpu0gYpDybMJNDPB3lld8r1UyfoPbz08SVGeSS84HjR
+    secure: mFnGriHw4x2Uq92vl19XDzO8tNJ2E1+D0OetIt4QjOVg+h396utFpLkY7nVa/G8k
   artifact: /crashdetect-.*-win32\.zip/
   draft: true
   on:
