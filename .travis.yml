@@ -7,7 +7,8 @@ env:
 
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y linux-libc-dev:i386 gcc-4.8 gcc-4.8-multilib g++-4.8 g++-4.8-multilib cmake
+  - sudo apt-get install -y linux-libc-dev:i386 gcc-4.8 gcc-4.8-multilib g++-4.8 g++-4.8-multilib cmake snapd
+  - sudo snap install --classic ffsend
 
   - wget https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-linux.tar.gz
   - sudo tar xvf pawnc-3.10.20150412-linux.tar.gz --strip-components=1 -C /usr/local
@@ -23,6 +24,9 @@ script:
   - make
   - make test
   - make package
+
+after_script:
+  - ffsend upload crashdetect-*-linux.tar.gz
 
 after_failure:
   - cat Testing/Temporary/LastTest.log
