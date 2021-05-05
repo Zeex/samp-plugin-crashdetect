@@ -1,4 +1,5 @@
-/* Copyright (c) 2012-2015 Zeex
+/*
+ * Copyright (c) 2012-2018 Zeex
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,12 +27,29 @@
 #include <stddef.h>
 #include <windows.h>
 
-void *subhook_unprotect(void *address, size_t size) {
-  DWORD old;
+#define SUBHOOK_CODE_PROTECT_FLAGS PAGE_EXECUTE_READWRITE
 
-  if (VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &old) == 0) {
-    return NULL;
+int subhook_unprotect(void *address, size_t size) {
+  DWORD old_flags;
+  BOOL result = VirtualProtect(address,
+                               size,
+                               SUBHOOK_CODE_PROTECT_FLAGS,
+                               &old_flags);
+  return !result;
+}
+
+void *subhook_alloc_code(size_t size) {
+  return VirtualAlloc(NULL,
+                      size,
+                      MEM_COMMIT | MEM_RESERVE,
+                      SUBHOOK_CODE_PROTECT_FLAGS);
+}
+
+int subhook_free_code(void *address, size_t size) {
+  (void)size;
+
+  if (address == NULL) {
+    return 0;
   }
-
-  return address;
+  return !VirtualFree(address, 0, MEM_RELEASE);
 }

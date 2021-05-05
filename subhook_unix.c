@@ -1,4 +1,5 @@
-/* Copyright (c) 2012-2015 Zeex
+/*
+ * Copyright (c) 2012-2018 Zeex
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,15 +28,35 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-void *subhook_unprotect(void *address, size_t size) {
+#define SUBHOOK_CODE_PROTECT_FLAGS (PROT_READ | PROT_WRITE | PROT_EXEC)
+
+int subhook_unprotect(void *address, size_t size) {
   long pagesize;
 
   pagesize = sysconf(_SC_PAGESIZE);
   address = (void *)((long)address & ~(pagesize - 1));
 
-  if (mprotect(address, size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-    return NULL;
-  }
+  return mprotect(address, size, SUBHOOK_CODE_PROTECT_FLAGS);
+}
 
-  return address;
+void *subhook_alloc_code(size_t size) {
+  void *address;
+
+  address = mmap(NULL,
+                 size,
+                 SUBHOOK_CODE_PROTECT_FLAGS,
+                 #if defined MAP_32BIT && !defined __APPLE__
+                   MAP_32BIT |
+                 #endif
+                 MAP_PRIVATE | MAP_ANONYMOUS,
+                 -1,
+                 0);
+  return address == MAP_FAILED ? NULL : address;
+}
+
+int subhook_free_code(void *address, size_t size) {
+  if (address == NULL) {
+    return 0;
+  }
+  return munmap(address, size);
 }
