@@ -68,7 +68,7 @@ class ConfigReader {
 
 template<typename T>
 void ConfigReader::GetValue(const std::string &name, T &value) const {
-  value = GetOptionDefault(name, value);
+  value = GetValueWithDefault(name, value);
 }
 
 template<typename T>
