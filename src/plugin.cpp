@@ -136,7 +136,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   ::logprintf = (logprintf_t)ppData[PLUGIN_DATA_LOGPRINTF];
 
   void *amx_Exec_ptr = exports[PLUGIN_AMX_EXPORT_Exec];
-  void *amx_Exec_sub = subhook::Hook::ReadDst(amx_Exec_ptr);
+  void *amx_Exec_sub = subhook::ReadHookDst(amx_Exec_ptr);
 
   if (amx_Exec_sub == nullptr) {
     amx_exec_hook.Install(amx_Exec_ptr, (void*)ProcessExec);
