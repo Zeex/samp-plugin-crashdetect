@@ -8,9 +8,9 @@ install:
   - 7z x pawnc-3.10.20150412-windows.zip
   - set PATH=%PATH%;%CD%\pawnc-3.10.20150412-windows\bin
 
-  - appveyor DownloadFile https://github.com/Zeex/plugin-runner/releases/download/v1.1.2/plugin-runner-1.1.2-win32.zip
-  - 7z x plugin-runner-1.1.2-win32.zip
-  - set PATH=%PATH%;%CD%\plugin-runner-1.1.2-win32
+  - appveyor DownloadFile https://github.com/Zeex/plugin-runner/releases/download/v1.3/plugin-runner-1.3-win32.zip
+  - 7z x plugin-runner-1.3-win32.zip
+  - set PATH=%PATH%;%CD%\plugin-runner-1.3-win32
 
 before_build:
   - cmake . -G "Visual Studio 12 2013" -T v120_xp
@@ -33,7 +33,7 @@ deploy:
   description: '<Put release description here>'
   provider: GitHub
   auth_token:
-    secure: ++mk9GhXTpN/hdVjIIi/nHpu0gYpDybMJNDPB3lld8r1UyfoPbz08SVGeSS84HjR
+    secure: mFnGriHw4x2Uq92vl19XDzO8tNJ2E1+D0OetIt4QjOVg+h396utFpLkY7nVa/G8k
   artifact: /crashdetect-.*-win32\.zip/
   draft: true
   on:

@@ -1,4 +1,5 @@
-/* Copyright (c) 2012-2018 Zeex
+/*
+ * Copyright (c) 2012-2018 Zeex
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +48,8 @@ struct subhook_struct {
   size_t trampoline_len;
 };
 
-void *subhook_unprotect(void *address, size_t size);
+int subhook_unprotect(void *address, size_t size);
+void *subhook_alloc_code(size_t size);
+int subhook_free_code(void *address, size_t size);
 
 #endif /* SUBHOOK_PRIVATE_H */

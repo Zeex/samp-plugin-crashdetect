@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Zeex
+// Copyright (c) 2011-2018 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -21,3 +21,98 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+
+#ifndef CRASHDETECT_H
+#define CRASHDETECT_H
+
+#include <cstdarg>
+#include <cstdio>
+#include <cstdio>
+#include <chrono>
+#include "amxcallstack.h"
+#include "amxdebuginfo.h"
+#include "amxhandler.h"
+#include "amxref.h"
+#include "regexp.h"
+
+class AMXPathFinder;
+class AMXStackFrame;
+
+namespace os {
+  class Context;
+}
+
+extern "C" {
+  void SetLongCallTime(unsigned int time);
+  unsigned int LongCallOption(int option);
+  void CheckLongCallTime(void);
+}
+
+class CrashDetect: public AMXHandler<CrashDetect> {
+ public:
+  friend class AMXHandler<CrashDetect>; // for accessing private ctor
+
+  void set_amx_path_finder(AMXPathFinder *finder) {
+    amx_path_finder_ = finder;
+  }
+
+  int Load();
+  int Unload();
+
+  int ProcessDebugHook();
+  int ProcessCallback(cell index, cell *result, cell *params);
+  int ProcessExec(cell *retval, int index);
+  void ProcessExecError(int index, cell *retval, int error);
+
+ public:
+  static void PluginLoad();
+  static void PluginUnload();
+
+  static void OnCrash(const os::Context &context);
+  static void OnInterrupt(const os::Context &context);
+
+  static void PrintAMXBacktrace();
+  static void PrintAMXBacktrace(std::ostream &stream);
+
+  static void PrintNativeBacktrace(const os::Context &context);
+  static void PrintNativeBacktrace(std::ostream &stream,
+                                   const os::Context &context);
+
+ private:
+  static void PrintTraceFrame(const AMXStackFrame &frame,
+                              const AMXDebugInfo &debug_info);
+  static void PrintRuntimeError(AMXRef amx, const AMX &amx_state, int error);
+  static void PrintRegisters(const os::Context &context);
+  static void PrintStack(const os::Context &context);
+  static void PrintLoadedModules();
+  static void Push(AMXCall call);
+  static AMXCall Pop();
+
+ private:
+  CrashDetect(AMX *amx);
+
+ private:
+  AMXRef amx_;
+  AMXPathFinder *amx_path_finder_;
+  AMXDebugInfo debug_info_;
+  AMX_DEBUG prev_debug_;
+  AMX_CALLBACK prev_callback_;
+  cell last_frame_;
+  std::string amx_path_;
+  std::string amx_name_;
+  bool block_exec_errors_;
+
+ private:
+  static unsigned int long_call_time_original_;
+  static std::chrono::microseconds long_call_time_current_;
+  static std::chrono::high_resolution_clock::time_point long_call_time_next_;
+  static bool running_;
+  static AMXCallStack call_stack_;
+
+ public:
+  friend void ::SetLongCallTime(unsigned int time);
+  friend unsigned int ::LongCallOption(int option);
+  friend void ::CheckLongCallTime(void);
+};
+
+#endif // !CRASHDETECT_H

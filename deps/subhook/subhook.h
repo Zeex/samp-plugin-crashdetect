@@ -1,4 +1,5 @@
-/* Copyright (c) 2012-2018 Zeex
+/*
+ * Copyright (c) 2012-2018 Zeex
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,6 +27,8 @@
 #ifndef SUBHOOK_H
 #define SUBHOOK_H
 
+#include <stddef.h>
+
 #if defined _M_IX86 || defined __i386__
   #define SUBHOOK_X86
   #define SUBHOOK_BITS 32
@@ -38,17 +41,14 @@
 
 #if defined _WIN32 || defined __CYGWIN__
   #define SUBHOOK_WINDOWS
-#elif defined __linux__
-  #define SUBHOOK_LINUX
-  #define SUBHOOK_UNIX
-#elif defined __APPLE__
-  #define SUBHOOK_MACOS
+#elif defined __linux__ || defined __APPLE__ \
+   || defined __FreeBSD__ || defined __OpenBSD__ || defined __NetBSD__
   #define SUBHOOK_UNIX
 #else
   #error Unsupported operating system
 #endif
 
-#if !defined SUHOOK_EXTERN
+#if !defined SUBHOOK_EXTERN
   #if defined __cplusplus
     #define SUBHOOK_EXTERN extern "C"
   #else
@@ -97,9 +97,14 @@ typedef enum subhook_flags {
 struct subhook_struct;
 typedef struct subhook_struct *subhook_t;
 
-SUBHOOK_EXPORT subhook_t SUBHOOK_API subhook_new(void *src,
-                                                 void *dst,
-                                                 subhook_flags_t flags);
+typedef int (SUBHOOK_API *subhook_disasm_handler_t)(
+  void *src,
+  int *reloc_op_offset);
+
+SUBHOOK_EXPORT subhook_t SUBHOOK_API subhook_new(
+  void *src,
+  void *dst,
+  subhook_flags_t flags);
 SUBHOOK_EXPORT void SUBHOOK_API subhook_free(subhook_t hook);
 
 SUBHOOK_EXPORT void *SUBHOOK_API subhook_get_src(subhook_t hook);
@@ -110,12 +115,30 @@ SUBHOOK_EXPORT int SUBHOOK_API subhook_install(subhook_t hook);
 SUBHOOK_EXPORT int SUBHOOK_API subhook_is_installed(subhook_t hook);
 SUBHOOK_EXPORT int SUBHOOK_API subhook_remove(subhook_t hook);
 
-/* Reads hook destination address from code.
+/*
+ * Reads hook destination address from code.
  *
- * This is useful when you don't know the address or want to check
- * whether src is already hooked.
+ * This function may be useful when you don't know the address or want to
+ * check whether src is already hooked.
  */
 SUBHOOK_EXPORT void *SUBHOOK_API subhook_read_dst(void *src);
+
+/*
+ * Returns the length of the first instruction in src. You can replace it with
+ * a custom function via subhook_set_disasm_handler.
+ */
+SUBHOOK_EXPORT int SUBHOOK_API subhook_disasm(void *src, int *reloc_op_offset);
+
+/*
+ * Sets a custom disassmbler function to use in place of the default one
+ * (subhook_disasm).
+ *
+ * The default function can recognize only a small subset of x86 instructions
+ * commonly used in prologues. If it fails in your situation, you might want
+ * to use a more advanced disassembler library.
+ */
+SUBHOOK_EXPORT void SUBHOOK_API subhook_set_disasm_handler(
+  subhook_disasm_handler_t handler);
 
 #ifdef __cplusplus
 
@@ -136,9 +159,17 @@ inline HookFlags operator&(HookFlags o1, HookFlags o2) {
       static_cast<unsigned int>(o1) & static_cast<unsigned int>(o2));
 }
 
+inline void *ReadHookDst(void *src) {
+  return subhook_read_dst(src);
+}
+
+inline void SetDisasmHandler(subhook_disasm_handler_t handler) {
+  subhook_set_disasm_handler(handler);
+}
+
 class Hook {
  public:
-  Hook() : hook_(0) {}
+  Hook() : hook_(NULL) {}
   Hook(void *src, void *dst, HookFlags flags = HookNoFlags)
     : hook_(subhook_new(src, dst, (subhook_flags_t)flags))
   {
@@ -154,28 +185,29 @@ class Hook {
   void *GetTrampoline() const { return subhook_get_trampoline(hook_); }
 
   bool Install() {
-    return subhook_install(hook_) >= 0;
+    return subhook_install(hook_) == 0;
   }
 
   bool Install(void *src,
                void *dst,
                HookFlags flags = HookNoFlags) {
-    if (hook_ == 0) {
-      hook_ = subhook_new(src, dst, (subhook_flags_t)flags);
+    if (hook_ != NULL) {
+      subhook_remove(hook_);
+      subhook_free(hook_);
+    }
+    hook_ = subhook_new(src, dst, (subhook_flags_t)flags);
+    if (hook_ == NULL) {
+      return false;
     }
     return Install();
   }
 
   bool Remove() {
-    return subhook_remove(hook_) >= 0;
+    return subhook_remove(hook_) == 0;
   }
 
   bool IsInstalled() const {
     return !!subhook_is_installed(hook_);
-  }
-
-  static void *ReadDst(void *src) {
-    return subhook_read_dst(src);
   }
 
  private:
@@ -189,8 +221,8 @@ class Hook {
 class ScopedHookRemove {
  public:
   ScopedHookRemove(Hook *hook)
-    : hook_(hook)
-    , removed_(hook_->Remove())
+    : hook_(hook),
+      removed_(hook_->Remove())
   {
   }
 
@@ -212,8 +244,8 @@ class ScopedHookRemove {
 class ScopedHookInstall {
  public:
   ScopedHookInstall(Hook *hook)
-    : hook_(hook)
-    , installed_(hook_->Install())
+    : hook_(hook),
+      installed_(hook_->Install())
   {
   }
 
@@ -221,8 +253,8 @@ class ScopedHookInstall {
                     void *src,
                     void *dst,
                     HookFlags flags = HookNoFlags)
-    : hook_(hook)
-    , installed_(hook_->Install(src, dst, flags))
+    : hook_(hook),
+      installed_(hook_->Install(src, dst, flags))
   {
   }
 
