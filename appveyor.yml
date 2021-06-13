@@ -8,7 +8,7 @@ install:
   - 7z x pawnc-3.10.20150412-windows.zip
   - set PATH=%PATH%;%CD%\pawnc-3.10.20150412-windows\bin
 
-  - appveyor DownloadFile https://github.com/Zeex/plugin-runner/releases/download/v1.3/plugin-runner-1.3-win32.zip
+  - appveyor DownloadFile https://github.com/Zeex/samp-plugin-runner/releases/download/v1.3/plugin-runner-1.3-win32.zip
   - 7z x plugin-runner-1.3-win32.zip
   - set PATH=%PATH%;%CD%\plugin-runner-1.3-win32
 
