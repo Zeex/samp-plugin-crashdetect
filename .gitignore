@@ -1,7 +1,23 @@
+.DS_Store
+Thumbs.db
+*.bak
+*.log
+
+# IDEs and editors
 .clang_complete
+.idea
 .kdev4
 .vs
 .vscode
 CMakeLists.txt.user*
+CMakeSettings.json
+*.swp
 *.kdev4
+
+# Build files
+build
+
+# Pawn compiler outputs
+*.asm
 *.amx
+*.lst
