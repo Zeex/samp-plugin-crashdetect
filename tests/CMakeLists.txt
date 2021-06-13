@@ -57,7 +57,7 @@ Loaded script: .*<TEST_OUTPUT>"
     TARGETS            ${target}
     SCRIPT             ${CMAKE_CURRENT_BINARY_DIR}/${name}
     OUTPUT_FILE        ${CMAKE_CURRENT_BINARY_DIR}/${name}.out
-    TIMEOUT            1
+    TIMEOUT            5
     WORKING_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}
   )
 

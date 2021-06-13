@@ -1,5 +1,7 @@
 args
 bounds
+long_call_error
+long_call_ok
 orte_backtrace
 orte_regs
 presence
