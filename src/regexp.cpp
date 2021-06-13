@@ -26,29 +26,35 @@
 #include "regexp.h"
 
 RegExp::RegExp(const std::string &pattern)
-  : pcre_(nullptr)
+  : re_(nullptr)
 {
-  const char *errorptr;
-  int erroroffset = 0;
-  pcre_ = pcre_compile(pattern.c_str(),
-                       0,
-                       &errorptr,
-                       &erroroffset,
-                       nullptr);
+  int errornumber;
+  PCRE2_SIZE erroroffset = 0;
+  re_ = pcre2_compile(reinterpret_cast<PCRE2_SPTR8>(pattern.c_str()),
+                      PCRE2_ZERO_TERMINATED,
+                      0,
+                      &errornumber,
+                      &erroroffset,
+                      nullptr);
 }
 
 RegExp::~RegExp() {
-  pcre_free(pcre_);
+  pcre2_code_free(re_);
 }
 
 bool RegExp::Test(const std::string &string) const {
-  int result = pcre_exec(pcre_,
-                         nullptr,
-                         string.c_str(),
-                         string.length(),
-                         0,
-                         0,
-                         nullptr,
-                         0);
+  if (re_ == nullptr) {
+    return false;
+  }
+  pcre2_match_data *match_data =
+      pcre2_match_data_create_from_pattern(re_, NULL);
+  int result = pcre2_match(re_,
+                           reinterpret_cast<PCRE2_SPTR8>(string.c_str()),
+                           string.length(),
+                           0,
+                           0,
+                           match_data,
+                           nullptr);
+  pcre2_match_data_free(match_data);
   return result >= 0;
 }

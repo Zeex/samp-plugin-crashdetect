@@ -1,10 +1,19 @@
+# This set of tests checks local-specific features, using the "fr_FR" locale. 
+# It is not Perl-compatible. When run via RunTest, the locale is edited to
+# be whichever of "fr_FR", "french", or "fr" is found to exist. There is
+# different version of this file called wintestinput3 for use on Windows,
+# where the locale is called "french" and the tests are run using
+# RunTest.bat. 
+
+#forbid_utf
+
 /^[\w]+/
     *** Failers
 No match
     École
 No match
 
-/^[\w]+/Lfrench
+/^[\w]+/locale=french
     École
  0: École
 
@@ -18,7 +27,7 @@ No match
     École
  0: \xc9
 
-/^[\W]+/Lfrench
+/^[\W]+/locale=french
     *** Failers
  0: *** 
     École
@@ -32,7 +41,7 @@ No match
     a
 No match
 
-/[\b]/Lfrench
+/[\b]/locale=french
     \b
  0: \x08
     *** Failers
@@ -46,7 +55,7 @@ No match
     École
 No match
 
-/^\w+/Lfrench
+/^\w+/locale=french
     École
  0: École
 
@@ -56,7 +65,7 @@ No match
  1: \xc9
  2: cole
 
-/(.+)\b(.+)/Lfrench
+/(.+)\b(.+)/locale=french
     *** Failers
  0: *** Failers
  1: *** 
@@ -72,40 +81,38 @@ No match
     école
 No match
 
-/École/iLfrench
+/École/i,locale=french
     École
  0: École
     école
  0: école
 
-/\w/IS
-Capturing subpattern count = 0
-No options
-No first char
-No need char
-Subject length lower bound = 1
-Starting chars: 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P 
+/\w/I
+Capture group count = 0
+Starting code units: 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P 
   Q R S T U V W X Y Z _ a b c d e f g h i j k l m n o p q r s t u v w x y z 
-
-/\w/ISLfrench
-Capturing subpattern count = 0
-No options
-No first char
-No need char
 Subject length lower bound = 1
-Starting chars: 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P 
+
+/\w/I,locale=french
+Capture group count = 0
+Starting code units: 0 1 2 3 4 5 6 7 8 9 A B C D E F G H I J K L M N O P 
   Q R S T U V W X Y Z _ a b c d e f g h i j k l m n o p q r s t u v w x y z 
   ƒ Š Œ Ž š œ ž Ÿ ª ² ³ µ ¹ º À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó Ô Õ Ö 
   Ø Ù Ú Û Ü Ý Þ ß à á â ã ä å æ ç è é ê ë ì í î ï ð ñ ò ó ô õ ö ø ù ú û ü ý 
   þ ÿ 
+Subject length lower bound = 1
 
-/^[\xc8-\xc9]/iLfrench
+# All remaining tests are in the french locale, so set the default.
+
+#pattern locale=french
+
+/^[\xc8-\xc9]/i
     École
  0: É
     école
  0: é
 
-/^[\xc8-\xc9]/Lfrench
+/^[\xc8-\xc9]/
     École
  0: É
     *** Failers 
@@ -113,43 +120,43 @@ No match
     école
 No match
 
-/\W+/Lfrench
+/\W+/
     >>>\xaa<<<
  0: >>>
     >>>\xba<<< 
  0: >>>
 
-/[\W]+/Lfrench
+/[\W]+/
     >>>\xaa<<<
  0: >>>
     >>>\xba<<< 
  0: >>>
 
-/[^[:alpha:]]+/Lfrench
+/[^[:alpha:]]+/
     >>>\xaa<<<
  0: >>>
     >>>\xba<<< 
  0: >>>
 
-/\w+/Lfrench
-    >>>\xaa<<<
- 0: ª
-    >>>\xba<<< 
- 0: º
-
-/[\w]+/Lfrench
+/\w+/
     >>>\xaa<<<
  0: ª
     >>>\xba<<< 
  0: º
 
-/[[:alpha:]]+/Lfrench
+/[\w]+/
+    >>>\xaa<<<
+ 0: ª
+    >>>\xba<<< 
+ 0: º
+
+/[[:alpha:]]+/
     >>>\xaa<<<
  0: ª
     >>>\xba<<< 
  0: º
     
-/[[:alpha:]][[:lower:]][[:upper:]]/DZLfrench 
+/[[:alpha:]][[:lower:]][[:upper:]]/IB
 ------------------------------------------------------------------
         Bra
         [A-Za-z\x83\x8a\x8c\x8e\x9a\x9c\x9e\x9f\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\xff]
@@ -158,9 +165,11 @@ No match
         Ket
         End
 ------------------------------------------------------------------
-Capturing subpattern count = 0
-No options
-No first char
-No need char
+Capture group count = 0
+Starting code units: A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 
+  a b c d e f g h i j k l m n o p q r s t u v w x y z ƒ Š Œ Ž š œ ž Ÿ ª µ º 
+  À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó Ô Õ Ö Ø Ù Ú Û Ü Ý Þ ß à á â ã ä å 
+  æ ç è é ê ë ì í î ï ð ñ ò ó ô õ ö ø ù ú û ü ý þ ÿ 
+Subject length lower bound = 3
 
-/ End of testinput3 /
+# End of testinput3 

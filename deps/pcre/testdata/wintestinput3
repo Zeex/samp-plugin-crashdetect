@@ -1,8 +1,17 @@
+# This set of tests checks local-specific features, using the "fr_FR" locale. 
+# It is not Perl-compatible. When run via RunTest, the locale is edited to
+# be whichever of "fr_FR", "french", or "fr" is found to exist. There is
+# different version of this file called wintestinput3 for use on Windows,
+# where the locale is called "french" and the tests are run using
+# RunTest.bat. 
+
+#forbid_utf
+
 /^[\w]+/
     *** Failers
     École
 
-/^[\w]+/Lfrench
+/^[\w]+/locale=french
     École
 
 /^[\w]+/
@@ -12,7 +21,7 @@
 /^[\W]+/
     École
 
-/^[\W]+/Lfrench
+/^[\W]+/locale=french
     *** Failers
     École
 
@@ -21,7 +30,7 @@
     *** Failers
     a
 
-/[\b]/Lfrench
+/[\b]/locale=french
     \b
     *** Failers
     a
@@ -30,13 +39,13 @@
     *** Failers
     École
 
-/^\w+/Lfrench
+/^\w+/locale=french
     École
 
 /(.+)\b(.+)/
     École
 
-/(.+)\b(.+)/Lfrench
+/(.+)\b(.+)/locale=french
     *** Failers
     École
 
@@ -45,47 +54,51 @@
     *** Failers
     école
 
-/École/iLfrench
+/École/i,locale=french
     École
     école
 
-/\w/IS
+/\w/I
 
-/\w/ISLfrench
+/\w/I,locale=french
 
-/^[\xc8-\xc9]/iLfrench
+# All remaining tests are in the french locale, so set the default.
+
+#pattern locale=french
+
+/^[\xc8-\xc9]/i
     École
     école
 
-/^[\xc8-\xc9]/Lfrench
+/^[\xc8-\xc9]/
     École
     *** Failers 
     école
 
-/\W+/Lfrench
+/\W+/
     >>>\xaa<<<
     >>>\xba<<< 
 
-/[\W]+/Lfrench
+/[\W]+/
     >>>\xaa<<<
     >>>\xba<<< 
 
-/[^[:alpha:]]+/Lfrench
+/[^[:alpha:]]+/
     >>>\xaa<<<
     >>>\xba<<< 
 
-/\w+/Lfrench
+/\w+/
     >>>\xaa<<<
     >>>\xba<<< 
 
-/[\w]+/Lfrench
+/[\w]+/
     >>>\xaa<<<
     >>>\xba<<< 
 
-/[[:alpha:]]+/Lfrench
+/[[:alpha:]]+/
     >>>\xaa<<<
     >>>\xba<<< 
     
-/[[:alpha:]][[:lower:]][[:upper:]]/DZLfrench 
+/[[:alpha:]][[:lower:]][[:upper:]]/IB
 
-/ End of testinput3 /
+# End of testinput3 

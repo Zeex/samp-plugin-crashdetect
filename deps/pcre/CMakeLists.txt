@@ -1,8 +1,8 @@
 # CMakeLists.txt
 #
-#
-# This file allows building PCRE with the CMake configuration and build
+# This file enables PCRE2 to be built with the CMake configuration and build
 # tool. Download CMake in source or binary form from http://www.cmake.org/
+# Converted to support PCRE2 from the original PCRE file, August 2014.
 #
 # Original listfile by Christian Ehrlicher <Ch.Ehrlicher@gmx.de>
 # Refined and expanded by Daniel Richard G. <skunk@iSKUNK.ORG>
@@ -65,14 +65,52 @@
 #            so it has been removed.
 # 2013-10-08 PH got rid of the "source" command, which is a bash-ism (use ".")
 # 2013-11-05 PH added support for PARENS_NEST_LIMIT
+# 2014-08-29 PH converted the file for PCRE2 (which has no C++).
+# 2015-04-24 PH added support for PCRE2_DEBUG
+# 2015-07-16 PH updated for new pcre2_find_bracket source module
+# 2015-08-24 PH correct C_FLAGS setting (patch from Roy Ivy III)
+# 2015-10=16 PH added support for never-backslash-C
+# 2016-03-01 PH applied Chris Wilson's patch for MSVC static
+# 2016-06-24 PH applied Chris Wilson's second patch, putting the first under
+#            a new option instead of being unconditional.
+# 2016-10-05 PH fixed a typo (PCRE should be PCRE2) in above patch
+#            fix by David Gaussmann
+# 2016-10-07 PH added PCREGREP_MAX_BUFSIZE
+# 2017-03-11 PH turned HEAP_MATCH_RECURSE into a NO-OP for 10.30
+# 2017-04-08 PH added HEAP_LIMIT
+# 2017-06-15 ZH added SUPPORT_JIT_SEALLOC support
+# 2018-06-19 PH added checks for stdint.h and inttypes.h (later removed)
+# 2018-06-27 PH added Daniel's patch to increase the stack for MSVC
+# 2018-11-14 PH removed unnecessary checks for stdint.h and inttypes.h
+# 2018-11-16 PH added PCRE2GREP_SUPPORT_CALLOUT_FORK support and tidied
+# 2019-02-16 PH hacked to avoid CMP0026 policy issue (see comments below)
+# 2020-03-16 PH renamed dftables as pcre2_dftables (as elsewhere)
+# 2020-03-24 PH changed CMAKE_MODULE_PATH definition to add, not replace
+# 2020-04-08 Carlo added function check for secure_getenv, fixed strerror
+# 2020-04-16 enh added check for __attribute__((uninitialized))
+# 2020-04-25 PH applied patches from Uwe Korn to support pkg-config and
+#            library versioning.
+# 2020-04-25 Carlo added function check for mkostemp used in ProtExecAllocator
+# 2020-04-28 PH added function check for memfd_create based on Carlo's patch
+# 2020-05-25 PH added a check for Intel CET
+# 2020-12-03 PH altered the definition of pcre2test as suggested by Daniel
 
-PROJECT(PCRE C CXX)
+PROJECT(PCRE2 C)
 
-# Increased minimum to 2.8.0 to support newer add_test features
+# Increased minimum to 2.8.5 to support GNUInstallDirs.
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
+# Set policy CMP0026 to avoid warnings for the use of LOCATION in
+# GET_TARGET_PROPERTY. This should no longer be required.
+# CMAKE_POLICY(SET CMP0026 OLD)
 
-SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake) # for FindReadline.cmake
+# For FindReadline.cmake. This was changed to allow setting CMAKE_MODULE_PATH
+# on the command line.
+# SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src)
 
 # external packages
 FIND_PACKAGE( BZip2 )
@@ -82,10 +120,12 @@ FIND_PACKAGE( Editline )
 
 # Configuration checks
 
-INCLUDE(CheckIncludeFile)
-INCLUDE(CheckIncludeFileCXX)
+INCLUDE(CheckCSourceCompiles)
 INCLUDE(CheckFunctionExists)
+INCLUDE(CheckSymbolExists)
+INCLUDE(CheckIncludeFile)
 INCLUDE(CheckTypeSize)
+INCLUDE(GNUInstallDirs) # for CMAKE_INSTALL_LIBDIR
 
 CHECK_INCLUDE_FILE(dirent.h     HAVE_DIRENT_H)
 CHECK_INCLUDE_FILE(stdint.h     HAVE_STDINT_H)
@@ -95,98 +135,138 @@ CHECK_INCLUDE_FILE(sys/types.h  HAVE_SYS_TYPES_H)
 CHECK_INCLUDE_FILE(unistd.h     HAVE_UNISTD_H)
 CHECK_INCLUDE_FILE(windows.h    HAVE_WINDOWS_H)
 
-CHECK_INCLUDE_FILE_CXX(type_traits.h            HAVE_TYPE_TRAITS_H)
-CHECK_INCLUDE_FILE_CXX(bits/type_traits.h       HAVE_BITS_TYPE_TRAITS_H)
+CHECK_SYMBOL_EXISTS(bcopy         "strings.h"  HAVE_BCOPY)
+CHECK_SYMBOL_EXISTS(memfd_create  "sys/mman.h" HAVE_MEMFD_CREATE)
+CHECK_SYMBOL_EXISTS(memmove       "string.h"   HAVE_MEMMOVE)
+CHECK_SYMBOL_EXISTS(secure_getenv "stdlib.h"   HAVE_SECURE_GETENV)
+CHECK_SYMBOL_EXISTS(strerror      "string.h"   HAVE_STRERROR)
 
-CHECK_FUNCTION_EXISTS(bcopy     HAVE_BCOPY)
-CHECK_FUNCTION_EXISTS(memmove   HAVE_MEMMOVE)
-CHECK_FUNCTION_EXISTS(strerror  HAVE_STRERROR)
-CHECK_FUNCTION_EXISTS(strtoll   HAVE_STRTOLL)
-CHECK_FUNCTION_EXISTS(strtoq    HAVE_STRTOQ)
-CHECK_FUNCTION_EXISTS(_strtoi64 HAVE__STRTOI64)
+set(ORIG_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+CHECK_C_SOURCE_COMPILES(
+  "int main() { char buf[128] __attribute__((uninitialized)); (void)buf; return 0; }"
+  HAVE_ATTRIBUTE_UNINITIALIZED
+)
+set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
 
-CHECK_TYPE_SIZE("long long"             LONG_LONG)
-CHECK_TYPE_SIZE("unsigned long long"    UNSIGNED_LONG_LONG)
+# Check whether Intel CET is enabled, and if so, adjust compiler flags. This
+# code was written by PH, trying to imitate the logic from the autotools
+# configuration.
+
+CHECK_C_SOURCE_COMPILES(
+  "#ifndef __CET__
+   #error CET is not enabled
+   #endif
+   int main() { return 0; }"
+  INTEL_CET_ENABLED
+)
+
+IF (INTEL_CET_ENABLED)
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mshstk")
+ENDIF(INTEL_CET_ENABLED)
+
+
 
 # User-configurable options
 #
-# (Note: CMakeSetup displays these in alphabetical order, regardless of
-# the order we use here)
+# Note: CMakeSetup displays these in alphabetical order, regardless of
+# the order we use here.
 
 SET(BUILD_SHARED_LIBS OFF CACHE BOOL
     "Build shared libraries instead of static ones.")
 
-OPTION(PCRE_BUILD_PCRE8 "Build 8 bit PCRE library" ON)
+OPTION(PCRE2_BUILD_PCRE2_8 "Build 8 bit PCRE2 library" ON)
 
-OPTION(PCRE_BUILD_PCRE16 "Build 16 bit PCRE library" OFF)
+OPTION(PCRE2_BUILD_PCRE2_16 "Build 16 bit PCRE2 library" OFF)
 
-OPTION(PCRE_BUILD_PCRE32 "Build 32 bit PCRE library" OFF)
+OPTION(PCRE2_BUILD_PCRE2_32 "Build 32 bit PCRE2 library" OFF)
 
-OPTION(PCRE_BUILD_PCRECPP "Build the PCRE C++ library (pcrecpp)." ON)
+OPTION(PCRE2_DEBUG "Include debugging code" OFF)
 
-SET(PCRE_EBCDIC OFF CACHE BOOL
+OPTION(PCRE2_DISABLE_PERCENT_ZT "Disable the use of %zu and %td (rarely needed)" OFF)
+
+SET(PCRE2_EBCDIC OFF CACHE BOOL
     "Use EBCDIC coding instead of ASCII. (This is rarely used outside of mainframe systems.)")
 
-SET(PCRE_EBCDIC_NL25 OFF CACHE BOOL
+SET(PCRE2_EBCDIC_NL25 OFF CACHE BOOL
     "Use 0x25 as EBCDIC NL character instead of 0x15; implies EBCDIC.")
 
-SET(PCRE_LINK_SIZE "2" CACHE STRING
+SET(PCRE2_LINK_SIZE "2" CACHE STRING
     "Internal link size (2, 3 or 4 allowed). See LINK_SIZE in config.h.in for details.")
 
-SET(PCRE_PARENS_NEST_LIMIT "250" CACHE STRING
+SET(PCRE2_PARENS_NEST_LIMIT "250" CACHE STRING
     "Default nested parentheses limit. See PARENS_NEST_LIMIT in config.h.in for details.")
 
-SET(PCRE_MATCH_LIMIT "10000000" CACHE STRING
+SET(PCRE2_HEAP_LIMIT "20000000" CACHE STRING
+    "Default limit on heap memory (kibibytes). See HEAP_LIMIT in config.h.in for details.")
+
+SET(PCRE2_MATCH_LIMIT "10000000" CACHE STRING
     "Default limit on internal looping. See MATCH_LIMIT in config.h.in for details.")
 
-SET(PCRE_MATCH_LIMIT_RECURSION "MATCH_LIMIT" CACHE STRING
-    "Default limit on internal recursion. See MATCH_LIMIT_RECURSION in config.h.in for details.")
+SET(PCRE2_MATCH_LIMIT_DEPTH "MATCH_LIMIT" CACHE STRING
+    "Default limit on internal depth of search. See MATCH_LIMIT_DEPTH in config.h.in for details.")
 
-SET(PCREGREP_BUFSIZE "20480" CACHE STRING
-    "Buffer size parameter for pcregrep. See PCREGREP_BUFSIZE in config.h.in for details.")
+SET(PCRE2GREP_BUFSIZE "20480" CACHE STRING
+    "Buffer starting size parameter for pcre2grep. See PCRE2GREP_BUFSIZE in config.h.in for details.")
 
-SET(PCRE_NEWLINE "LF" CACHE STRING
-    "What to recognize as a newline (one of CR, LF, CRLF, ANY, ANYCRLF).")
+SET(PCRE2GREP_MAX_BUFSIZE "1048576" CACHE STRING
+    "Buffer maximum size parameter for pcre2grep. See PCRE2GREP_MAX_BUFSIZE in config.h.in for details.")
 
-SET(PCRE_NO_RECURSE OFF CACHE BOOL
-    "If ON, then don't use stack recursion when matching. See NO_RECURSE in config.h.in for details.")
+SET(PCRE2_NEWLINE "LF" CACHE STRING
+    "What to recognize as a newline (one of CR, LF, CRLF, ANY, ANYCRLF, NUL).")
 
-SET(PCRE_POSIX_MALLOC_THRESHOLD "10" CACHE STRING
-    "Threshold for malloc() usage. See POSIX_MALLOC_THRESHOLD in config.h.in for details.")
+SET(PCRE2_HEAP_MATCH_RECURSE OFF CACHE BOOL
+    "Obsolete option: do not use")
 
-SET(PCRE_SUPPORT_JIT OFF CACHE BOOL
+SET(PCRE2_SUPPORT_JIT OFF CACHE BOOL
     "Enable support for Just-in-time compiling.")
 
-SET(PCRE_SUPPORT_PCREGREP_JIT ON CACHE BOOL
-    "Enable use of Just-in-time compiling in pcregrep.")
+IF(${CMAKE_SYSTEM_NAME} MATCHES Linux|NetBSD)
+    SET(PCRE2_SUPPORT_JIT_SEALLOC OFF CACHE BOOL
+        "Enable SELinux compatible execmem allocator in JIT (experimental).")
+ELSE(${CMAKE_SYSTEM_NAME} MATCHES Linux|NetBSD)
+    SET(PCRE2_SUPPORT_JIT_SEALLOC IGNORE)
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES Linux|NetBSD)
 
-SET(PCRE_SUPPORT_UTF OFF CACHE BOOL
-    "Enable support for Unicode Transformation Format (UTF-8/UTF-16/UTF-32) encoding.")
+SET(PCRE2GREP_SUPPORT_JIT ON CACHE BOOL
+    "Enable use of Just-in-time compiling in pcre2grep.")
 
-SET(PCRE_SUPPORT_UNICODE_PROPERTIES OFF CACHE BOOL
-    "Enable support for Unicode properties (if set, UTF support will be enabled as well).")
+SET(PCRE2GREP_SUPPORT_CALLOUT ON CACHE BOOL
+    "Enable callout string support in pcre2grep.")
 
-SET(PCRE_SUPPORT_BSR_ANYCRLF OFF CACHE BOOL
+SET(PCRE2GREP_SUPPORT_CALLOUT_FORK ON CACHE BOOL
+    "Enable callout string fork support in pcre2grep.")
+
+SET(PCRE2_SUPPORT_UNICODE ON CACHE BOOL
+    "Enable support for Unicode and UTF-8/UTF-16/UTF-32 encoding.")
+
+SET(PCRE2_SUPPORT_BSR_ANYCRLF OFF CACHE BOOL
     "ON=Backslash-R matches only LF CR and CRLF, OFF=Backslash-R matches all Unicode Linebreaks")
 
-SET(PCRE_SUPPORT_VALGRIND OFF CACHE BOOL
+SET(PCRE2_NEVER_BACKSLASH_C OFF CACHE BOOL
+    "If ON, backslash-C (upper case C) is locked out.")
+
+SET(PCRE2_SUPPORT_VALGRIND OFF CACHE BOOL
     "Enable Valgrind support.")
 
-OPTION(PCRE_SHOW_REPORT    "Show the final configuration report" ON)
-OPTION(PCRE_BUILD_PCREGREP "Build pcregrep" ON)
-OPTION(PCRE_BUILD_TESTS    "Build the tests" ON)
+OPTION(PCRE2_SHOW_REPORT     "Show the final configuration report" ON)
+OPTION(PCRE2_BUILD_PCRE2GREP "Build pcre2grep" ON)
+OPTION(PCRE2_BUILD_TESTS     "Build the tests" ON)
 
 IF (MINGW)
   OPTION(NON_STANDARD_LIB_PREFIX
-         "ON=Shared libraries built in mingw will be named pcre.dll, etc., instead of libpcre.dll, etc."
+         "ON=Shared libraries built in mingw will be named pcre2.dll, etc., instead of libpcre2.dll, etc."
          OFF)
 
   OPTION(NON_STANDARD_LIB_SUFFIX
-         "ON=Shared libraries built in mingw will be named libpcre-0.dll, etc., instead of libpcre.dll, etc."
+         "ON=Shared libraries built in mingw will be named libpcre2-0.dll, etc., instead of libpcre2.dll, etc."
          OFF)
 ENDIF(MINGW)
 
 IF(MSVC)
+  OPTION(PCRE2_STATIC_RUNTIME
+	"ON=Compile against the static runtime (/MT)."
+	OFF)
   OPTION(INSTALL_MSVC_PDB
          "ON=Install .pdb files built by MSVC, if generated"
          OFF)
@@ -194,195 +274,181 @@ ENDIF(MSVC)
 
 # bzip2 lib
 IF(BZIP2_FOUND)
-  OPTION (PCRE_SUPPORT_LIBBZ2 "Enable support for linking pcregrep with libbz2." ON)
+  OPTION (PCRE2_SUPPORT_LIBBZ2 "Enable support for linking pcre2grep with libbz2." ON)
 ENDIF(BZIP2_FOUND)
-IF(PCRE_SUPPORT_LIBBZ2)
+IF(PCRE2_SUPPORT_LIBBZ2)
   INCLUDE_DIRECTORIES(${BZIP2_INCLUDE_DIR})
-ENDIF(PCRE_SUPPORT_LIBBZ2)
+ENDIF(PCRE2_SUPPORT_LIBBZ2)
 
 # zlib
 IF(ZLIB_FOUND)
-  OPTION (PCRE_SUPPORT_LIBZ "Enable support for linking pcregrep with libz." ON)
+  OPTION (PCRE2_SUPPORT_LIBZ "Enable support for linking pcre2grep with libz." ON)
 ENDIF(ZLIB_FOUND)
-IF(PCRE_SUPPORT_LIBZ)
+IF(PCRE2_SUPPORT_LIBZ)
   INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
-ENDIF(PCRE_SUPPORT_LIBZ)
+ENDIF(PCRE2_SUPPORT_LIBZ)
 
 # editline lib
 IF(EDITLINE_FOUND)
-  OPTION (PCRE_SUPPORT_LIBEDIT  "Enable support for linking pcretest with libedit." OFF)
+  OPTION (PCRE2_SUPPORT_LIBEDIT  "Enable support for linking pcre2test with libedit." OFF)
 ENDIF(EDITLINE_FOUND)
-IF(PCRE_SUPPORT_LIBEDIT)
+IF(PCRE2_SUPPORT_LIBEDIT)
   INCLUDE_DIRECTORIES(${EDITLINE_INCLUDE_DIR})
-ENDIF(PCRE_SUPPORT_LIBEDIT)
+ENDIF(PCRE2_SUPPORT_LIBEDIT)
 
 # readline lib
 IF(READLINE_FOUND)
-  OPTION (PCRE_SUPPORT_LIBREADLINE  "Enable support for linking pcretest with libreadline." ON)
+  OPTION (PCRE2_SUPPORT_LIBREADLINE  "Enable support for linking pcre2test with libreadline." ON)
 ENDIF(READLINE_FOUND)
-IF(PCRE_SUPPORT_LIBREADLINE)
+IF(PCRE2_SUPPORT_LIBREADLINE)
   INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
-ENDIF(PCRE_SUPPORT_LIBREADLINE)
+ENDIF(PCRE2_SUPPORT_LIBREADLINE)
 
 # Prepare build configuration
 
-SET(pcre_have_type_traits 0)
-SET(pcre_have_bits_type_traits 0)
-
-IF(HAVE_TYPE_TRAITS_H)
-        SET(pcre_have_type_traits 1)
-ENDIF(HAVE_TYPE_TRAITS_H)
-
-IF(HAVE_BITS_TYPE_TRAITS_H)
-        SET(pcre_have_bits_type_traits 1)
-ENDIF(HAVE_BITS_TYPE_TRAITS_H)
-
-SET(pcre_have_long_long 0)
-SET(pcre_have_ulong_long 0)
-
-IF(HAVE_LONG_LONG)
-        SET(pcre_have_long_long 1)
-ENDIF(HAVE_LONG_LONG)
-
-IF(HAVE_UNSIGNED_LONG_LONG)
-        SET(pcre_have_ulong_long 1)
-ENDIF(HAVE_UNSIGNED_LONG_LONG)
-
 IF(NOT BUILD_SHARED_LIBS)
-        SET(PCRE_STATIC 1)
+        SET(PCRE2_STATIC 1)
 ENDIF(NOT BUILD_SHARED_LIBS)
 
-IF(NOT PCRE_BUILD_PCRE8 AND NOT PCRE_BUILD_PCRE16 AND NOT PCRE_BUILD_PCRE32)
-        MESSAGE(FATAL_ERROR "At least one of PCRE_BUILD_PCRE8, PCRE_BUILD_PCRE16 or PCRE_BUILD_PCRE32 must be enabled")
-ENDIF(NOT PCRE_BUILD_PCRE8 AND NOT PCRE_BUILD_PCRE16 AND NOT PCRE_BUILD_PCRE32)
+IF(NOT PCRE2_BUILD_PCRE2_8 AND NOT PCRE2_BUILD_PCRE2_16 AND NOT PCRE2_BUILD_PCRE2_32)
+        MESSAGE(FATAL_ERROR "At least one of PCRE2_BUILD_PCRE2_8, PCRE2_BUILD_PCRE2_16 or PCRE2_BUILD_PCRE2_32 must be enabled")
+ENDIF(NOT PCRE2_BUILD_PCRE2_8 AND NOT PCRE2_BUILD_PCRE2_16 AND NOT PCRE2_BUILD_PCRE2_32)
 
-IF(PCRE_BUILD_PCRE8)
-        SET(SUPPORT_PCRE8 1)
-ENDIF(PCRE_BUILD_PCRE8)
+IF(PCRE2_BUILD_PCRE2_8)
+        SET(SUPPORT_PCRE2_8 1)
+ENDIF(PCRE2_BUILD_PCRE2_8)
 
-IF(PCRE_BUILD_PCRE16)
-        SET(SUPPORT_PCRE16 1)
-ENDIF(PCRE_BUILD_PCRE16)
+IF(PCRE2_BUILD_PCRE2_16)
+        SET(SUPPORT_PCRE2_16 1)
+ENDIF(PCRE2_BUILD_PCRE2_16)
 
-IF(PCRE_BUILD_PCRE32)
-        SET(SUPPORT_PCRE32 1)
-ENDIF(PCRE_BUILD_PCRE32)
+IF(PCRE2_BUILD_PCRE2_32)
+        SET(SUPPORT_PCRE2_32 1)
+ENDIF(PCRE2_BUILD_PCRE2_32)
 
-IF(PCRE_BUILD_PCRECPP AND NOT PCRE_BUILD_PCRE8)
-        MESSAGE(STATUS "** PCRE_BUILD_PCRE8 must be enabled for the C++ library support")
-        SET(PCRE_BUILD_PCRECPP OFF)
-ENDIF(PCRE_BUILD_PCRECPP AND NOT PCRE_BUILD_PCRE8)
+IF(PCRE2_BUILD_PCRE2GREP AND NOT PCRE2_BUILD_PCRE2_8)
+        MESSAGE(STATUS "** PCRE2_BUILD_PCRE2_8 must be enabled for the pcre2grep program")
+        SET(PCRE2_BUILD_PCRE2GREP OFF)
+ENDIF(PCRE2_BUILD_PCRE2GREP AND NOT PCRE2_BUILD_PCRE2_8)
 
-IF(PCRE_BUILD_PCREGREP AND NOT PCRE_BUILD_PCRE8)
-        MESSAGE(STATUS "** PCRE_BUILD_PCRE8 must be enabled for the pcregrep program")
-        SET(PCRE_BUILD_PCREGREP OFF)
-ENDIF(PCRE_BUILD_PCREGREP AND NOT PCRE_BUILD_PCRE8)
-
-IF(PCRE_SUPPORT_LIBREADLINE AND PCRE_SUPPORT_LIBEDIT)
+IF(PCRE2_SUPPORT_LIBREADLINE AND PCRE2_SUPPORT_LIBEDIT)
         MESSAGE(FATAL_ERROR "Only one of libreadline or libeditline can be specified")
-ENDIF(PCRE_SUPPORT_LIBREADLINE AND PCRE_SUPPORT_LIBEDIT)
+ENDIF(PCRE2_SUPPORT_LIBREADLINE AND PCRE2_SUPPORT_LIBEDIT)
 
-IF(PCRE_SUPPORT_BSR_ANYCRLF)
+IF(PCRE2_SUPPORT_BSR_ANYCRLF)
         SET(BSR_ANYCRLF 1)
-ENDIF(PCRE_SUPPORT_BSR_ANYCRLF)
+ENDIF(PCRE2_SUPPORT_BSR_ANYCRLF)
 
-IF(PCRE_SUPPORT_UTF OR PCRE_SUPPORT_UNICODE_PROPERTIES)
-        SET(SUPPORT_UTF 1)
-        SET(PCRE_SUPPORT_UTF ON)
-ENDIF(PCRE_SUPPORT_UTF OR PCRE_SUPPORT_UNICODE_PROPERTIES)
+IF(PCRE2_NEVER_BACKSLASH_C)
+        SET(NEVER_BACKSLASH_C 1)
+ENDIF(PCRE2_NEVER_BACKSLASH_C)
 
-IF(PCRE_SUPPORT_UNICODE_PROPERTIES)
-        SET(SUPPORT_UCP 1)
-ENDIF(PCRE_SUPPORT_UNICODE_PROPERTIES)
+IF(PCRE2_SUPPORT_UNICODE)
+        SET(SUPPORT_UNICODE 1)
+ENDIF(PCRE2_SUPPORT_UNICODE)
 
-IF(PCRE_SUPPORT_JIT)
+IF(PCRE2_SUPPORT_JIT)
         SET(SUPPORT_JIT 1)
-ENDIF(PCRE_SUPPORT_JIT)
+ENDIF(PCRE2_SUPPORT_JIT)
 
-IF(PCRE_SUPPORT_PCREGREP_JIT)
-        SET(SUPPORT_PCREGREP_JIT 1)
-ENDIF(PCRE_SUPPORT_PCREGREP_JIT)
+IF(PCRE2_SUPPORT_JIT_SEALLOC)
+        SET(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+	CHECK_SYMBOL_EXISTS(mkostemp stdlib.h REQUIRED)
+        UNSET(CMAKE_REQUIRED_DEFINITIONS)
+        IF(${REQUIRED})
+                IF(${CMAKE_SYSTEM_NAME} MATCHES Linux|NetBSD)
+                        ADD_DEFINITIONS(-D_GNU_SOURCE)
+                        SET(SLJIT_PROT_EXECUTABLE_ALLOCATOR 1)
+                ELSE(${CMAKE_SYSTEM_NAME} MATCHES Linux|NetBSD)
+                        MESSAGE(FATAL_ERROR "Your configuration is not supported")
+                ENDIF(${CMAKE_SYSTEM_NAME} MATCHES Linux|NetBSD)
+        ELSE(${REQUIRED})
+                SET(PCRE2_SUPPORT_JIT_SEALLOC OFF)
+        ENDIF(${REQUIRED})
+ENDIF(PCRE2_SUPPORT_JIT_SEALLOC)
 
-IF(PCRE_SUPPORT_VALGRIND)
+IF(PCRE2GREP_SUPPORT_JIT)
+        SET(SUPPORT_PCRE2GREP_JIT 1)
+ENDIF(PCRE2GREP_SUPPORT_JIT)
+
+IF(PCRE2GREP_SUPPORT_CALLOUT)
+        SET(SUPPORT_PCRE2GREP_CALLOUT 1)
+        IF(PCRE2GREP_SUPPORT_CALLOUT_FORK)
+                SET(SUPPORT_PCRE2GREP_CALLOUT_FORK 1)
+        ENDIF(PCRE2GREP_SUPPORT_CALLOUT_FORK)
+ENDIF(PCRE2GREP_SUPPORT_CALLOUT)
+
+IF(PCRE2_SUPPORT_VALGRIND)
         SET(SUPPORT_VALGRIND 1)
-ENDIF(PCRE_SUPPORT_VALGRIND)
+ENDIF(PCRE2_SUPPORT_VALGRIND)
 
-# This next one used to contain
-#       SET(PCRETEST_LIBS ${READLINE_LIBRARY})
+IF(PCRE2_DISABLE_PERCENT_ZT)
+        SET(DISABLE_PERCENT_ZT 1)
+ENDIF(PCRE2_DISABLE_PERCENT_ZT)
+
+# This next one used to reference ${READLINE_LIBRARY})
 # but I was advised to add the NCURSES test as well, along with
 # some modifications to cmake/FindReadline.cmake which should
 # make it possible to override the default if necessary. PH
 
-IF(PCRE_SUPPORT_LIBREADLINE)
+IF(PCRE2_SUPPORT_LIBREADLINE)
         SET(SUPPORT_LIBREADLINE 1)
-        SET(PCRETEST_LIBS ${READLINE_LIBRARY} ${NCURSES_LIBRARY})
-ENDIF(PCRE_SUPPORT_LIBREADLINE)
+        SET(PCRE2TEST_LIBS ${READLINE_LIBRARY} ${NCURSES_LIBRARY})
+ENDIF(PCRE2_SUPPORT_LIBREADLINE)
 
 # libedit is a plug-compatible alternative to libreadline
 
-IF(PCRE_SUPPORT_LIBEDIT)
+IF(PCRE2_SUPPORT_LIBEDIT)
         SET(SUPPORT_LIBEDIT 1)
-        SET(PCRETEST_LIBS ${EDITLINE_LIBRARY} ${NCURSES_LIBRARY})
-ENDIF(PCRE_SUPPORT_LIBEDIT)
+        SET(PCRE2TEST_LIBS ${EDITLINE_LIBRARY} ${NCURSES_LIBRARY})
+ENDIF(PCRE2_SUPPORT_LIBEDIT)
 
-IF(PCRE_SUPPORT_LIBZ)
+IF(PCRE2_SUPPORT_LIBZ)
         SET(SUPPORT_LIBZ 1)
-        SET(PCREGREP_LIBS ${PCREGREP_LIBS} ${ZLIB_LIBRARIES})
-ENDIF(PCRE_SUPPORT_LIBZ)
+        SET(PCRE2GREP_LIBS ${PCRE2GREP_LIBS} ${ZLIB_LIBRARIES})
+ENDIF(PCRE2_SUPPORT_LIBZ)
 
-IF(PCRE_SUPPORT_LIBBZ2)
+IF(PCRE2_SUPPORT_LIBBZ2)
         SET(SUPPORT_LIBBZ2 1)
-        SET(PCREGREP_LIBS ${PCREGREP_LIBS} ${BZIP2_LIBRARIES})
-ENDIF(PCRE_SUPPORT_LIBBZ2)
+        SET(PCRE2GREP_LIBS ${PCRE2GREP_LIBS} ${BZIP2_LIBRARIES})
+ENDIF(PCRE2_SUPPORT_LIBBZ2)
 
-SET(NEWLINE "")
+SET(NEWLINE_DEFAULT "")
 
-IF(PCRE_NEWLINE STREQUAL "LF")
-        SET(NEWLINE "10")
-ENDIF(PCRE_NEWLINE STREQUAL "LF")
-IF(PCRE_NEWLINE STREQUAL "CR")
-        SET(NEWLINE "13")
-ENDIF(PCRE_NEWLINE STREQUAL "CR")
-IF(PCRE_NEWLINE STREQUAL "CRLF")
-        SET(NEWLINE "3338")
-ENDIF(PCRE_NEWLINE STREQUAL "CRLF")
-IF(PCRE_NEWLINE STREQUAL "ANY")
-        SET(NEWLINE "-1")
-ENDIF(PCRE_NEWLINE STREQUAL "ANY")
-IF(PCRE_NEWLINE STREQUAL "ANYCRLF")
-        SET(NEWLINE "-2")
-ENDIF(PCRE_NEWLINE STREQUAL "ANYCRLF")
+IF(PCRE2_NEWLINE STREQUAL "CR")
+        SET(NEWLINE_DEFAULT "1")
+ENDIF(PCRE2_NEWLINE STREQUAL "CR")
+IF(PCRE2_NEWLINE STREQUAL "LF")
+        SET(NEWLINE_DEFAULT "2")
+ENDIF(PCRE2_NEWLINE STREQUAL "LF")
+IF(PCRE2_NEWLINE STREQUAL "CRLF")
+        SET(NEWLINE_DEFAULT "3")
+ENDIF(PCRE2_NEWLINE STREQUAL "CRLF")
+IF(PCRE2_NEWLINE STREQUAL "ANY")
+        SET(NEWLINE_DEFAULT "4")
+ENDIF(PCRE2_NEWLINE STREQUAL "ANY")
+IF(PCRE2_NEWLINE STREQUAL "ANYCRLF")
+        SET(NEWLINE_DEFAULT "5")
+ENDIF(PCRE2_NEWLINE STREQUAL "ANYCRLF")
+IF(PCRE2_NEWLINE STREQUAL "NUL")
+        SET(NEWLINE_DEFAULT "6")
+ENDIF(PCRE2_NEWLINE STREQUAL "NUL")
 
-IF(NEWLINE STREQUAL "")
-        MESSAGE(FATAL_ERROR "The PCRE_NEWLINE variable must be set to one of the following values: \"LF\", \"CR\", \"CRLF\", \"ANY\", \"ANYCRLF\".")
-ENDIF(NEWLINE STREQUAL "")
+IF(NEWLINE_DEFAULT STREQUAL "")
+        MESSAGE(FATAL_ERROR "The PCRE2_NEWLINE variable must be set to one of the following values: \"LF\", \"CR\", \"CRLF\", \"ANY\", \"ANYCRLF\".")
+ENDIF(NEWLINE_DEFAULT STREQUAL "")
 
-IF(PCRE_EBCDIC)
+IF(PCRE2_EBCDIC)
         SET(EBCDIC 1)
-IF(PCRE_NEWLINE STREQUAL "LF")
-        SET(NEWLINE "21")
-ENDIF(PCRE_NEWLINE STREQUAL "LF")
-IF(PCRE_NEWLINE STREQUAL "CRLF")
-        SET(NEWLINE "3349")
-ENDIF(PCRE_NEWLINE STREQUAL "CRLF")
-ENDIF(PCRE_EBCDIC)
+ENDIF(PCRE2_EBCDIC)
 
-IF(PCRE_EBCDIC_NL25)
+IF(PCRE2_EBCDIC_NL25)
         SET(EBCDIC 1)
         SET(EBCDIC_NL25 1)
-IF(PCRE_NEWLINE STREQUAL "LF")
-        SET(NEWLINE "37")
-ENDIF(PCRE_NEWLINE STREQUAL "LF")
-IF(PCRE_NEWLINE STREQUAL "CRLF")
-        SET(NEWLINE "3365")
-ENDIF(PCRE_NEWLINE STREQUAL "CRLF")
-ENDIF(PCRE_EBCDIC_NL25)
-
-IF(PCRE_NO_RECURSE)
-        SET(NO_RECURSE 1)
-ENDIF(PCRE_NO_RECURSE)
+ENDIF(PCRE2_EBCDIC_NL25)
 
 # Output files
+
 CONFIGURE_FILE(config-cmake.h.in
                ${PROJECT_BINARY_DIR}/config.h
                @ONLY)
@@ -394,12 +460,13 @@ file(STRINGS ${PROJECT_SOURCE_DIR}/configure.ac
   LIMIT_COUNT 50 # Read only the first 50 lines of the file
 )
 
-set(SEARCHED_VARIABLES "pcre_major" "pcre_minor" "pcre_prerelease" "pcre_date")
+set(SEARCHED_VARIABLES "pcre2_major" "pcre2_minor" "pcre2_prerelease" "pcre2_date"
+  "libpcre2_posix_version" "libpcre2_8_version" "libpcre2_16_version" "libpcre2_32_version")
 foreach(configure_line ${configure_lines})
     foreach(_substitution_variable ${SEARCHED_VARIABLES})
         string(TOUPPER ${_substitution_variable} _substitution_variable_upper)
         if (NOT ${_substitution_variable_upper})
-            string(REGEX MATCH "m4_define\\(${_substitution_variable}, \\[(.*)\\]" MACTHED_STRING ${configure_line})
+            string(REGEX MATCH "m4_define\\(${_substitution_variable}, *\\[(.*)\\]" MATCHED_STRING ${configure_line})
             if (CMAKE_MATCH_1)
                 set(${_substitution_variable_upper} ${CMAKE_MATCH_1})
             endif()
@@ -407,370 +474,336 @@ foreach(configure_line ${configure_lines})
     endforeach()
 endforeach()
 
-CONFIGURE_FILE(pcre.h.in
-               ${PROJECT_BINARY_DIR}/pcre.h
+macro(PARSE_LIB_VERSION VARIABLE_PREFIX)
+  string(REPLACE ":" ";" ${VARIABLE_PREFIX}_VERSION_LIST ${${VARIABLE_PREFIX}_VERSION})
+  list(GET ${VARIABLE_PREFIX}_VERSION_LIST 0 ${VARIABLE_PREFIX}_VERSION_CURRENT)
+  list(GET ${VARIABLE_PREFIX}_VERSION_LIST 1 ${VARIABLE_PREFIX}_VERSION_REVISION)
+  list(GET ${VARIABLE_PREFIX}_VERSION_LIST 2 ${VARIABLE_PREFIX}_VERSION_AGE)
+
+  math(EXPR ${VARIABLE_PREFIX}_SOVERSION "${${VARIABLE_PREFIX}_VERSION_CURRENT} - ${${VARIABLE_PREFIX}_VERSION_AGE}")
+  math(EXPR ${VARIABLE_PREFIX}_MACHO_COMPATIBILITY_VERSION "${${VARIABLE_PREFIX}_VERSION_CURRENT} + 1")
+  math(EXPR ${VARIABLE_PREFIX}_MACHO_CURRENT_VERSION "${${VARIABLE_PREFIX}_VERSION_CURRENT} + 1")
+  set(${VARIABLE_PREFIX}_MACHO_CURRENT_VERSION "${${VARIABLE_PREFIX}_MACHO_CURRENT_VERSION}.${${VARIABLE_PREFIX}_VERSION_REVISION}}")
+  set(${VARIABLE_PREFIX}_VERSION "${${VARIABLE_PREFIX}_SOVERSION}.${${VARIABLE_PREFIX}_VERSION_AGE}.${${VARIABLE_PREFIX}_VERSION_REVISION}")
+endmacro()
+
+PARSE_LIB_VERSION(LIBPCRE2_POSIX)
+PARSE_LIB_VERSION(LIBPCRE2_8)
+PARSE_LIB_VERSION(LIBPCRE2_16)
+PARSE_LIB_VERSION(LIBPCRE2_32)
+
+CONFIGURE_FILE(src/pcre2.h.in
+               ${PROJECT_BINARY_DIR}/pcre2.h
                @ONLY)
 
-# What about pcre-config and libpcre.pc?
+# Make sure to not link debug libs
+# against release libs and vice versa
+IF(WIN32)
+  SET(CMAKE_DEBUG_POSTFIX "d")
+ENDIF(WIN32)
 
-IF(PCRE_BUILD_PCRECPP)
-        CONFIGURE_FILE(pcre_stringpiece.h.in
-                       ${PROJECT_BINARY_DIR}/pcre_stringpiece.h
-                       @ONLY)
+# Generate pkg-config files
 
-        CONFIGURE_FILE(pcrecpparg.h.in
-                       ${PROJECT_BINARY_DIR}/pcrecpparg.h
-                       @ONLY)
-ENDIF(PCRE_BUILD_PCRECPP)
+SET(PACKAGE_VERSION "${PCRE2_MAJOR}.${PCRE2_MINOR}")
+SET(prefix ${CMAKE_INSTALL_PREFIX})
+
+SET(exec_prefix "\${prefix}")
+SET(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+SET(includedir "\${prefix}/include")
+IF(WIN32 AND (CMAKE_BUILD_TYPE MATCHES Debug))
+  SET(LIB_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+ENDIF()
+CONFIGURE_FILE(libpcre2-posix.pc.in libpcre2-posix.pc @ONLY)
+SET(pkg_config_files ${pkg_config_files} "${CMAKE_CURRENT_BINARY_DIR}/libpcre2-posix.pc")
+
+IF(PCRE2_BUILD_PCRE2_8)
+  CONFIGURE_FILE(libpcre2-8.pc.in libpcre2-8.pc @ONLY)
+  SET(pkg_config_files ${pkg_config_files} "${CMAKE_CURRENT_BINARY_DIR}/libpcre2-8.pc")
+  SET(enable_pcre2_8 "yes")
+ELSE()
+  SET(enable_pcre2_8 "no")
+ENDIF()
+
+IF(PCRE2_BUILD_PCRE2_16)
+  CONFIGURE_FILE(libpcre2-16.pc.in libpcre2-16.pc @ONLY)
+  SET(pkg_config_files ${pkg_config_files} "${CMAKE_CURRENT_BINARY_DIR}/libpcre2-16.pc")
+  SET(enable_pcre2_16 "yes")
+ELSE()
+  SET(enable_pcre2_16 "no")
+ENDIF()
+
+IF(PCRE2_BUILD_PCRE2_32)
+  CONFIGURE_FILE(libpcre2-32.pc.in libpcre2-32.pc @ONLY)
+  SET(pkg_config_files ${pkg_config_files} "${CMAKE_CURRENT_BINARY_DIR}/libpcre2-32.pc")
+  SET(enable_pcre2_32 "yes")
+ELSE()
+  SET(enable_pcre2_32 "no")
+ENDIF()
+
+CONFIGURE_FILE(pcre2-config.in pcre2-config @ONLY)
 
 # Character table generation
 
-OPTION(PCRE_REBUILD_CHARTABLES "Rebuild char tables" OFF)
-IF(PCRE_REBUILD_CHARTABLES)
-  ADD_EXECUTABLE(dftables dftables.c)
-
-  GET_TARGET_PROPERTY(DFTABLES_EXE dftables LOCATION)
-
+OPTION(PCRE2_REBUILD_CHARTABLES "Rebuild char tables" OFF)
+IF(PCRE2_REBUILD_CHARTABLES)
+  ADD_EXECUTABLE(pcre2_dftables src/pcre2_dftables.c)
   ADD_CUSTOM_COMMAND(
-    COMMENT "Generating character tables (pcre_chartables.c) for current locale"
-    DEPENDS dftables
-    COMMAND ${DFTABLES_EXE}
-    ARGS        ${PROJECT_BINARY_DIR}/pcre_chartables.c
-    OUTPUT      ${PROJECT_BINARY_DIR}/pcre_chartables.c
+    COMMENT "Generating character tables (pcre2_chartables.c) for current locale"
+    DEPENDS pcre2_dftables
+    COMMAND pcre2_dftables
+    ARGS        ${PROJECT_BINARY_DIR}/pcre2_chartables.c
+    OUTPUT      ${PROJECT_BINARY_DIR}/pcre2_chartables.c
   )
-ELSE(PCRE_REBUILD_CHARTABLES)
-  CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/pcre_chartables.c.dist
-                    ${PROJECT_BINARY_DIR}/pcre_chartables.c
+ELSE(PCRE2_REBUILD_CHARTABLES)
+  CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/src/pcre2_chartables.c.dist
+                    ${PROJECT_BINARY_DIR}/pcre2_chartables.c
                     COPYONLY)
-ENDIF(PCRE_REBUILD_CHARTABLES)
+ENDIF(PCRE2_REBUILD_CHARTABLES)
 
 # Source code
 
-SET(PCRE_HEADERS ${PROJECT_BINARY_DIR}/pcre.h)
+SET(PCRE2_HEADERS ${PROJECT_BINARY_DIR}/pcre2.h)
 
-IF(PCRE_BUILD_PCRE8)
-SET(PCRE_SOURCES
-  pcre_byte_order.c
-  pcre_chartables.c
-  pcre_compile.c
-  pcre_config.c
-  pcre_dfa_exec.c
-  pcre_exec.c
-  pcre_fullinfo.c
-  pcre_get.c
-  pcre_globals.c
-  pcre_jit_compile.c
-  pcre_maketables.c
-  pcre_newline.c
-  pcre_ord2utf8.c
-  pcre_refcount.c
-  pcre_string_utils.c
-  pcre_study.c
-  pcre_tables.c
-  pcre_ucd.c
-  pcre_valid_utf8.c
-  pcre_version.c
-  pcre_xclass.c
+SET(PCRE2_SOURCES
+  src/pcre2_auto_possess.c
+  ${PROJECT_BINARY_DIR}/pcre2_chartables.c
+  src/pcre2_compile.c
+  src/pcre2_config.c
+  src/pcre2_context.c
+  src/pcre2_convert.c
+  src/pcre2_dfa_match.c
+  src/pcre2_error.c
+  src/pcre2_extuni.c
+  src/pcre2_find_bracket.c
+  src/pcre2_jit_compile.c
+  src/pcre2_maketables.c
+  src/pcre2_match.c
+  src/pcre2_match_data.c
+  src/pcre2_newline.c
+  src/pcre2_ord2utf.c
+  src/pcre2_pattern_info.c
+  src/pcre2_script_run.c
+  src/pcre2_serialize.c
+  src/pcre2_string_utils.c
+  src/pcre2_study.c
+  src/pcre2_substitute.c
+  src/pcre2_substring.c
+  src/pcre2_tables.c
+  src/pcre2_ucd.c
+  src/pcre2_valid_utf.c
+  src/pcre2_xclass.c
 )
 
-SET(PCREPOSIX_HEADERS pcreposix.h)
+SET(PCRE2POSIX_HEADERS src/pcre2posix.h)
+SET(PCRE2POSIX_SOURCES src/pcre2posix.c)
 
-SET(PCREPOSIX_SOURCES pcreposix.c)
-
-ENDIF(PCRE_BUILD_PCRE8)
-
-IF(PCRE_BUILD_PCRE16)
-SET(PCRE16_SOURCES
-  pcre16_byte_order.c
-  pcre16_chartables.c
-  pcre16_compile.c
-  pcre16_config.c
-  pcre16_dfa_exec.c
-  pcre16_exec.c
-  pcre16_fullinfo.c
-  pcre16_get.c
-  pcre16_globals.c
-  pcre16_jit_compile.c
-  pcre16_maketables.c
-  pcre16_newline.c
-  pcre16_ord2utf16.c
-  pcre16_refcount.c
-  pcre16_string_utils.c
-  pcre16_study.c
-  pcre16_tables.c
-  pcre16_ucd.c
-  pcre16_utf16_utils.c
-  pcre16_valid_utf16.c
-  pcre16_version.c
-  pcre16_xclass.c
-)
-ENDIF(PCRE_BUILD_PCRE16)
-
-IF(PCRE_BUILD_PCRE32)
-SET(PCRE32_SOURCES
-  pcre32_byte_order.c
-  pcre32_chartables.c
-  pcre32_compile.c
-  pcre32_config.c
-  pcre32_dfa_exec.c
-  pcre32_exec.c
-  pcre32_fullinfo.c
-  pcre32_get.c
-  pcre32_globals.c
-  pcre32_jit_compile.c
-  pcre32_maketables.c
-  pcre32_newline.c
-  pcre32_ord2utf32.c
-  pcre32_refcount.c
-  pcre32_string_utils.c
-  pcre32_study.c
-  pcre32_tables.c
-  pcre32_ucd.c
-  pcre32_utf32_utils.c
-  pcre32_valid_utf32.c
-  pcre32_version.c
-  pcre32_xclass.c
-)
-ENDIF(PCRE_BUILD_PCRE32)
-
-IF(MINGW AND NOT PCRE_STATIC)
-IF (EXISTS ${PROJECT_SOURCE_DIR}/pcre.rc)
-ADD_CUSTOM_COMMAND(OUTPUT ${PROJECT_SOURCE_DIR}/pcre.o
+IF(MINGW AND NOT PCRE2_STATIC)
+IF (EXISTS ${PROJECT_SOURCE_DIR}/pcre2.rc)
+ADD_CUSTOM_COMMAND(OUTPUT ${PROJECT_SOURCE_DIR}/pcre2.o
 PRE-LINK
-COMMAND windres ARGS pcre.rc pcre.o
+COMMAND windres ARGS pcre2.rc pcre2.o
 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-COMMENT Using pcre coff info in mingw build)
-SET(PCRE_SOURCES
-  ${PCRE_SOURCES} ${PROJECT_SOURCE_DIR}/pcre.o
+COMMENT Using pcre2 coff info in mingw build)
+SET(PCRE2_SOURCES
+  ${PCRE2_SOURCES} ${PROJECT_SOURCE_DIR}/pcre2.o
 )
-ENDIF(EXISTS ${PROJECT_SOURCE_DIR}/pcre.rc)
-IF (EXISTS ${PROJECT_SOURCE_DIR}/pcreposix.rc)
-ADD_CUSTOM_COMMAND(OUTPUT ${PROJECT_SOURCE_DIR}/pcreposix.o
+ENDIF(EXISTS ${PROJECT_SOURCE_DIR}/pcre2.rc)
+IF (EXISTS ${PROJECT_SOURCE_DIR}/pcre2posix.rc)
+ADD_CUSTOM_COMMAND(OUTPUT ${PROJECT_SOURCE_DIR}/pcre2posix.o
 PRE-LINK
-COMMAND windres ARGS pcreposix.rc pcreposix.o
+COMMAND windres ARGS pcre2posix.rc pcre2posix.o
 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-COMMENT Using pcreposix coff info in mingw build)
-SET(PCREPOSIX_SOURCES
-  ${PCREPOSIX_SOURCES} ${PROJECT_SOURCE_DIR}/pcreposix.o
+COMMENT Using pcre2posix coff info in mingw build)
+SET(PCRE2POSIX_SOURCES
+  ${PCRE2POSIX_SOURCES} ${PROJECT_SOURCE_DIR}/pcre2posix.o
 )
-ENDIF(EXISTS ${PROJECT_SOURCE_DIR}/pcreposix.rc)
-ENDIF(MINGW AND NOT PCRE_STATIC)
+ENDIF(EXISTS ${PROJECT_SOURCE_DIR}/pcre2posix.rc)
+ENDIF(MINGW AND NOT PCRE2_STATIC)
 
-IF(MSVC AND NOT PCRE_STATIC)
-IF (EXISTS ${PROJECT_SOURCE_DIR}/pcre.rc)
-SET(PCRE_SOURCES
-  ${PCRE_SOURCES} pcre.rc)
-ENDIF(EXISTS ${PROJECT_SOURCE_DIR}/pcre.rc)
-IF (EXISTS ${PROJECT_SOURCE_DIR}/pcreposix.rc)
-SET(PCREPOSIX_SOURCES
-  ${PCREPOSIX_SOURCES} pcreposix.rc)
-ENDIF (EXISTS ${PROJECT_SOURCE_DIR}/pcreposix.rc)
-ENDIF(MSVC AND NOT PCRE_STATIC)
+IF(MSVC AND NOT PCRE2_STATIC)
+IF (EXISTS ${PROJECT_SOURCE_DIR}/pcre2.rc)
+SET(PCRE2_SOURCES
+  ${PCRE2_SOURCES} pcre2.rc)
+ENDIF(EXISTS ${PROJECT_SOURCE_DIR}/pcre2.rc)
+IF (EXISTS ${PROJECT_SOURCE_DIR}/pcre2posix.rc)
+SET(PCRE2POSIX_SOURCES
+  ${PCRE2POSIX_SOURCES} pcre2posix.rc)
+ENDIF (EXISTS ${PROJECT_SOURCE_DIR}/pcre2posix.rc)
+ENDIF(MSVC AND NOT PCRE2_STATIC)
 
-SET(PCRECPP_HEADERS
-  pcrecpp.h
-  pcre_scanner.h
-  ${PROJECT_BINARY_DIR}/pcrecpparg.h
-  ${PROJECT_BINARY_DIR}/pcre_stringpiece.h
-)
+# Fix static compilation with MSVC: https://bugs.exim.org/show_bug.cgi?id=1681
+# This code was taken from the CMake wiki, not from WebM.
 
-SET(PCRECPP_SOURCES
-        pcrecpp.cc
-        pcre_scanner.cc
-        pcre_stringpiece.cc
-)
+IF(MSVC AND PCRE2_STATIC_RUNTIME)
+  MESSAGE(STATUS "** MSVC and PCRE2_STATIC_RUNTIME: modifying compiler flags to use static runtime library")
+  foreach(flag_var
+          CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+          CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+    string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+  endforeach()
+ENDIF(MSVC AND PCRE2_STATIC_RUNTIME)
 
 # Build setup
 
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
 IF(MSVC)
-        ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
 ENDIF(MSVC)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR 1)
-# needed to make sure to not link debug libs
-# against release libs and vice versa
-IF(WIN32)
-  SET(CMAKE_DEBUG_POSTFIX "d")
-ENDIF(WIN32)
 
 SET(targets)
 
-# Libraries
-# pcre
-IF(PCRE_BUILD_PCRE8)
-ADD_LIBRARY(pcre ${PCRE_HEADERS} ${PCRE_SOURCES} ${PROJECT_BINARY_DIR}/config.h)
-SET(targets ${targets} pcre)
-ADD_LIBRARY(pcreposix ${PCREPOSIX_HEADERS} ${PCREPOSIX_SOURCES})
-SET(targets ${targets} pcreposix)
-TARGET_LINK_LIBRARIES(pcreposix pcre)
+# 8-bit library
 
-IF(MINGW AND NOT PCRE_STATIC)
+IF(PCRE2_BUILD_PCRE2_8)
+ADD_LIBRARY(pcre2-8 ${PCRE2_HEADERS} ${PCRE2_SOURCES} ${PROJECT_BINARY_DIR}/config.h)
+SET_TARGET_PROPERTIES(pcre2-8 PROPERTIES
+  COMPILE_DEFINITIONS PCRE2_CODE_UNIT_WIDTH=8
+  MACHO_COMPATIBILITY_VERSION "${LIBPCRE2_8_MACHO_COMPATIBILITY_VERSION}"
+  MACHO_CURRENT_VERSION "${LIBPCRE2_8_MACHO_CURRENT_VERSION}"
+  VERSION ${LIBPCRE2_8_VERSION}
+  SOVERSION ${LIBPCRE2_8_SOVERSION})
+SET(targets ${targets} pcre2-8)
+ADD_LIBRARY(pcre2-posix ${PCRE2POSIX_HEADERS} ${PCRE2POSIX_SOURCES})
+SET_TARGET_PROPERTIES(pcre2-posix PROPERTIES
+  COMPILE_DEFINITIONS PCRE2_CODE_UNIT_WIDTH=8
+  MACHO_COMPATIBILITY_VERSION "${LIBPCRE2_POSIX_MACHO_COMPATIBILITY_VERSION}"
+  MACHO_CURRENT_VERSION "${LIBPCRE2_POSIX_MACHO_CURRENT_VERSION}"
+  VERSION ${LIBPCRE2_POSIX_VERSION}
+  SOVERSION ${LIBPCRE2_POSIX_SOVERSION})
+SET(targets ${targets} pcre2-posix)
+TARGET_LINK_LIBRARIES(pcre2-posix pcre2-8)
+
+IF(MINGW AND NOT PCRE2_STATIC)
   IF(NON_STANDARD_LIB_PREFIX)
-    SET_TARGET_PROPERTIES(pcre pcreposix
-                        PROPERTIES PREFIX ""
-    )
+    SET_TARGET_PROPERTIES(pcre2-8 pcre2-posix PROPERTIES PREFIX "")
   ENDIF(NON_STANDARD_LIB_PREFIX)
-
   IF(NON_STANDARD_LIB_SUFFIX)
-    SET_TARGET_PROPERTIES(pcre pcreposix
-                        PROPERTIES SUFFIX "-0.dll"
-    )
+    SET_TARGET_PROPERTIES(pcre2-8 pcre2-posix PROPERTIES SUFFIX "-0.dll")
   ENDIF(NON_STANDARD_LIB_SUFFIX)
-ENDIF(MINGW AND NOT PCRE_STATIC)
+ENDIF(MINGW AND NOT PCRE2_STATIC)
+ENDIF(PCRE2_BUILD_PCRE2_8)
 
-ENDIF(PCRE_BUILD_PCRE8)
+# 16-bit library
 
-IF(PCRE_BUILD_PCRE16)
-ADD_LIBRARY(pcre16 ${PCRE_HEADERS} ${PCRE16_SOURCES} ${PROJECT_BINARY_DIR}/config.h)
-SET(targets ${targets} pcre16)
+IF(PCRE2_BUILD_PCRE2_16)
+ADD_LIBRARY(pcre2-16 ${PCRE2_HEADERS} ${PCRE2_SOURCES} ${PROJECT_BINARY_DIR}/config.h)
+SET_TARGET_PROPERTIES(pcre2-16 PROPERTIES
+  COMPILE_DEFINITIONS PCRE2_CODE_UNIT_WIDTH=16
+  MACHO_COMPATIBILITY_VERSION "${LIBPCRE2_32_MACHO_COMPATIBILITY_VERSION}"
+  MACHO_CURRENT_VERSION "${LIBPCRE2_32_MACHO_CURRENT_VERSION}"
+  VERSION ${LIBPCRE2_16_VERSION}
+  SOVERSION ${LIBPCRE2_16_SOVERSION})
+SET(targets ${targets} pcre2-16)
 
-IF(MINGW AND NOT PCRE_STATIC)
+IF(MINGW AND NOT PCRE2_STATIC)
   IF(NON_STANDARD_LIB_PREFIX)
-    SET_TARGET_PROPERTIES(pcre16
-                        PROPERTIES PREFIX ""
-    )
+    SET_TARGET_PROPERTIES(pcre2-16 PROPERTIES PREFIX "")
   ENDIF(NON_STANDARD_LIB_PREFIX)
-
   IF(NON_STANDARD_LIB_SUFFIX)
-    SET_TARGET_PROPERTIES(pcre16
-                        PROPERTIES SUFFIX "-0.dll"
-    )
+    SET_TARGET_PROPERTIES(pcre2-16 PROPERTIES SUFFIX "-0.dll")
   ENDIF(NON_STANDARD_LIB_SUFFIX)
-ENDIF(MINGW AND NOT PCRE_STATIC)
+ENDIF(MINGW AND NOT PCRE2_STATIC)
+ENDIF(PCRE2_BUILD_PCRE2_16)
 
-ENDIF(PCRE_BUILD_PCRE16)
+# 32-bit library
 
-IF(PCRE_BUILD_PCRE32)
-ADD_LIBRARY(pcre32 ${PCRE_HEADERS} ${PCRE32_SOURCES} ${PROJECT_BINARY_DIR}/config.h)
-SET(targets ${targets} pcre32)
+IF(PCRE2_BUILD_PCRE2_32)
+ADD_LIBRARY(pcre2-32 ${PCRE2_HEADERS} ${PCRE2_SOURCES} ${PROJECT_BINARY_DIR}/config.h)
+SET_TARGET_PROPERTIES(pcre2-32 PROPERTIES
+  COMPILE_DEFINITIONS PCRE2_CODE_UNIT_WIDTH=32
+  MACHO_COMPATIBILITY_VERSION "${LIBPCRE2_32_MACHO_COMPATIBILITY_VERSION}"
+  MACHO_CURRENT_VERSION "${LIBPCRE2_32_MACHO_CURRENT_VERSION}"
+  VERSION ${LIBPCRE2_32_VERSION}
+  SOVERSION ${LIBPCRE2_32_SOVERSION})
+SET(targets ${targets} pcre2-32)
 
-IF(MINGW AND NOT PCRE_STATIC)
+IF(MINGW AND NOT PCRE2_STATIC)
   IF(NON_STANDARD_LIB_PREFIX)
-    SET_TARGET_PROPERTIES(pcre32
-                        PROPERTIES PREFIX ""
-    )
+    SET_TARGET_PROPERTIES(pcre2-32 PROPERTIES PREFIX "")
   ENDIF(NON_STANDARD_LIB_PREFIX)
-
   IF(NON_STANDARD_LIB_SUFFIX)
-    SET_TARGET_PROPERTIES(pcre32
-                        PROPERTIES SUFFIX "-0.dll"
-    )
+    SET_TARGET_PROPERTIES(pcre2-32 PROPERTIES SUFFIX "-0.dll")
   ENDIF(NON_STANDARD_LIB_SUFFIX)
-ENDIF(MINGW AND NOT PCRE_STATIC)
-
-ENDIF(PCRE_BUILD_PCRE32)
-
-# pcrecpp
-IF(PCRE_BUILD_PCRECPP)
-ADD_LIBRARY(pcrecpp ${PCRECPP_HEADERS} ${PCRECPP_SOURCES})
-SET(targets ${targets} pcrecpp)
-TARGET_LINK_LIBRARIES(pcrecpp pcre)
-
-  IF(MINGW AND NOT PCRE_STATIC)
-    IF(NON_STANDARD_LIB_PREFIX)
-      SET_TARGET_PROPERTIES(pcrecpp
-                            PROPERTIES PREFIX ""
-      )
-    ENDIF(NON_STANDARD_LIB_PREFIX)
-
-    IF(NON_STANDARD_LIB_SUFFIX)
-      SET_TARGET_PROPERTIES(pcrecpp
-                          PROPERTIES SUFFIX "-0.dll"
-      )
-    ENDIF(NON_STANDARD_LIB_SUFFIX)
-  ENDIF(MINGW AND NOT PCRE_STATIC)
-ENDIF(PCRE_BUILD_PCRECPP)
-
+ENDIF(MINGW AND NOT PCRE2_STATIC)
+ENDIF(PCRE2_BUILD_PCRE2_32)
 
 # Executables
 
-# Removed by PH (2008-01-23) because pcredemo shouldn't really be built
-# automatically, and it gave trouble in some environments anyway.
-# ADD_EXECUTABLE(pcredemo pcredemo.c)
-# TARGET_LINK_LIBRARIES(pcredemo pcreposix)
-# IF(NOT BUILD_SHARED_LIBS)
-#     # make sure to not use declspec(dllimport) in static mode on windows
-#         SET_TARGET_PROPERTIES(pcredemo PROPERTIES COMPILE_FLAGS "-DPCRE_STATIC")
-# ENDIF(NOT BUILD_SHARED_LIBS)
-
-IF(PCRE_BUILD_PCREGREP)
-  ADD_EXECUTABLE(pcregrep pcregrep.c)
-  SET(targets ${targets} pcregrep)
-  TARGET_LINK_LIBRARIES(pcregrep pcreposix ${PCREGREP_LIBS})
-ENDIF(PCRE_BUILD_PCREGREP)
+IF(PCRE2_BUILD_PCRE2GREP)
+  ADD_EXECUTABLE(pcre2grep src/pcre2grep.c)
+  SET_PROPERTY(TARGET pcre2grep
+    PROPERTY COMPILE_DEFINITIONS PCRE2_CODE_UNIT_WIDTH=8)
+  SET(targets ${targets} pcre2grep)
+  TARGET_LINK_LIBRARIES(pcre2grep pcre2-posix ${PCRE2GREP_LIBS})
+ENDIF(PCRE2_BUILD_PCRE2GREP)
 
 # Testing
-IF(PCRE_BUILD_TESTS)
+
+IF(PCRE2_BUILD_TESTS)
   ENABLE_TESTING()
 
-  SET(PCRETEST_SOURCES pcretest.c)
-  IF(PCRE_BUILD_PCRE8)
-    LIST(APPEND PCRETEST_SOURCES pcre_printint.c)
-  ENDIF(PCRE_BUILD_PCRE8)
-  IF(PCRE_BUILD_PCRE16)
-    LIST(APPEND PCRETEST_SOURCES pcre16_printint.c)
-  ENDIF(PCRE_BUILD_PCRE16)
-  IF(PCRE_BUILD_PCRE32)
-    LIST(APPEND PCRETEST_SOURCES pcre32_printint.c)
-  ENDIF(PCRE_BUILD_PCRE32)
+  SET(PCRE2TEST_SOURCES src/pcre2test.c)
 
-  ADD_EXECUTABLE(pcretest ${PCRETEST_SOURCES})
-  SET(targets ${targets} pcretest)
-  IF(PCRE_BUILD_PCRE8)
-    LIST(APPEND PCRETEST_LIBS pcreposix pcre)
-  ENDIF(PCRE_BUILD_PCRE8)
-  IF(PCRE_BUILD_PCRE16)
-    LIST(APPEND PCRETEST_LIBS pcre16)
-  ENDIF(PCRE_BUILD_PCRE16)
-  IF(PCRE_BUILD_PCRE32)
-    LIST(APPEND PCRETEST_LIBS pcre32)
-  ENDIF(PCRE_BUILD_PCRE32)
-  TARGET_LINK_LIBRARIES(pcretest ${PCRETEST_LIBS})
+  IF(MSVC)
+    # This is needed to avoid a stack overflow error in the standard tests. The
+    # flag should be indicated with a forward-slash instead of a hyphen, but
+    # then CMake treats it as a file path.
+    SET(PCRE2TEST_LINKER_FLAGS -STACK:2500000)
+  ENDIF(MSVC)
 
-  IF(PCRE_SUPPORT_JIT)
-    ADD_EXECUTABLE(pcre_jit_test pcre_jit_test.c)
-    SET(targets ${targets} pcre_jit_test)
-    SET(PCRE_JIT_TEST_LIBS )
-    IF(PCRE_BUILD_PCRE8)
-      LIST(APPEND PCRE_JIT_TEST_LIBS pcre)
-    ENDIF(PCRE_BUILD_PCRE8)
-    IF(PCRE_BUILD_PCRE16)
-      LIST(APPEND PCRE_JIT_TEST_LIBS pcre16)
-    ENDIF(PCRE_BUILD_PCRE16)
-    IF(PCRE_BUILD_PCRE32)
-      LIST(APPEND PCRE_JIT_TEST_LIBS pcre32)
-    ENDIF(PCRE_BUILD_PCRE32)
-    TARGET_LINK_LIBRARIES(pcre_jit_test ${PCRE_JIT_TEST_LIBS})
-  ENDIF(PCRE_SUPPORT_JIT)
+  ADD_EXECUTABLE(pcre2test ${PCRE2TEST_SOURCES})
+  SET(targets ${targets} pcre2test)
+  IF(PCRE2_BUILD_PCRE2_8)
+    LIST(APPEND PCRE2TEST_LIBS pcre2-posix pcre2-8)
+  ENDIF(PCRE2_BUILD_PCRE2_8)
+  IF(PCRE2_BUILD_PCRE2_16)
+    LIST(APPEND PCRE2TEST_LIBS pcre2-16)
+  ENDIF(PCRE2_BUILD_PCRE2_16)
+  IF(PCRE2_BUILD_PCRE2_32)
+    LIST(APPEND PCRE2TEST_LIBS pcre2-32)
+  ENDIF(PCRE2_BUILD_PCRE2_32)
+  TARGET_LINK_LIBRARIES(pcre2test ${PCRE2TEST_LIBS} ${PCRE2TEST_LINKER_FLAGS})
 
-  IF(PCRE_BUILD_PCRECPP)
-    ADD_EXECUTABLE(pcrecpp_unittest pcrecpp_unittest.cc)
-    SET(targets ${targets} pcrecpp_unittest)
-    TARGET_LINK_LIBRARIES(pcrecpp_unittest pcrecpp)
-    IF(MINGW AND NON_STANDARD_LIB_NAMES AND NOT PCRE_STATIC)
-      SET_TARGET_PROPERTIES(pcrecpp
-                        PROPERTIES PREFIX ""
-      )
-    ENDIF(MINGW AND NON_STANDARD_LIB_NAMES AND NOT PCRE_STATIC)
+  IF(PCRE2_SUPPORT_JIT)
+    ADD_EXECUTABLE(pcre2_jit_test src/pcre2_jit_test.c)
+    SET(targets ${targets} pcre2_jit_test)
+    SET(PCRE2_JIT_TEST_LIBS )
+    IF(PCRE2_BUILD_PCRE2_8)
+      LIST(APPEND PCRE2_JIT_TEST_LIBS pcre2-8)
+    ENDIF(PCRE2_BUILD_PCRE2_8)
+    IF(PCRE2_BUILD_PCRE2_16)
+      LIST(APPEND PCRE2_JIT_TEST_LIBS pcre2-16)
+    ENDIF(PCRE2_BUILD_PCRE2_16)
+    IF(PCRE2_BUILD_PCRE2_32)
+      LIST(APPEND PCRE2_JIT_TEST_LIBS pcre2-32)
+    ENDIF(PCRE2_BUILD_PCRE2_32)
+    TARGET_LINK_LIBRARIES(pcre2_jit_test ${PCRE2_JIT_TEST_LIBS})
+  ENDIF(PCRE2_SUPPORT_JIT)
 
-    ADD_EXECUTABLE(pcre_scanner_unittest pcre_scanner_unittest.cc)
-    SET(targets ${targets} pcre_scanner_unittest)
-    TARGET_LINK_LIBRARIES(pcre_scanner_unittest pcrecpp)
-
-    ADD_EXECUTABLE(pcre_stringpiece_unittest pcre_stringpiece_unittest.cc)
-    SET(targets ${targets} pcre_stringpiece_unittest)
-    TARGET_LINK_LIBRARIES(pcre_stringpiece_unittest pcrecpp)
-  ENDIF(PCRE_BUILD_PCRECPP)
-
-  # exes in Debug location tested by the RunTest shell script
+  # exes in Debug location tested by the RunTest and RunGrepTest shell scripts
   # via "make test"
-  IF(PCRE_BUILD_PCREGREP)
-    GET_TARGET_PROPERTY(PCREGREP_EXE pcregrep DEBUG_LOCATION)
-  ENDIF(PCRE_BUILD_PCREGREP)
 
-  GET_TARGET_PROPERTY(PCRETEST_EXE pcretest DEBUG_LOCATION)
+  # The commented out code below provokes a warning about future removal
+  # of the facility, and requires policy CMP0026 to be set to "OLD". I have
+  # got fed-up with the warnings, but my plea for help on the mailing list
+  # produced no response. So, I've hacked. The new code below seems to work on
+  # Linux.
+
+#  IF(PCRE2_BUILD_PCRE2GREP)
+#    GET_TARGET_PROPERTY(PCRE2GREP_EXE pcre2grep DEBUG_LOCATION)
+#  ENDIF(PCRE2_BUILD_PCRE2GREP)
+#
+#  GET_TARGET_PROPERTY(PCRE2TEST_EXE pcre2test DEBUG_LOCATION)
+
+  IF(PCRE2_BUILD_PCRE2GREP)
+    SET(PCRE2GREP_EXE $<TARGET_FILE:pcre2grep>)
+  ENDIF(PCRE2_BUILD_PCRE2GREP)
+
+  SET(PCRE2TEST_EXE $<TARGET_FILE:pcre2test>)
+
 
 # =================================================
   # Write out a CTest configuration file
@@ -782,210 +815,203 @@ MESSAGE(\"When testing is complete, review test output in the
 MESSAGE(\" \")
 ")
 
-  FILE(WRITE ${PROJECT_BINARY_DIR}/pcre_test.sh
+  FILE(WRITE ${PROJECT_BINARY_DIR}/pcre2_test.sh
   "#! /bin/sh
 # This is a generated file.
-srcdir=${PROJECT_SOURCE_DIR}
-pcretest=${PCRETEST_EXE}
 . ${PROJECT_SOURCE_DIR}/RunTest
 if test \"$?\" != \"0\"; then exit 1; fi
 # End
 ")
 
   IF(UNIX)
-    ADD_TEST(pcre_test      sh ${PROJECT_BINARY_DIR}/pcre_test.sh)
+    ADD_TEST(pcre2_test sh ${PROJECT_BINARY_DIR}/pcre2_test.sh)
   ENDIF(UNIX)
 
-  IF(PCRE_BUILD_PCREGREP)
-    FILE(WRITE ${PROJECT_BINARY_DIR}/pcre_grep_test.sh
+  IF(PCRE2_BUILD_PCRE2GREP)
+    FILE(WRITE ${PROJECT_BINARY_DIR}/pcre2_grep_test.sh
     "#! /bin/sh
 # This is a generated file.
-srcdir=${PROJECT_SOURCE_DIR}
-pcregrep=${PCREGREP_EXE}
-pcretest=${PCRETEST_EXE}
 . ${PROJECT_SOURCE_DIR}/RunGrepTest
 if test \"$?\" != \"0\"; then exit 1; fi
 # End
 ")
 
     IF(UNIX)
-      ADD_TEST(pcre_grep_test sh ${PROJECT_BINARY_DIR}/pcre_grep_test.sh)
+      ADD_TEST(pcre2_grep_test sh ${PROJECT_BINARY_DIR}/pcre2_grep_test.sh)
     ENDIF(UNIX)
-  ENDIF(PCRE_BUILD_PCREGREP)
+  ENDIF(PCRE2_BUILD_PCRE2GREP)
 
   IF(WIN32)
     # Provide environment for executing the bat file version of RunTest
     FILE(TO_NATIVE_PATH ${PROJECT_SOURCE_DIR} winsrc)
     FILE(TO_NATIVE_PATH ${PROJECT_BINARY_DIR} winbin)
-    FILE(TO_NATIVE_PATH ${PCRETEST_EXE} winexe)
+    FILE(TO_NATIVE_PATH ${PCRE2TEST_EXE} winexe)
 
-    FILE(WRITE ${PROJECT_BINARY_DIR}/pcre_test.bat
+    FILE(WRITE ${PROJECT_BINARY_DIR}/pcre2_test.bat
     "\@REM This is a generated file.
 \@echo off
 setlocal
 SET srcdir=\"${winsrc}\"
-SET pcretest=\"${winexe}\"
-if not [%CMAKE_CONFIG_TYPE%]==[] SET pcretest=\"${winbin}\\%CMAKE_CONFIG_TYPE%\\pcretest.exe\"
+# The next line was replaced by the following one after a user comment.
+# SET pcre2test=\"${winexe}\"
+SET pcre2test=\"${winbin}\\pcre2test.exe\"
+if not [%CMAKE_CONFIG_TYPE%]==[] SET pcre2test=\"${winbin}\\%CMAKE_CONFIG_TYPE%\\pcre2test.exe\"
 call %srcdir%\\RunTest.Bat
 if errorlevel 1 exit /b 1
 echo RunTest.bat tests successfully completed
 ")
 
-  ADD_TEST(NAME pcre_test_bat
-  COMMAND pcre_test.bat)
-  SET_TESTS_PROPERTIES(pcre_test_bat PROPERTIES
+  ADD_TEST(NAME pcre2_test_bat
+  COMMAND pcre2_test.bat)
+  SET_TESTS_PROPERTIES(pcre2_test_bat PROPERTIES
   PASS_REGULAR_EXPRESSION "RunTest\\.bat tests successfully completed")
 
     IF("$ENV{OSTYPE}" STREQUAL "msys")
       # Both the sh and bat file versions of RunTest are run if make test is used
       # in msys
-      ADD_TEST(pcre_test_sh    sh.exe ${PROJECT_BINARY_DIR}/pcre_test.sh)
-      IF(PCRE_BUILD_PCREGREP)
-        ADD_TEST(pcre_grep_test  sh.exe ${PROJECT_BINARY_DIR}/pcre_grep_test.sh)
-      ENDIF(PCRE_BUILD_PCREGREP)
+      ADD_TEST(pcre2_test_sh    sh.exe ${PROJECT_BINARY_DIR}/pcre2_test.sh)
+      IF(PCRE2_BUILD_PCRE2GREP)
+        ADD_TEST(pcre2_grep_test  sh.exe ${PROJECT_BINARY_DIR}/pcre2_grep_test.sh)
+      ENDIF(PCRE2_BUILD_PCRE2GREP)
     ENDIF("$ENV{OSTYPE}" STREQUAL "msys")
-
   ENDIF(WIN32)
 
   # Changed to accommodate testing whichever location was just built
 
-  IF(PCRE_SUPPORT_JIT)
-    ADD_TEST(pcre_jit_test         pcre_jit_test)
-  ENDIF(PCRE_SUPPORT_JIT)
+  IF(PCRE2_SUPPORT_JIT)
+    ADD_TEST(pcre2_jit_test pcre2_jit_test)
+  ENDIF(PCRE2_SUPPORT_JIT)
 
-  IF(PCRE_BUILD_PCRECPP)
-    ADD_TEST(pcrecpp_test          pcrecpp_unittest)
-    ADD_TEST(pcre_scanner_test     pcre_scanner_unittest)
-    ADD_TEST(pcre_stringpiece_test pcre_stringpiece_unittest)
-  ENDIF(PCRE_BUILD_PCRECPP)
-
-ENDIF(PCRE_BUILD_TESTS)
+ENDIF(PCRE2_BUILD_TESTS)
 
 # Installation
+
 SET(CMAKE_INSTALL_ALWAYS 1)
 
 INSTALL(TARGETS ${targets}
         RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib)
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+INSTALL(FILES ${pkg_config_files} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/pcre2-config"
+  DESTINATION bin
+  # Set 0755 permissions
+  PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-INSTALL(FILES ${PCRE_HEADERS} ${PCREPOSIX_HEADERS} DESTINATION include)
+INSTALL(FILES ${PCRE2_HEADERS} ${PCRE2POSIX_HEADERS} DESTINATION include)
 
 FILE(GLOB html ${PROJECT_SOURCE_DIR}/doc/html/*.html)
 FILE(GLOB man1 ${PROJECT_SOURCE_DIR}/doc/*.1)
 FILE(GLOB man3 ${PROJECT_SOURCE_DIR}/doc/*.3)
 
-IF(PCRE_BUILD_PCRECPP)
-        INSTALL(FILES ${PCRECPP_HEADERS} DESTINATION include)
-ELSE(PCRE_BUILD_PCRECPP)
-        # Remove pcrecpp.3
-        FOREACH(man ${man3})
-                GET_FILENAME_COMPONENT(man_tmp ${man} NAME)
-                IF(NOT man_tmp STREQUAL "pcrecpp.3")
-                        SET(man3_new ${man3} ${man})
-                ENDIF(NOT man_tmp STREQUAL "pcrecpp.3")
-        ENDFOREACH(man ${man3})
-        SET(man3 ${man3_new})
-ENDIF(PCRE_BUILD_PCRECPP)
+FOREACH(man ${man3})
+        GET_FILENAME_COMPONENT(man_tmp ${man} NAME)
+        SET(man3_new ${man3} ${man})
+ENDFOREACH(man ${man3})
+SET(man3 ${man3_new})
 
 INSTALL(FILES ${man1} DESTINATION man/man1)
 INSTALL(FILES ${man3} DESTINATION man/man3)
-INSTALL(FILES ${html} DESTINATION share/doc/pcre/html)
+INSTALL(FILES ${html} DESTINATION share/doc/pcre2/html)
 
 IF(MSVC AND INSTALL_MSVC_PDB)
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/pcre.pdb
-                  ${PROJECT_BINARY_DIR}/pcreposix.pdb
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/pcre2.pdb
+                  ${PROJECT_BINARY_DIR}/pcre2posix.pdb
             DESTINATION bin
             CONFIGURATIONS RelWithDebInfo)
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/pcred.pdb
-                  ${PROJECT_BINARY_DIR}/pcreposixd.pdb
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/pcre2d.pdb
+                  ${PROJECT_BINARY_DIR}/pcre2posixd.pdb
             DESTINATION bin
             CONFIGURATIONS Debug)
 ENDIF(MSVC AND INSTALL_MSVC_PDB)
 
-# help, only for nice output
+# Help, only for nice output
 IF(BUILD_SHARED_LIBS)
   SET(BUILD_STATIC_LIBS OFF)
 ELSE(BUILD_SHARED_LIBS)
   SET(BUILD_STATIC_LIBS ON)
 ENDIF(BUILD_SHARED_LIBS)
 
-IF(PCRE_SHOW_REPORT)
+IF(PCRE2_HEAP_MATCH_RECURSE)
+  MESSAGE(WARNING "HEAP_MATCH_RECURSE is obsolete and does nothing.")
+ENDIF(PCRE2_HEAP_MATCH_RECURSE)
+
+IF(PCRE2_SHOW_REPORT)
   STRING(TOUPPER "${CMAKE_BUILD_TYPE}" buildtype)
   IF (CMAKE_C_FLAGS)
     SET(cfsp " ")
   ENDIF(CMAKE_C_FLAGS)
-  IF (CMAKE_CXX_FLAGS)
-    SET(cxxfsp " ")
-  ENDIF(CMAKE_CXX_FLAGS)
   MESSAGE(STATUS "")
   MESSAGE(STATUS "")
-  MESSAGE(STATUS "PCRE configuration summary:")
+  MESSAGE(STATUS "PCRE2-${PCRE2_MAJOR}.${PCRE2_MINOR} configuration summary:")
   MESSAGE(STATUS "")
   MESSAGE(STATUS "  Install prefix .................. : ${CMAKE_INSTALL_PREFIX}")
   MESSAGE(STATUS "  C compiler ...................... : ${CMAKE_C_COMPILER}")
-  MESSAGE(STATUS "  C++ compiler .................... : ${CMAKE_CXX_COMPILER}")
   MESSAGE(STATUS "  C compiler flags ................ : ${CMAKE_C_FLAGS}${cfsp}${CMAKE_C_FLAGS_${buildtype}}")
-  MESSAGE(STATUS "  C++ compiler flags .............. : ${CMAKE_CXX_FLAGS}${cxxfsp}${CMAKE_CXX_FLAGS_${buildtype}}")
   MESSAGE(STATUS "")
-  MESSAGE(STATUS "  Build 8 bit PCRE library ........ : ${PCRE_BUILD_PCRE8}")
-  MESSAGE(STATUS "  Build 16 bit PCRE library ....... : ${PCRE_BUILD_PCRE16}")
-  MESSAGE(STATUS "  Build 32 bit PCRE library ....... : ${PCRE_BUILD_PCRE32}")
-  MESSAGE(STATUS "  Build C++ library ............... : ${PCRE_BUILD_PCRECPP}")
-  MESSAGE(STATUS "  Enable JIT compiling support .... : ${PCRE_SUPPORT_JIT}")
-  MESSAGE(STATUS "  Enable UTF support .............. : ${PCRE_SUPPORT_UTF}")
-  MESSAGE(STATUS "  Unicode properties .............. : ${PCRE_SUPPORT_UNICODE_PROPERTIES}")
-  MESSAGE(STATUS "  Newline char/sequence ........... : ${PCRE_NEWLINE}")
-  MESSAGE(STATUS "  \\R matches only ANYCRLF ......... : ${PCRE_SUPPORT_BSR_ANYCRLF}")
-  MESSAGE(STATUS "  EBCDIC coding ................... : ${PCRE_EBCDIC}")
-  MESSAGE(STATUS "  EBCDIC coding with NL=0x25 ...... : ${PCRE_EBCDIC_NL25}")
-  MESSAGE(STATUS "  Rebuild char tables ............. : ${PCRE_REBUILD_CHARTABLES}")
-  MESSAGE(STATUS "  No stack recursion .............. : ${PCRE_NO_RECURSE}")
-  MESSAGE(STATUS "  POSIX mem threshold ............. : ${PCRE_POSIX_MALLOC_THRESHOLD}")
-  MESSAGE(STATUS "  Internal link size .............. : ${PCRE_LINK_SIZE}")
-  MESSAGE(STATUS "  Parentheses nest limit .......... : ${PCRE_PARENS_NEST_LIMIT}")
-  MESSAGE(STATUS "  Match limit ..................... : ${PCRE_MATCH_LIMIT}")
-  MESSAGE(STATUS "  Match limit recursion ........... : ${PCRE_MATCH_LIMIT_RECURSION}")
+  MESSAGE(STATUS "  Build 8 bit PCRE2 library ....... : ${PCRE2_BUILD_PCRE2_8}")
+  MESSAGE(STATUS "  Build 16 bit PCRE2 library ...... : ${PCRE2_BUILD_PCRE2_16}")
+  MESSAGE(STATUS "  Build 32 bit PCRE2 library ...... : ${PCRE2_BUILD_PCRE2_32}")
+  MESSAGE(STATUS "  Enable JIT compiling support .... : ${PCRE2_SUPPORT_JIT}")
+  MESSAGE(STATUS "  Use SELinux allocator in JIT .... : ${PCRE2_SUPPORT_JIT_SEALLOC}")
+  MESSAGE(STATUS "  Enable Unicode support .......... : ${PCRE2_SUPPORT_UNICODE}")
+  MESSAGE(STATUS "  Newline char/sequence ........... : ${PCRE2_NEWLINE}")
+  MESSAGE(STATUS "  \\R matches only ANYCRLF ......... : ${PCRE2_SUPPORT_BSR_ANYCRLF}")
+  MESSAGE(STATUS "  \\C is disabled .................. : ${PCRE2_NEVER_BACKSLASH_C}")
+  MESSAGE(STATUS "  EBCDIC coding ................... : ${PCRE2_EBCDIC}")
+  MESSAGE(STATUS "  EBCDIC coding with NL=0x25 ...... : ${PCRE2_EBCDIC_NL25}")
+  MESSAGE(STATUS "  Rebuild char tables ............. : ${PCRE2_REBUILD_CHARTABLES}")
+  MESSAGE(STATUS "  Internal link size .............. : ${PCRE2_LINK_SIZE}")
+  MESSAGE(STATUS "  Parentheses nest limit .......... : ${PCRE2_PARENS_NEST_LIMIT}")
+  MESSAGE(STATUS "  Heap limit ...................... : ${PCRE2_HEAP_LIMIT}")
+  MESSAGE(STATUS "  Match limit ..................... : ${PCRE2_MATCH_LIMIT}")
+  MESSAGE(STATUS "  Match depth limit ............... : ${PCRE2_MATCH_LIMIT_DEPTH}")
   MESSAGE(STATUS "  Build shared libs ............... : ${BUILD_SHARED_LIBS}")
   MESSAGE(STATUS "  Build static libs ............... : ${BUILD_STATIC_LIBS}")
-  MESSAGE(STATUS "  Build pcregrep .................. : ${PCRE_BUILD_PCREGREP}")
-  MESSAGE(STATUS "  Enable JIT in pcregrep .......... : ${PCRE_SUPPORT_PCREGREP_JIT}")
-  MESSAGE(STATUS "  Buffer size for pcregrep ........ : ${PCREGREP_BUFSIZE}")
-  MESSAGE(STATUS "  Build tests (implies pcretest  .. : ${PCRE_BUILD_TESTS}")
-  MESSAGE(STATUS "               and pcregrep)")
+  MESSAGE(STATUS "  Build pcre2grep ................. : ${PCRE2_BUILD_PCRE2GREP}")
+  MESSAGE(STATUS "  Enable JIT in pcre2grep ......... : ${PCRE2GREP_SUPPORT_JIT}")
+  MESSAGE(STATUS "  Enable callouts in pcre2grep .... : ${PCRE2GREP_SUPPORT_CALLOUT}")
+  MESSAGE(STATUS "  Enable callout fork in pcre2grep. : ${PCRE2GREP_SUPPORT_CALLOUT_FORK}")
+  MESSAGE(STATUS "  Buffer size for pcre2grep ....... : ${PCRE2GREP_BUFSIZE}")
+  MESSAGE(STATUS "  Build tests (implies pcre2test .. : ${PCRE2_BUILD_TESTS}")
+  MESSAGE(STATUS "               and pcre2grep)")
   IF(ZLIB_FOUND)
-    MESSAGE(STATUS "  Link pcregrep with libz ......... : ${PCRE_SUPPORT_LIBZ}")
+    MESSAGE(STATUS "  Link pcre2grep with libz ........ : ${PCRE2_SUPPORT_LIBZ}")
   ELSE(ZLIB_FOUND)
-    MESSAGE(STATUS "  Link pcregrep with libz ......... : Library not found" )
+    MESSAGE(STATUS "  Link pcre2grep with libz ........ : Library not found" )
   ENDIF(ZLIB_FOUND)
   IF(BZIP2_FOUND)
-    MESSAGE(STATUS "  Link pcregrep with libbz2 ....... : ${PCRE_SUPPORT_LIBBZ2}")
+    MESSAGE(STATUS "  Link pcre2grep with libbz2 ...... : ${PCRE2_SUPPORT_LIBBZ2}")
   ELSE(BZIP2_FOUND)
-    MESSAGE(STATUS "  Link pcregrep with libbz2 ....... : Library not found" )
+    MESSAGE(STATUS "  Link pcre2grep with libbz2 ...... : Library not found" )
   ENDIF(BZIP2_FOUND)
   IF(EDITLINE_FOUND)
-    MESSAGE(STATUS "  Link pcretest with libeditline .. : ${PCRE_SUPPORT_LIBEDIT}")
+    MESSAGE(STATUS "  Link pcre2test with libeditline . : ${PCRE2_SUPPORT_LIBEDIT}")
   ELSE(EDITLINE_FOUND)
-    MESSAGE(STATUS "  Link pcretest with libeditline .. : Library not found" )
+    MESSAGE(STATUS "  Link pcre2test with libeditline . : Library not found" )
   ENDIF(EDITLINE_FOUND)
   IF(READLINE_FOUND)
-    MESSAGE(STATUS "  Link pcretest with libreadline .. : ${PCRE_SUPPORT_LIBREADLINE}")
+    MESSAGE(STATUS "  Link pcre2test with libreadline . : ${PCRE2_SUPPORT_LIBREADLINE}")
   ELSE(READLINE_FOUND)
-    MESSAGE(STATUS "  Link pcretest with libreadline .. : Library not found" )
+    MESSAGE(STATUS "  Link pcre2test with libreadline . : Library not found" )
   ENDIF(READLINE_FOUND)
-  MESSAGE(STATUS "  Support Valgrind .................: ${PCRE_SUPPORT_VALGRIND}")
-  MESSAGE(STATUS "  Support coverage .................: ${PCRE_SUPPORT_COVERAGE}")
+  MESSAGE(STATUS "  Support Valgrind .................: ${PCRE2_SUPPORT_VALGRIND}")
+  IF(PCRE2_DISABLE_PERCENT_ZT)
+    MESSAGE(STATUS "  Use %zu and %td ..................: OFF" )
+  ELSE(PCRE2_DISABLE_PERCENT_ZT)
+    MESSAGE(STATUS "  Use %zu and %td ..................: AUTO" )
+  ENDIF(PCRE2_DISABLE_PERCENT_ZT)
 
-  IF(MINGW AND NOT PCRE_STATIC)
+  IF(MINGW AND NOT PCRE2_STATIC)
     MESSAGE(STATUS "  Non-standard dll names (prefix) . : ${NON_STANDARD_LIB_PREFIX}")
     MESSAGE(STATUS "  Non-standard dll names (suffix) . : ${NON_STANDARD_LIB_SUFFIX}")
-  ENDIF(MINGW AND NOT PCRE_STATIC)
+  ENDIF(MINGW AND NOT PCRE2_STATIC)
 
   IF(MSVC)
     MESSAGE(STATUS "  Install MSVC .pdb files ..........: ${INSTALL_MSVC_PDB}")
   ENDIF(MSVC)
 
   MESSAGE(STATUS "")
-ENDIF(PCRE_SHOW_REPORT)
+ENDIF(PCRE2_SHOW_REPORT)
 
 # end CMakeLists.txt

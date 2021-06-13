@@ -1,26 +1,16 @@
-/-- Tests for reloading pre-compiled patterns. The first one gives an error
-right away, and can be any old pattern compiled in 8-bit mode ("abc" is
-typical). The others require the link size to be 2. */x
+# These are tests of \C that do not involve UTF. They are not run when \C is
+# disabled by compiling with --enable-never-backslash-C.
 
-<!testsaved8
+/\C+\D \C+\d \C+\S \C+\s \C+\W \C+\w \C+. \C+\R \C+\H \C+\h \C+\V \C+\v \C+\Z \C+\z \C+$/Bx
 
-%-- Generated from: 
-    /^[aL](?P<name>(?:[AaLl]+)[^xX-]*?)(?P<other>[\x{150}-\x{250}\x{300}]|
-      [^\x{800}aAs-uS-U\x{d800}-\x{dfff}])++[^#\b\x{500}\x{1000}]{3,5}$
-      /x
+/\D+\C \d+\C \S+\C \s+\C \W+\C \w+\C .+\C \R+\C \H+\C \h+\C \V+\C \v+\C a+\C \n+\C \C+\C/Bx
 
-    In 16-bit mode with options:  S>testdata/saved16LE-1
-                                 FS>testdata/saved16BE-1
-    In 32-bit mode with options:  S>testdata/saved32LE-1
-                                 FS>testdata/saved32BE-1
---%x
+/ab\Cde/never_backslash_c
 
-<!testsaved16LE-1
+/ab\Cde/info
+    abXde
+    
+/(?<=ab\Cde)X/
+    abZdeX
 
-<!testsaved16BE-1
-
-<!testsaved32LE-1
-
-<!testsaved32BE-1
-
-/-- End of testinput21 --/
+# End of testinput21

@@ -25,8 +25,10 @@
 #ifndef REGEXP_H
 #define REGEXP_H
 
+#define PCRE2_CODE_UNIT_WIDTH 8
+
 #include <string>
-#include <pcre.h>
+#include <pcre2.h>
 
 class RegExp {
  public:
@@ -38,7 +40,7 @@ class RegExp {
   bool Test(const std::string &string) const;
 
  private:
-  pcre *pcre_;
+  pcre2_code *re_;
 };
 
 #endif // !REGEXP_H

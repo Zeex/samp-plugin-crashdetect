@@ -1,6 +1,6 @@
 #! /usr/bin/perl
 
-# A script to scan PCRE's man pages to check for typos in the control
+# A script to scan PCRE2's man pages to check for typos in the control
 # sequences. I use only a small set of the available repertoire, so it is 
 # straightforward to check that nothing else has slipped in by mistake. This
 # script should be called in the doc directory.
@@ -16,6 +16,7 @@ while (scalar(@ARGV) > 0)
   
   while (<IN>)
     {  
+    $count = 0;
     $line++; 
     if (/^\s*$/)
       {
@@ -50,14 +51,24 @@ while (scalar(@ARGV) > 0)
         $yield = 1;
         }
       }
-    else
+    elsif (/\\[^ef]|\\f[^IBP]/)
       {
-      if (/\\[^ef]|\\f[^IBP]/)
-        {
-        printf "Bad backslash in line $line of $file\n";  
-        $yield = 1; 
-        } 
-      }   
+      printf "Bad backslash in line $line of $file\n";
+      $yield = 1;
+      }
+    while (/\\f[BI]/g)
+      {
+      $count++;
+      }
+    while (/\\fP/g)
+      {
+      $count--;
+      }
+    if ($count != 0)
+      {
+      printf "Mismatching formatting in line $line of $file\n";
+      $yield = 1;
+      }
     }
      
   close(IN);   
