@@ -69,7 +69,8 @@ Options::~Options() {
   delete trace_filter_;
 }
 
-const Options &Options::global_options() {
-  static Options options;
-  return options;
+// static
+Options &Options::shared() {
+  static Options instance;
+  return instance;
 }

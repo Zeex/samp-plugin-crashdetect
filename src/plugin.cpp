@@ -23,19 +23,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <functional>
-#include <sstream>
 #include <string>
-#include <subhook.h>
 #ifdef _WIN32
   #include <windows.h>
 #else
   #include <stdio.h>
 #endif
+#include <subhook.h>
 #include "amxpathfinder.h"
 #include "crashdetect.h"
 #include "fileutils.h"
 #include "logprintf.h"
 #include "natives.h"
+#include "options.h"
 #include "os.h"
 #include "plugincommon.h"
 #include "pluginversion.h"
@@ -43,27 +43,13 @@
 
 namespace {
 
-//
-// We hook amx_Exec() to intercept calls to AMX entry points (public functions).
-// It's installed at plugin load time.
-//
-subhook::Hook amx_exec_hook;
+std::vector<std::function<void()>> unload_callbacks;
 
-//
-// Path to the last loaded AMX file. This is used to make a connection between
-// *.amx files and their corresponding AMX instances.
-//
-std::string last_amx_path;
-
-//
-// Stores paths to loaded AMX files and is able to find a path by a pointer to
-// an AMX instance.
-//
-AMXPathFinder amx_path_finder;
+subhook::Hook exec_hook;
+subhook::Hook open_file_hook;
+std::string last_opened_amx_file_name;
 
 #ifdef _WIN32
-  subhook::Hook create_file_hook;
-
   HANDLE WINAPI CreateFileAHook(
     LPCSTR lpFileName,
     DWORD dwDesiredAccess,
@@ -73,10 +59,10 @@ AMXPathFinder amx_path_finder;
     DWORD dwFlagsAndAttributes,
     HANDLE hTemplateFile)
   {
-    subhook::ScopedHookRemove _(&create_file_hook);
+    subhook::ScopedHookRemove _(&open_file_hook);
     const char *ext = fileutils::GetFileExtensionPtr(lpFileName);
     if (ext != nullptr && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
-      last_amx_path = lpFileName;
+      last_opened_amx_file_name = lpFileName;
     }
     return CreateFileA(
       lpFileName,
@@ -88,28 +74,26 @@ AMXPathFinder amx_path_finder;
       hTemplateFile);
   }
 #else
-  subhook::Hook fopen_hook;
-
   FILE *FopenHook(const char *filename, const char *mode) {
-    subhook::ScopedHookRemove _(&fopen_hook);
+    subhook::ScopedHookRemove _(&open_file_hook);
     const char *ext = fileutils::GetFileExtensionPtr(filename);
     if (ext != nullptr && stringutils::CompareIgnoreCase(ext, "amx") == 0) {
-      last_amx_path = filename;
+      last_opened_amx_file_name = filename;
     }
     return fopen(filename, mode);
   }
 #endif
 
-int AMXAPI ProcessDebugHook(AMX *amx) {
-  return CrashDetect::GetHandler(amx)->ProcessDebugHook();
+int AMXAPI OnDebugHook(AMX *amx) {
+  return CrashDetect::GetHandler(amx)->OnDebugHook();
 }
 
-int AMXAPI ProcessCallback(AMX *amx, cell index, cell *result, cell *params) {
+int AMXAPI OnCallback(AMX *amx, cell index, cell *result, cell *params) {
   CrashDetect *handler = CrashDetect::GetHandler(amx);
-  return handler->ProcessCallback(index, result, params);
+  return handler->OnCallback(index, result, params);
 }
 
-int AMXAPI ProcessExec(AMX *amx, cell *retval, int index) {
+int AMXAPI OnExec(AMX *amx, cell *retval, int index) {
   if (amx->flags & AMX_FLAG_BROWSE) {
     return amx_Exec(amx, retval, index);
   }
@@ -117,12 +101,17 @@ int AMXAPI ProcessExec(AMX *amx, cell *retval, int index) {
   if (handler == nullptr) {
     return amx_Exec(amx, retval, index);
   }
-  return handler->ProcessExec(retval, index);
+  return handler->OnExec(retval, index);
 }
 
-void AMXAPI ProcessExecError(AMX *amx, cell index, cell *retval, int error) {
+int AMXAPI OnExecError(AMX *amx, cell index, cell *retval, int error) {
   CrashDetect *handler = CrashDetect::GetHandler(amx);
-  handler->ProcessExecError(index, retval, error);
+  return handler->OnExecError(index, retval, error);
+}
+
+int AMXAPI OnLongCallRequest(AMX *amx, int option, int value) {
+  CrashDetect *handler = CrashDetect::GetHandler(amx);
+  return handler->OnLongCallRequest(option, value);
 }
 
 } // anonymous namespace
@@ -139,7 +128,10 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   void *amx_Exec_sub = subhook::ReadHookDst(amx_Exec_ptr);
 
   if (amx_Exec_sub == nullptr) {
-    amx_exec_hook.Install(amx_Exec_ptr, (void*)ProcessExec);
+    exec_hook.Install(amx_Exec_ptr, (void*)OnExec);
+    unload_callbacks.push_back([]() {
+      exec_hook.Remove();
+    });
   } else {
     std::string module =
       fileutils::GetFileName(os::GetModuleName(amx_Exec_sub));
@@ -150,13 +142,16 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
   }
 
   #if _WIN32
-    create_file_hook.Install((void*)CreateFileA, (void*)CreateFileAHook);
+    open_file_hook.Install((void*)CreateFileA, (void*)CreateFileAHook);
   #else
-    fopen_hook.Install((void*)fopen, (void*)FopenHook);
+    open_file_hook.Install((void*)fopen, (void*)FopenHook);
   #endif
+  unload_callbacks.push_back([]() {
+    open_file_hook.Remove();
+  });
 
-  amx_path_finder.AddSearchPath("gamemodes");
-  amx_path_finder.AddSearchPath("filterscripts");
+  AMXPathFinder::shared().AddSearchPath("gamemodes");
+  AMXPathFinder::shared().AddSearchPath("filterscripts");
 
   const char *amx_path_var = getenv("AMX_PATH");
   if (amx_path_var != nullptr) {
@@ -164,7 +159,7 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
       amx_path_var,
       fileutils::kNativePathListSepChar,
       std::bind1st(std::mem_fun(&AMXPathFinder::AddSearchPath),
-                   &amx_path_finder));
+                   &AMXPathFinder::shared()));
   }
 
   os::SetCrashHandler(CrashDetect::OnCrash);
@@ -177,20 +172,28 @@ PLUGIN_EXPORT bool PLUGIN_CALL Load(void **ppData) {
 
 PLUGIN_EXPORT void PLUGIN_CALL Unload() {
   CrashDetect::PluginUnload();
+
+  for (auto &callback : unload_callbacks) {
+    callback();
+  }
 }
 
 PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
-  if (!last_amx_path.empty()) {
-    amx_path_finder.AddKnownFile(amx, last_amx_path);
+  if (!last_opened_amx_file_name.empty()) {
+    AMXPathFinder::shared().AddKnownFile(amx, last_opened_amx_file_name);
   }
 
   CrashDetect *handler = CrashDetect::CreateHandler(amx);
-  handler->set_amx_path_finder(&amx_path_finder);
   handler->Load();
 
-  amx_SetDebugHook(amx, ProcessDebugHook);
-  amx_SetCallback(amx, ProcessCallback);
-  amx_SetExecErrorHandler(amx, ProcessExecError);
+  amx_SetDebugHook(amx, OnDebugHook);
+  amx_SetCallback(amx, OnCallback);
+
+  static AMX_EXT_HOOKS ext_hooks = {
+    OnExecError,
+    OnLongCallRequest
+  };
+  amx_SetExtHooks(amx, &ext_hooks);
 
   RegisterNatives(amx);
   return AMX_ERR_NONE;

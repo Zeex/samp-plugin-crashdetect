@@ -30,6 +30,7 @@
  * - LREF.S.* and SREF.S.* instructions sync STK and FRM before dereferencing
  *   the pointer (because of possible crash)
  * - LCTRL 0xFF always sets PRI to 1
+ * - Long call detection
  */
 
 #if BUILD_PLATFORM == WINDOWS && BUILD_TYPE == RELEASE && BUILD_COMPILER == MSVC && PAWN_CELL_SIZE == 64
@@ -73,27 +74,27 @@
   #include <windows.h>
 #endif
 
-void SetLongCallTime(unsigned int time);
-unsigned int LongCallOption(int option);
-void CheckLongCallTime(void);
-
-// CheckLongCallTime uses the values in `amx`, but while we're in `Exec` they aren't accurate.
-#define CHECK_LONG_CALL_TIME() \
-  do {                                                      \
-    static unsigned int long_call_delay_ = 5000;            \
-    if (--long_call_delay_ == 0) {                          \
-      cell tmp_frm = amx->frm;                              \
-      cell tmp_hea = amx->hea;                              \
-      cell tmp_stk = amx->stk;                              \
-      amx->frm = frm;                                       \
-      amx->hea = hea;                                       \
-      amx->stk = stk;                                       \
-      CheckLongCallTime();                                  \
-      long_call_delay_ = 5000;                              \
-      amx->frm = tmp_frm;                                   \
-      amx->hea = tmp_hea;                                   \
-      amx->stk = tmp_stk;                                   \
-    }                                                       \
+/* CheckLongCallTime uses the values in `amx`, but while we're in `Exec`
+ * they aren't accurate.
+ */
+#define CHECK_LONG_CALL_TIME()                \
+  do {                                        \
+    if (long_call_ctl==NULL)                  \
+      break;                                  \
+    static unsigned int long_call_delay=5000; \
+    if (--long_call_delay==0) {               \
+      cell tmp_frm=amx->frm;                  \
+      cell tmp_hea=amx->hea;                  \
+      cell tmp_stk=amx->stk;                  \
+      amx->frm=frm;                           \
+      amx->hea=hea;                           \
+      amx->stk=stk;                           \
+      long_call_ctl(amx,AMX_LCT_CHECK,0);     \
+      long_call_delay=5000;                   \
+      amx->frm=tmp_frm;                       \
+      amx->hea=tmp_hea;                       \
+      amx->stk=tmp_stk;                       \
+    }                                         \
   } while (0)
 
 /* When one or more of the AMX_funcname macris are defined, we want
@@ -1686,44 +1687,51 @@ int AMXAPI amx_PushString(AMX *amx, cell *amx_addr, cell **phys_addr, const char
   return err;
 }
 
-int AMXAPI amx_RaiseExecError(AMX *amx, cell index, cell *retval, int error) {
+#if defined AMX_XXXUSERDATA
+int AMXAPI amx_RaiseExecError(AMX *amx, cell index, cell *retval, int error)
+{
+  AMX_EXT_HOOKS *ext_hooks;
   AMX_EXEC_ERROR handler;
 
   assert(amx!=NULL);
 
-  if (amx_GetExecErrorHandler(amx, &handler)==AMX_ERR_NONE) {
-    handler(amx, index, retval, error);
-    return AMX_ERR_NONE;
-  }
-  return AMX_ERR_NOTFOUND;
+  if (amx_GetExtHooks(amx,&ext_hooks)!=AMX_ERR_NONE)
+    return AMX_ERR_NOTFOUND;
+  handler=ext_hooks->exec_error;
+  if (handler==NULL)
+    return AMX_ERR_NOTFOUND;
+  handler(amx,index,retval,error);
+  return AMX_ERR_NONE;
 }
 
-int AMXAPI amx_GetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR *handler) {
+int AMXAPI amx_GetExtHooks(AMX *amx, AMX_EXT_HOOKS **ext_hooks)
+{
   assert(amx!=NULL);
-  assert(handler!=NULL);
+  assert(ext_hooks!=NULL);
 
-  return amx_GetUserData(amx, AMX_USERTAG('e', 'e', 'h', 'r'), (void **)handler);
+  return amx_GetUserData(amx,AMX_USERTAG('c','d','e','h'),ext_hooks);
 }
 
-int AMXAPI amx_SetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR handler) {
+int AMXAPI amx_SetExtHooks(AMX *amx, AMX_EXT_HOOKS *ext_hooks)
+{
   assert(amx!=NULL);
-  assert(handler!=NULL);
+  assert(ext_hooks!=NULL);
 
-  return amx_SetUserData(amx, AMX_USERTAG('e', 'e', 'h', 'r'), (void *)handler);
+  return amx_SetUserData(amx,AMX_USERTAG('c','d','e','h'),ext_hooks);
 }
-
+#endif /* AMX_XXXUSERDATA */
 
 #define GETPARAM(v)     ( v=*(cell *)cip++ )
 #define SKIPPARAM(n)    ( cip=(cell *)cip+(n) )
 #define PUSH(v)         ( stk-=sizeof(cell), *(cell *)(data+(int)stk)=v )
 #define POP(v)          ( v=*(cell *)(data+(int)stk), stk+=sizeof(cell) )
-#define ABORT(amx,v)    { (amx)->pri = pri;\
-                          (amx)->stk = stk;\
-                          (amx)->hea = hea;\
-                          (amx)->frm = frm;\
-                          amx_RaiseExecError(amx, index, retval, v);\
-                          (amx)->stk=reset_stk;\
-                          (amx)->hea=reset_hea;\
+#define ABORT(amx,v)    { (amx)->pri = pri;                          \
+                          (amx)->stk = stk;                          \
+                          (amx)->hea = hea;                          \
+                          (amx)->frm = frm;                          \
+                          amx_RaiseExecError(amx, index, retval, v); \
+                          (amx)->stk=reset_stk;                      \
+                          (amx)->hea=reset_hea;                      \
                           return v; }
 
 #define CHKMARGIN()     if (hea+STKMARGIN>stk) ABORT(amx, AMX_ERR_STACKERR)
@@ -1783,6 +1791,8 @@ static const void * const amx_opcodelist[] = {
   cell offs;
   ucell codesize;
   int num,i;
+  AMX_EXT_HOOKS *ext_hooks=NULL;
+  AMX_LCT_CTL long_call_ctl=NULL;
 
   /* HACK: return label table (for amx_BrowseRelocate) if amx structure
    * has the AMX_FLAG_BROWSE flag set.
@@ -1871,6 +1881,11 @@ static const void * const amx_opcodelist[] = {
   } /* if */
   /* check stack/heap before starting to run */
   CHKMARGIN();
+
+  /* initialize long_call_ctl */
+  amx_GetExtHooks(amx,&ext_hooks);
+  if (ext_hooks!=NULL)
+    long_call_ctl=ext_hooks->long_call_ctl;
 
   /* start running */
   NEXT(cip);
@@ -2070,10 +2085,12 @@ static const void * const amx_opcodelist[] = {
       pri=(cell)((unsigned char *)cip - code);
       break;
     case 0xFE:
-      pri=LongCallOption(0);
+      if (long_call_ctl != NULL)
+        pri = long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_CURRENT);
       break;
     case 0xFF:
-      pri=1|(LongCallOption(2)<<1);
+      if (long_call_ctl != NULL)
+        pri = 1 | (long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_ACTIVE) << 1);
       break;
     } /* switch */
     NEXT(cip);
@@ -2099,21 +2116,25 @@ static const void * const amx_opcodelist[] = {
       break;
     case 0xFE:
       /* set long_call_time */
-      if (pri)
-        SetLongCallTime((unsigned int)pri);
-      else
-        LongCallOption(4);
+      if (long_call_ctl != NULL) {
+        if (pri)
+          long_call_ctl(amx, AMX_LCT_SET_TIME, pri);
+        else
+          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_DISABLE);
+      } /* if */
       break;
     case 0xFF:
-      if (pri&2)
-        /* enable long_call_time check */
-        LongCallOption(5);
-      if (pri&4)
-        /* reset long_call_time */
-        LongCallOption(6);
-      if (pri&8)
-        /* restart long_call_time check */
-        LongCallOption(3);
+      if (long_call_ctl != NULL) {
+        if (pri & 2)
+          /* enable long_call_time check */
+          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_ENABLE);
+        if (pri & 4)
+          /* reset long_call_time */
+          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_RESET);
+        if (pri & 8)
+          /* restart long_call_time check */
+          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_RESTART);
+      } /* if */
       break;
     } /* switch */
     NEXT(cip);
@@ -2728,6 +2749,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       #pragma aux amx_opcodelist_jit "_*"
     #endif
   #endif
+  AMX_EXT_HOOKS *ext_hooks=NULL;
+  AMX_LCT_CTL long_call_ctl=NULL;
 
   assert(amx!=NULL);
   #if defined ASM32 || defined JIT
@@ -2830,6 +2853,11 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   } /* if */
   /* check stack/heap before starting to run */
   CHKMARGIN();
+
+  /* initialize long_call_ctl */
+  amx_GetExtHooks(amx,&ext_hooks);
+  if (ext_hooks!=NULL)
+    long_call_ctl=ext_hooks->long_call_ctl;
 
   /* start running */
 #if defined ASM32 || defined JIT
@@ -3076,10 +3104,12 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         pri=(cell)((unsigned char *)cip - code);
         break;
       case 0xFE:
-        pri=LongCallOption(0);
+        if (long_call_ctl!=NULL)
+          pri=long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_CURRENT);
         break;
       case 0xFF:
-        pri=1|(LongCallOption(2)<<1);
+        if (long_call_ctl != NULL)
+          pri=1|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1);
         break;
       } /* switch */
       break;
@@ -3103,23 +3133,28 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       case 6:
         cip=(cell *)(code + (int)pri);
         break;
-      case 0xFE:
+      case 0xFE: {
         /* set long_call_time */
-        if (pri)
-          SetLongCallTime((unsigned int)pri);
-        else
-          LongCallOption(4);
+        if (long_call_ctl!=NULL) {
+          if (pri)
+            long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
+          else
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
+        } /* if */
         break;
+      }
       case 0xFF:
-        if (pri&2)
-          /* enable long_call_time check */
-          LongCallOption(5);
-        if (pri&4)
-          /* reset long_call_time */
-          LongCallOption(6);
-        if (pri&8)
-          /* restart long_call_time check */
-          LongCallOption(3);
+        if (long_call_ctl!=NULL) {
+          if (pri&2)
+            /* enable long_call_time check */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
+          if (pri&4)
+            /* reset long_call_time */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
+          if (pri&8)
+            /* restart long_call_time check */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+        } /* if */
         break;
       } /* switch */
       break;

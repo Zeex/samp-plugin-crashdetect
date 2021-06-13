@@ -120,3 +120,10 @@ std::string AMXPathFinder::Find(AMX *amx) {
 
   return result;
 }
+
+// static
+AMXPathFinder &AMXPathFinder::shared() {
+  static AMXPathFinder instance;
+  return instance;
+}
+

@@ -23,6 +23,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <cassert>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
@@ -50,9 +51,6 @@
 
 namespace {
 
-using std::chrono::high_resolution_clock;
-using std::chrono::microseconds;
-
 template<typename Printer>
 class PrintLine: public std::unary_function<const std::string &, void> {
  public:
@@ -74,16 +72,15 @@ void PrintStream(Printer printer, const std::stringstream &stream) {
 } // anonymous namespace
 
 AMXCallStack CrashDetect::call_stack_;
-bool CrashDetect::running_;
 
-unsigned int CrashDetect::long_call_time_original_;
-microseconds CrashDetect::long_call_time_current_;
-high_resolution_clock::time_point CrashDetect::long_call_time_next_;
+unsigned int CrashDetect::long_call_time_;
+std::chrono::microseconds CrashDetect::long_call_time_current_;
+std::chrono::high_resolution_clock::time_point CrashDetect::long_call_time_next_;
+bool CrashDetect::long_call_time_running_;
 
 CrashDetect::CrashDetect(AMX *amx)
   : AMXHandler<CrashDetect>(amx),
     amx_(amx),
-    amx_path_finder_(nullptr),
     prev_debug_(nullptr),
     prev_callback_(nullptr),
     last_frame_(amx->stp),
@@ -92,67 +89,18 @@ CrashDetect::CrashDetect(AMX *amx)
 }
 
 void CrashDetect::PluginLoad() {
-  long_call_time_original_ = Options::global_options().long_call_time();
-  long_call_time_current_ = microseconds(long_call_time_original_);
-  long_call_time_next_ = high_resolution_clock::time_point::max();
-  running_ = long_call_time_original_ != 0;
+  long_call_time_ = Options::shared().long_call_time();
+  long_call_time_current_ = std::chrono::microseconds(long_call_time_);
+  long_call_time_next_ = std::chrono::high_resolution_clock::time_point::max();
+  long_call_time_running_ = long_call_time_ != 0;
 }
 
 void CrashDetect::PluginUnload() {
-  running_ = false;
-}
-
-unsigned int LongCallOption(int option) {
-  switch (option) {
-    case 0:
-      // Current time.
-      return (unsigned int)CrashDetect::long_call_time_current_.count();
-    //case 1:
-    //  // Original time.
-    //  return CrashDetect::long_call_time_original_;
-    case 2:
-      // Is active?
-      return CrashDetect::running_;
-    case 3:
-      // Reset start time.
-      CrashDetect::long_call_time_next_ =
-          high_resolution_clock::now() + CrashDetect::long_call_time_current_;
-      break;
-    case 4:
-      // Disable.
-      CrashDetect::running_ = false;
-      break;
-    case 5:
-      // Enable.
-      CrashDetect::running_ = CrashDetect::long_call_time_original_ != 0;
-      break;
-    case 6:
-      // Reset.
-      SetLongCallTime(CrashDetect::long_call_time_original_);
-      break;
-    }
-  return 0;
-}
-
-void SetLongCallTime(unsigned int time) {
-  CrashDetect::long_call_time_current_ = microseconds(time);
-}
-
-void CheckLongCallTime(void) {
-  if (!CrashDetect::running_) {
-    return;
-  }
-  if (CrashDetect::long_call_time_next_ < high_resolution_clock::now()) {
-    // Disable repeat stack dumps by setting this WAY in the future.
-    CrashDetect::long_call_time_next_ =
-        high_resolution_clock::time_point::max();
-    LogDebugPrint("Long callback execution detected (hang or performance issue)");
-    CrashDetect::PrintAMXBacktrace();
-  }
+  long_call_time_running_ = false;
 }
 
 int CrashDetect::Load() {
-  amx_path_ = amx_path_finder_->Find(amx());
+  amx_path_ = AMXPathFinder::shared().Find(amx());
   if (!amx_path_.empty()) {
     if (AMXDebugInfo::IsPresent(amx())) {
       debug_info_.Load(amx_path_);
@@ -176,9 +124,9 @@ int CrashDetect::Unload() {
   return AMX_ERR_NONE;
 }
 
-int CrashDetect::ProcessDebugHook() {
+int CrashDetect::OnDebugHook() {
   if (amx_.GetFrm() < last_frame_
-      && (Options::global_options().trace_flags() & TRACE_FUNCTIONS)
+      && (Options::shared().trace_flags() & TRACE_FUNCTIONS)
       && debug_info_.IsLoaded()) {
     AMXStackTrace trace = GetAMXStackTrace(
       amx_,
@@ -193,15 +141,15 @@ int CrashDetect::ProcessDebugHook() {
   return prev_debug_ != nullptr ? prev_debug_(amx_) : AMX_ERR_NONE;
 }
 
-int CrashDetect::ProcessCallback(cell index, cell *result, cell *params) {
+int CrashDetect::OnCallback(cell index, cell *result, cell *params) {
   Push(AMXCall::Native(amx_, index));
 
-  if (Options::global_options().trace_flags() & TRACE_NATIVES) {
+  if (Options::shared().trace_flags() & TRACE_NATIVES) {
     std::stringstream stream;
     const char *name = amx_.GetNativeName(index);
     stream << "native " << (name != nullptr ? name : "<unknown>") << " ()";
-    if (Options::global_options().trace_filter() == nullptr
-        || Options::global_options().trace_filter()->Test(stream.str())) {
+    if (Options::shared().trace_filter() == nullptr
+        || Options::shared().trace_filter()->Test(stream.str())) {
       PrintStream(LogTracePrint, stream);
     }
   }
@@ -212,13 +160,13 @@ int CrashDetect::ProcessCallback(cell index, cell *result, cell *params) {
   return error;
 }
 
-int CrashDetect::ProcessExec(cell *retval, int index) {
+int CrashDetect::OnExec(cell *retval, int index) {
   Push(AMXCall::Public(amx_, index));
 
-  if (Options::global_options().trace_flags() & TRACE_FUNCTIONS) {
+  if (Options::shared().trace_flags() & TRACE_FUNCTIONS) {
     last_frame_ = 0;
   }
-  if (Options::global_options().trace_flags() & TRACE_PUBLICS) {
+  if (Options::shared().trace_flags() & TRACE_PUBLICS) {
     if (cell address = amx_.GetPublicAddress(index)) {
       AMXStackTrace trace = GetAMXStackTrace(
         amx_,
@@ -249,16 +197,16 @@ int CrashDetect::ProcessExec(cell *retval, int index) {
       || error == AMX_ERR_SLEEP) {
     // For these types of errors amx_Error() is not called because of
     // early return from amx_Exec().
-    ProcessExecError(index, retval, error);
+    OnExecError(index, retval, error);
   }
 
   Pop();
   return error;
 }
 
-void CrashDetect::ProcessExecError(int index, cell *retval, int error) {
+int CrashDetect::OnExecError(int index, cell *retval, int error) {
   if (block_exec_errors_) {
-    return;
+    return AMX_ERR_NONE;
   }
 
   // The following error codes should not be treated as errors:
@@ -269,13 +217,13 @@ void CrashDetect::ProcessExecError(int index, cell *retval, int error) {
   // 2. AMX_ERR_SLEEP is returned when the VM is put into sleep mode. The
   //    execution can be later continued using AMX_EXEC_CONT.
   if (error == AMX_ERR_NONE || error == AMX_ERR_SLEEP) {
-    return;
+    return AMX_ERR_NONE;
   }
 
   // For compatibility with sampgdk.
   if (error == AMX_ERR_INDEX && (index == AMX_EXEC_GDK ||
                                  index <= AMX_EXEC_GDK_42)) {
-    return;
+    return AMX_ERR_NONE;
   }
 
   // Block errors while calling OnRuntimeError as it may result in yet
@@ -303,7 +251,7 @@ void CrashDetect::ProcessExecError(int index, cell *retval, int error) {
       cell suppress_addr, *suppress_ptr;
       amx_PushArray(amx_, &suppress_addr, &suppress_ptr, &suppress, 1);
       amx_Push(amx_, error);
-      ProcessExec(retval, callback_index);
+      OnExec(retval, callback_index);
       amx_Release(amx_, suppress_addr);
       suppress = *suppress_ptr;
     }
@@ -320,6 +268,23 @@ void CrashDetect::ProcessExecError(int index, cell *retval, int error) {
   }
 
   block_exec_errors_ = false;
+  return AMX_ERR_NONE;
+}
+
+int CrashDetect::OnLongCallRequest(int option, int value) {
+  if (long_call_time_ != 0) {
+    switch (option) {
+      case AMX_LCT_OPTION:
+        return LongCallOption(value);
+      case AMX_LCT_SET_TIME:
+        SetLongCallTime(static_cast<unsigned int>(value));
+        break;
+      case AMX_LCT_CHECK:
+        CheckLongCallTime();
+        break;
+    }
+  }
+  return AMX_ERR_NONE;
 }
 
 // static
@@ -363,8 +328,8 @@ void CrashDetect::PrintTraceFrame(const AMXStackFrame &frame,
   std::stringstream stream;
   AMXStackFramePrinter printer(stream, debug_info);
   printer.PrintCallerNameAndArguments(frame);
-  if (Options::global_options().trace_filter() == nullptr
-      || Options::global_options().trace_filter()->Test(stream.str())) {
+  if (Options::shared().trace_filter() == nullptr
+      || Options::shared().trace_filter()->Test(stream.str())) {
     PrintStream(LogTracePrint, stream);
   }
 }
@@ -573,7 +538,7 @@ void CrashDetect::PrintLoadedModules() {
 void CrashDetect::Push(AMXCall call) {
   if (call_stack_.IsEmpty()) {
     long_call_time_next_ =
-        high_resolution_clock::now() + long_call_time_current_;
+        std::chrono::high_resolution_clock::now() + long_call_time_current_;
   }
   call_stack_.Push(call);
 }
@@ -582,7 +547,8 @@ void CrashDetect::Push(AMXCall call) {
 AMXCall CrashDetect::Pop() {
   AMXCall call = call_stack_.Pop();
   if (call_stack_.IsEmpty()) {
-    long_call_time_next_ = high_resolution_clock::time_point::max();
+    long_call_time_next_ =
+        std::chrono::high_resolution_clock::time_point::max();
   }
   return call;
 }
@@ -615,5 +581,50 @@ void CrashDetect::PrintNativeBacktrace(std::ostream &stream,
         stream << " in " << fileutils::GetRelativePath(module);
       }
     }
+  }
+}
+
+// static
+void CrashDetect::SetLongCallTime(unsigned int time) {
+  long_call_time_current_ = std::chrono::microseconds(time);
+}
+
+// static
+unsigned int CrashDetect::LongCallOption(int option) {
+  switch (option) {
+    case AMX_LCT_OPTION_CURRENT:
+      return static_cast<unsigned int>(long_call_time_current_.count());
+    // case AMX_LCT_OPTION_ORIGINAL:
+    //   return CrashDetect::long_call_time_;
+    case AMX_LCT_OPTION_ACTIVE:
+      return long_call_time_running_;
+    case AMX_LCT_OPTION_RESTART:
+      long_call_time_next_ =
+          std::chrono::high_resolution_clock::now() + long_call_time_current_;
+      break;
+    case AMX_LCT_OPTION_DISABLE:
+      long_call_time_running_ = false;
+      break;
+    case AMX_LCT_OPTION_ENABLE:
+      long_call_time_running_ = long_call_time_ != 0;
+      break;
+    case AMX_LCT_OPTION_RESET:
+      SetLongCallTime(long_call_time_);
+      break;
+  }
+  return 0;
+}
+
+// static
+void CrashDetect::CheckLongCallTime(void) {
+  if (!long_call_time_running_) {
+    return;
+  }
+  if (long_call_time_next_ < std::chrono::high_resolution_clock::now()) {
+    // Disable repeat stack dumps by setting this WAY in the future.
+    long_call_time_next_ =
+        std::chrono::high_resolution_clock::time_point::max();
+    LogDebugPrint("Long callback execution detected (hang or performance issue)");
+    PrintAMXBacktrace();
   }
 }

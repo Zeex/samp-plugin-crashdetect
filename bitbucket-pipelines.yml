@@ -1,0 +1,38 @@
+image: atlassian/default-image:latest
+
+pipelines:
+  default:
+    - step:
+        name: Build
+        caches:
+          - downloads
+        artifacts:
+          - crashdetect-*-linux.tar.gz
+        script:
+          - export DOWNLOAD_DIR=/tmp/downloads
+          - export CC=gcc-4.7
+          - export CXX=g++-4.7
+          - export CXXFLAGS=-D_GLIBCXX_USE_NANOSLEEP # for GCC 4.7 and below
+          - export CTEST_OUTPUT_ON_FAILURE=1
+
+          - dpkg --add-architecture i386
+          - apt-get update -qq
+          - apt-get install -y wget libc6:i386 linux-libc-dev:i386 gcc-4.7 gcc-4.7-multilib g++-4.7 g++-4.7-multilib cmake
+          - mkdir -p $DOWNLOAD_DIR
+
+          - wget https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-linux.tar.gz -O $DOWNLOAD_DIR/pawnc.tar.gz
+          - tar -xvf $DOWNLOAD_DIR/pawnc.tar.gz --strip-components=1 -C /usr/local
+          - ldconfig
+
+          - wget https://github.com/Zeex/samp-plugin-runner/archive/refs/tags/v1.3.tar.gz -O $DOWNLOAD_DIR/plugin-runner.tar.gz
+          - tar -xvf $DOWNLOAD_DIR/plugin-runner.tar.gz --strip-components=1 -C $DOWNLOAD_DIR
+          - (cd $DOWNLOAD_DIR/plugin-runner && cmake . && make && make install)
+
+          - cmake . -DCMAKE_BUILD_TYPE=Release
+          - make
+          - make test
+          - make package
+
+definitions:
+  caches:
+    downloads: /tmp/downloads

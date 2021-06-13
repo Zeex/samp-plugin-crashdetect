@@ -35,34 +35,24 @@
 #include "amxref.h"
 #include "regexp.h"
 
-class AMXPathFinder;
 class AMXStackFrame;
 
 namespace os {
   class Context;
 }
 
-extern "C" {
-  void SetLongCallTime(unsigned int time);
-  unsigned int LongCallOption(int option);
-  void CheckLongCallTime(void);
-}
-
 class CrashDetect: public AMXHandler<CrashDetect> {
  public:
   friend class AMXHandler<CrashDetect>; // for accessing private ctor
 
-  void set_amx_path_finder(AMXPathFinder *finder) {
-    amx_path_finder_ = finder;
-  }
-
   int Load();
   int Unload();
 
-  int ProcessDebugHook();
-  int ProcessCallback(cell index, cell *result, cell *params);
-  int ProcessExec(cell *retval, int index);
-  void ProcessExecError(int index, cell *retval, int error);
+  int OnDebugHook();
+  int OnCallback(cell index, cell *result, cell *params);
+  int OnExec(cell *retval, int index);
+  int OnExecError(int index, cell *retval, int error);
+  int OnLongCallRequest(int option, int value);
 
  public:
   static void PluginLoad();
@@ -88,12 +78,15 @@ class CrashDetect: public AMXHandler<CrashDetect> {
   static void Push(AMXCall call);
   static AMXCall Pop();
 
+  static void SetLongCallTime(unsigned int time);
+  static unsigned int LongCallOption(int option);
+  static void CheckLongCallTime(void);
+
  private:
   CrashDetect(AMX *amx);
 
  private:
   AMXRef amx_;
-  AMXPathFinder *amx_path_finder_;
   AMXDebugInfo debug_info_;
   AMX_DEBUG prev_debug_;
   AMX_CALLBACK prev_callback_;
@@ -103,16 +96,11 @@ class CrashDetect: public AMXHandler<CrashDetect> {
   bool block_exec_errors_;
 
  private:
-  static unsigned int long_call_time_original_;
+  static AMXCallStack call_stack_;
+  static unsigned int long_call_time_;
   static std::chrono::microseconds long_call_time_current_;
   static std::chrono::high_resolution_clock::time_point long_call_time_next_;
-  static bool running_;
-  static AMXCallStack call_stack_;
-
- public:
-  friend void ::SetLongCallTime(unsigned int time);
-  friend unsigned int ::LongCallOption(int option);
-  friend void ::CheckLongCallTime(void);
+  static bool long_call_time_running_;
 };
 
 #endif // !CRASHDETECT_H

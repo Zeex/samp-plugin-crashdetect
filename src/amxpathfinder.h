@@ -40,6 +40,8 @@ class AMXPathFinder {
 
   std::string Find(AMX *amx);
 
+  static AMXPathFinder &shared();
+
  private:
   std::list<std::string> search_paths_;
 

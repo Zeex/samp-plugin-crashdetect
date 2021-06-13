@@ -49,7 +49,7 @@ class Options {
   const std::string &log_time_format()
     const { return log_time_format_; }
 
-  static const Options &global_options();
+  static Options &shared();
 
  private:
   Options(const Options &options);

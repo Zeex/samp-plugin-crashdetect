@@ -163,11 +163,15 @@ extern  "C" {
 #define UNLIMITED     (~1u >> 1)
 
 struct tagAMX;
+struct tagAMX_EXT_HOOKS;
+
 typedef cell (AMX_NATIVE_CALL *AMX_NATIVE)(struct tagAMX *amx, cell *params);
 typedef int (AMXAPI *AMX_CALLBACK)(struct tagAMX *amx, cell index,
                                    cell *result, cell *params);
 typedef int (AMXAPI *AMX_DEBUG)(struct tagAMX *amx);
-typedef void (AMXAPI *AMX_EXEC_ERROR)(struct tagAMX *amx, int index, cell *retval, int error);
+typedef int (AMXAPI *AMX_EXEC_ERROR)(struct tagAMX *amx, int index, cell *retval, int error);
+typedef int (AMXAPI *AMX_LCT_CTL)(struct tagAMX *amx, int option, int value);
+
 #if !defined _FAR
   #define _FAR
 #endif
@@ -283,6 +287,15 @@ typedef struct tagAMX_HEADER {
   int32_t nametable     PACKED; /* name table */
 } PACKED AMX_HEADER;
 
+/* The AMX_EXT_HOOKS structure is a custom extension for CrashDetect that lets
+ * the host (e.g. the CrashDetect plugin) to hook into certain AMX execution
+ * events.
+ */
+typedef struct tagAMX_EXT_HOOKS {
+  AMX_EXEC_ERROR exec_error;
+  AMX_LCT_CTL long_call_ctl;
+} PACKED AMX_EXT_HOOKS;
+
 #if PAWN_CELL_SIZE==16
   #define AMX_MAGIC     0xf1e2
 #elif PAWN_CELL_SIZE==32
@@ -341,6 +354,18 @@ enum {
   #define AMX_COMPACTMARGIN 64
 #endif
 
+#define AMX_LCT_OPTION   1
+#define AMX_LCT_SET_TIME 2
+#define AMX_LCT_CHECK    3
+
+#define AMX_LCT_OPTION_CURRENT  0  /* current time */
+#define AMX_LCT_OPTION_ORIGINAL 1  /* original time */
+#define AMX_LCT_OPTION_ACTIVE   2  /* is active? */
+#define AMX_LCT_OPTION_RESTART  3  /* reset start time (restart the counter) */
+#define AMX_LCT_OPTION_DISABLE  4  /* disable */
+#define AMX_LCT_OPTION_ENABLE   5  /* enable */
+#define AMX_LCT_OPTION_RESET    6  /* reset to original time */
+
 /* for native functions that use floating point parameters, the following
  * two macros are convenient for casting a "cell" into a "float" type _without_
  * changing the bit pattern
@@ -382,7 +407,7 @@ int AMXAPI amx_FindPubVar(AMX *amx, const char *varname, cell *amx_addr);
 int AMXAPI amx_FindTagId(AMX *amx, cell tag_id, char *tagname);
 int AMXAPI amx_Flags(AMX *amx,uint16_t *flags);
 int AMXAPI amx_GetAddr(AMX *amx,cell amx_addr,cell **phys_addr);
-int AMXAPI amx_GetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR *handler);
+int AMXAPI amx_GetExtHooks(AMX *amx, AMX_EXT_HOOKS **ext_hook);
 int AMXAPI amx_GetNative(AMX *amx, int index, char *funcname);
 int AMXAPI amx_GetPublic(AMX *amx, int index, char *funcname);
 int AMXAPI amx_GetPubVar(AMX *amx, int index, char *varname, cell *amx_addr);
@@ -407,7 +432,7 @@ int AMXAPI amx_Register(AMX *amx, const AMX_NATIVE_INFO *nativelist, int number)
 int AMXAPI amx_Release(AMX *amx, cell amx_addr);
 int AMXAPI amx_SetCallback(AMX *amx, AMX_CALLBACK callback);
 int AMXAPI amx_SetDebugHook(AMX *amx, AMX_DEBUG debug);
-int AMXAPI amx_SetExecErrorHandler(AMX *amx, AMX_EXEC_ERROR handler);
+int AMXAPI amx_SetExtHooks(AMX *amx, AMX_EXT_HOOKS *ext_hook);
 int AMXAPI amx_SetString(cell *dest, const char *source, int pack, int use_wchar, size_t size);
 int AMXAPI amx_SetUserData(AMX *amx, long tag, void *ptr);
 int AMXAPI amx_StrLen(const cell *cstring, int *length);
