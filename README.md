@@ -7,7 +7,7 @@
 
 CrashDetect helps you debug runtime errors and server crashes. When something
 goes wrong you will get a detailed error message with error description, stack
-trace, and other useful information that will makes it easier to quickly find
+trace, and other useful information that will make it easier to quickly find
 and fix the issue.
 
 Installation
