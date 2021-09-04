@@ -123,14 +123,14 @@ typedef struct tagAMX_DBG_STATE {
 } AMX_DBG_STATE         PACKED;
 
 typedef struct tagAMX_DBG {
-  AMX_DBG_HDR     _FAR *hdr         PACKED; /* points to the AMX_DBG header */
-  AMX_DBG_FILE    _FAR **filetbl    PACKED;
-  AMX_DBG_LINE    _FAR *linetbl     PACKED;
-  AMX_DBG_SYMBOL  _FAR **symboltbl  PACKED;
-  AMX_DBG_TAG     _FAR **tagtbl     PACKED;
+  AMX_DBG_HDR     _FAR *hdr           PACKED; /* points to the AMX_DBG header */
+  AMX_DBG_FILE    _FAR **filetbl      PACKED;
+  AMX_DBG_LINE    _FAR *linetbl       PACKED;
+  AMX_DBG_SYMBOL  _FAR **symboltbl    PACKED;
+  AMX_DBG_TAG     _FAR **tagtbl       PACKED;
   AMX_DBG_MACHINE _FAR **automatontbl PACKED;
-  AMX_DBG_STATE   _FAR **statetbl   PACKED;
-} AMX_DBG                           PACKED;
+  AMX_DBG_STATE   _FAR **statetbl     PACKED;
+} AMX_DBG                             PACKED;
 
 #if !defined iVARIABLE
   #define iVARIABLE  1  /* cell that has an address and that can be fetched directly (lvalue) */
