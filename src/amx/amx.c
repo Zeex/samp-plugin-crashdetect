@@ -2982,18 +2982,26 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       break;
     case OP_STOR_PRI:
       GETPARAM(offs);
+      if (offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_STOR_ALT:
       GETPARAM(offs);
+      if (offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_STOR_S_PRI:
       GETPARAM(offs);
+      if (frm+offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)frm+(int)offs)=pri;
       break;
     case OP_STOR_S_ALT:
       GETPARAM(offs);
+      if (frm+offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)frm+(int)offs)=alt;
       break;
     case OP_SREF_PRI:
@@ -3001,6 +3009,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->stk=stk;
       GETPARAM(offs);
       offs=*(cell *)(data+(int)offs);
+      if (offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_ALT:
@@ -3008,22 +3018,30 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->stk = stk;
       GETPARAM(offs);
       offs=*(cell *)(data+(int)offs);
+      if (offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_SREF_S_PRI:
       GETPARAM(offs);
       offs=*(cell *)(data+(int)frm+(int)offs);
+      if (offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_S_ALT:
       GETPARAM(offs);
       offs=*(cell *)(data+(int)frm+(int)offs);
+      if (offs==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_STOR_I:
       /* verify address */
       if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
+      if (alt==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       *(cell *)(data+(int)alt)=pri;
       break;
     case OP_STRB_I:
@@ -3031,6 +3049,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       /* verify address */
       if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
+      if (alt==0)
+        ABORT(amx,AMX_ERR_USERDATA);
       switch (offs) {
       case 1:
         *(data+(int)alt)=(unsigned char)pri;
