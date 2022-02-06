@@ -1734,6 +1734,8 @@ int AMXAPI amx_SetExtHooks(AMX *amx, AMX_EXT_HOOKS *ext_hooks)
                           (amx)->hea=reset_hea;                      \
                           return v; }
 
+/* throw an error when writing to address naught is disabled */
+#define CHKNAUGHT()     if (address_naught_err!=NULL) ABORT(amx, AMX_ERR_ADDRESS_0)
 #define CHKMARGIN()     if (hea+STKMARGIN>stk) ABORT(amx, AMX_ERR_STACKERR)
 #define CHKSTACK()      if (stk>amx->stp) ABORT(amx, AMX_ERR_STACKLOW)
 #define CHKHEAP()       if (hea<amx->hlw) ABORT(amx, AMX_ERR_HEAPLOW)
@@ -1793,6 +1795,7 @@ static const void * const amx_opcodelist[] = {
   int num,i;
   AMX_EXT_HOOKS *ext_hooks=NULL;
   AMX_LCT_CTL long_call_ctl=NULL;
+  AMX_ADDR_0_ERR address_naught_err=NULL;
 
   /* HACK: return label table (for amx_BrowseRelocate) if amx structure
    * has the AMX_FLAG_BROWSE flag set.
@@ -1886,6 +1889,8 @@ static const void * const amx_opcodelist[] = {
   amx_GetExtHooks(amx,&ext_hooks);
   if (ext_hooks!=NULL)
     long_call_ctl=ext_hooks->long_call_ctl;
+  if (ext_hooks!=NULL)
+    address_naught_err=ext_hooks->address_naught_err;
 
   /* start running */
   NEXT(cip);
@@ -1967,44 +1972,62 @@ static const void * const amx_opcodelist[] = {
     NEXT(cip);
   op_stor_pri:
     GETPARAM(offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_stor_alt:
     GETPARAM(offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_stor_s_pri:
     GETPARAM(offs);
+    if ((int)frm+(int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)frm+(int)offs)=pri;
     NEXT(cip);
   op_stor_s_alt:
     GETPARAM(offs);
+    if ((int)frm+(int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)frm+(int)offs)=alt;
     NEXT(cip);
   op_sref_pri:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_sref_alt:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_sref_s_pri:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)frm+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_sref_s_alt:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)frm+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_stor_i:
     /* verify address */
     if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
       ABORT(amx,AMX_ERR_MEMACCESS);
+    if ((int)alt==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)alt)=pri;
     NEXT(cip);
   op_strb_i:
@@ -2012,6 +2035,8 @@ static const void * const amx_opcodelist[] = {
     /* verify address */
     if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
       ABORT(amx,AMX_ERR_MEMACCESS);
+    if ((int)offs==0)
+      CHKNAUGHT();
     switch (offs) {
     case 1:
       *(data+(int)alt)=(unsigned char)pri;
@@ -2751,6 +2776,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   #endif
   AMX_EXT_HOOKS *ext_hooks=NULL;
   AMX_LCT_CTL long_call_ctl=NULL;
+  AMX_ADDR_0_ERR address_naught_err=NULL;
 
   assert(amx!=NULL);
   #if defined ASM32 || defined JIT
@@ -2858,6 +2884,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   amx_GetExtHooks(amx,&ext_hooks);
   if (ext_hooks!=NULL)
     long_call_ctl=ext_hooks->long_call_ctl;
+  if (ext_hooks!=NULL)
+    address_naught_err=ext_hooks->address_naught_err;
 
   /* start running */
 #if defined ASM32 || defined JIT
@@ -2982,26 +3010,26 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       break;
     case OP_STOR_PRI:
       GETPARAM(offs);
-      if (offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_STOR_ALT:
       GETPARAM(offs);
-      if (offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_STOR_S_PRI:
       GETPARAM(offs);
-      if (frm+offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)frm+(int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)frm+(int)offs)=pri;
       break;
     case OP_STOR_S_ALT:
       GETPARAM(offs);
-      if (frm+offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)frm+(int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)frm+(int)offs)=alt;
       break;
     case OP_SREF_PRI:
@@ -3009,8 +3037,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->stk=stk;
       GETPARAM(offs);
       offs=*(cell *)(data+(int)offs);
-      if (offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_ALT:
@@ -3018,30 +3046,30 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->stk = stk;
       GETPARAM(offs);
       offs=*(cell *)(data+(int)offs);
-      if (offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_SREF_S_PRI:
       GETPARAM(offs);
       offs=*(cell *)(data+(int)frm+(int)offs);
-      if (offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_S_ALT:
       GETPARAM(offs);
       offs=*(cell *)(data+(int)frm+(int)offs);
-      if (offs==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_STOR_I:
       /* verify address */
       if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
-      if (alt==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)alt==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)alt)=pri;
       break;
     case OP_STRB_I:
@@ -3049,8 +3077,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       /* verify address */
       if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
-      if (alt==0)
-        ABORT(amx,AMX_ERR_USERDATA);
+      if ((int)alt==0)
+        CHKNAUGHT();
       switch (offs) {
       case 1:
         *(data+(int)alt)=(unsigned char)pri;

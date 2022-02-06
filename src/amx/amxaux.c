@@ -130,6 +130,7 @@ static char *messages[] = {
       /* AMX_ERR_PARAMS    */ "Parameter error",
       /* AMX_ERR_DOMAIN    */ "Domain error, expression result does not fit in range",
       /* AMX_ERR_GENERAL   */ "General error (unknown or unspecific error)",
+      /* AMX_ERR_ADDRESS_0 */ "Wrote to banned address naught",
     };
   if (errnum < 0 || errnum >= sizeof messages / sizeof messages[0])
     return "(unknown)";
