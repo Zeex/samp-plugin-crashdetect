@@ -46,6 +46,7 @@ stock bool:IsCrashDetectPresent() {
 	//   2 - long_call_time checks enabled (write ignored when `server.cfg` has `long_call_time 0`).
 	//   4 - long_call_time reset to default time (write only, read always 0).
 	//   8 - long_call_time restart check from now (write only, read always 0).
+	//   16 - Error with the crashdetect user data.
 	//
 	#emit zero.pri
 	#emit lctrl 0xFF

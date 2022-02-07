@@ -2112,7 +2112,7 @@ static const void * const amx_opcodelist[] = {
     case 0xFD:
       /* control address_naught */
       if (address_naught_ctl==NULL)
-        pri=0;
+        pri=-2;
       else
         pri=address_naught_ctl(amx,-1);
       break;
@@ -2124,7 +2124,7 @@ static const void * const amx_opcodelist[] = {
       break;
     case 0xFF:
       if (long_call_ctl==NULL)
-        pri=0;
+        pri=17;
       else
         pri=1|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1);
       break;
@@ -3170,7 +3170,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       case 0xFD:
         /* control address_naught */
         if (address_naught_ctl==NULL)
-          pri=0;
+          pri=-2;
         else
           pri=address_naught_ctl(amx,-1);
         break;
@@ -3182,7 +3182,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         break;
       case 0xFF:
         if (long_call_ctl==NULL)
-          pri=0;
+          pri=17;
         else
           pri=1|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1);
         break;
