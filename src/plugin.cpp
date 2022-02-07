@@ -191,7 +191,8 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 
   static AMX_EXT_HOOKS ext_hooks = {
     OnExecError,
-    OnLongCallRequest
+    OnLongCallRequest,
+    0
   };
   amx_SetExtHooks(amx, &ext_hooks);
 
