@@ -171,7 +171,7 @@ typedef int (AMXAPI *AMX_CALLBACK)(struct tagAMX *amx, cell index,
 typedef int (AMXAPI *AMX_DEBUG)(struct tagAMX *amx);
 typedef int (AMXAPI *AMX_EXEC_ERROR)(struct tagAMX *amx, int index, cell *retval, int error);
 typedef int (AMXAPI *AMX_LCT_CTL)(struct tagAMX *amx, int option, int value);
-typedef int (AMXAPI *AMX_ADDR_0_ERR)(struct tagAMX *amx);
+typedef cell * AMX_ADDR_0_ERR;
 
 #if !defined _FAR
   #define _FAR
@@ -295,7 +295,7 @@ typedef struct tagAMX_HEADER {
 typedef struct tagAMX_EXT_HOOKS {
   AMX_EXEC_ERROR exec_error;
   AMX_LCT_CTL long_call_ctl;
-  AMX_ADDR_0_ERR address_naught_err;
+  char address_naught_err;
 } PACKED AMX_EXT_HOOKS;
 
 #if PAWN_CELL_SIZE==16
