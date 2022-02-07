@@ -287,6 +287,20 @@ int CrashDetect::OnLongCallRequest(int option, int value) {
   return AMX_ERR_NONE;
 }
 
+int CrashDetect::OnAddressNaughtRequest(int option) {
+  switch (option) {
+    case -1:
+      return address_naught_;
+    case 0:
+      address_naught_ = false;
+      break;
+    case 1:
+      address_naught_ = true;
+      break;
+  }
+  return AMX_ERR_NONE;
+}
+
 // static
 void CrashDetect::OnCrash(const os::Context &context) {
   CrashDetect *instance = nullptr;

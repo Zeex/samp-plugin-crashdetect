@@ -1735,7 +1735,7 @@ int AMXAPI amx_SetExtHooks(AMX *amx, AMX_EXT_HOOKS *ext_hooks)
                           return v; }
 
 /* throw an error when writing to address naught is disabled */
-#define CHKNAUGHT()     if (ext_hooks!=NULL&&ext_hooks->address_naught_err!=0) ABORT(amx, AMX_ERR_ADDRESS_0)
+#define CHKNAUGHT()     if (address_naught_ctl!=NULL&&address_naught_ctl(amx,-1)!=0) ABORT(amx, AMX_ERR_ADDRESS_0)
 #define CHKMARGIN()     if (hea+STKMARGIN>stk) ABORT(amx, AMX_ERR_STACKERR)
 #define CHKSTACK()      if (stk>amx->stp) ABORT(amx, AMX_ERR_STACKLOW)
 #define CHKHEAP()       if (hea<amx->hlw) ABORT(amx, AMX_ERR_HEAPLOW)
@@ -1795,6 +1795,7 @@ static const void * const amx_opcodelist[] = {
   int num,i;
   AMX_EXT_HOOKS *ext_hooks=NULL;
   AMX_LCT_CTL long_call_ctl=NULL;
+  AMX_ADDR_0_CTL address_naught_ctl=NULL;
 
   /* HACK: return label table (for amx_BrowseRelocate) if amx structure
    * has the AMX_FLAG_BROWSE flag set.
@@ -1888,6 +1889,8 @@ static const void * const amx_opcodelist[] = {
   amx_GetExtHooks(amx,&ext_hooks);
   if (ext_hooks!=NULL)
     long_call_ctl=ext_hooks->long_call_ctl;
+  if (ext_hooks!=NULL)
+    address_naught_ctl=ext_hooks->address_naught_ctl;
 
   /* start running */
   NEXT(cip);
@@ -2108,10 +2111,10 @@ static const void * const amx_opcodelist[] = {
       break;
     case 0xFD:
       /* control address_naught */
-      if (ext_hooks==NULL)
+      if (address_naught_ctl==NULL)
         pri=0;
       else
-        pri=ext_hooks->address_naught_err;
+        pri=address_naught_ctl(amx,-1);
       break;
     case 0xFE:
       if (long_call_ctl==NULL)
@@ -2149,8 +2152,8 @@ static const void * const amx_opcodelist[] = {
       break;
     case 0xFD:
       /* control address_naught */
-      if (ext_hooks!=NULL)
-        ext_hooks->address_naught_err=(char)pri;
+      if (address_naught_ctl!=NULL)
+        address_naught_ctl(amx,pri?1:0);
       break;
     case 0xFE:
       /* set long_call_time */
@@ -2789,6 +2792,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   #endif
   AMX_EXT_HOOKS *ext_hooks=NULL;
   AMX_LCT_CTL long_call_ctl=NULL;
+  AMX_ADDR_0_CTL address_naught_ctl=NULL;
 
   assert(amx!=NULL);
   #if defined ASM32 || defined JIT
@@ -2896,6 +2900,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   amx_GetExtHooks(amx,&ext_hooks);
   if (ext_hooks!=NULL)
     long_call_ctl=ext_hooks->long_call_ctl;
+  if (ext_hooks!=NULL)
+    address_naught_ctl=ext_hooks->address_naught_ctl;
 
   /* start running */
 #if defined ASM32 || defined JIT
@@ -3163,10 +3169,10 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         break;
       case 0xFD:
         /* control address_naught */
-        if (ext_hooks==NULL)
+        if (address_naught_ctl==NULL)
           pri=0;
         else
-          pri=ext_hooks->address_naught_err;
+          pri=address_naught_ctl(amx,-1);
         break;
       case 0xFE:
         if (long_call_ctl==NULL)
@@ -3204,8 +3210,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         break;
       case 0xFD:
         /* control address_naught */
-        if (ext_hooks!=NULL)
-          ext_hooks->address_naught_err=(char)pri;
+        if (address_naught_ctl!=NULL)
+          address_naught_ctl(amx,pri?1:0);
         break;
       case 0xFE:
         /* set long_call_time */
