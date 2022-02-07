@@ -76,6 +76,8 @@ stock bool:IsCrashDetectAddr0Enabled() {
 	// Is the check enabled?  0 if off or doesn't exist.
 	#emit const.pri 0
 	#emit lctrl 0xFD
+	#emit const.alt 1
+	#emit and
 	#emit retn
 	return false;
 }
