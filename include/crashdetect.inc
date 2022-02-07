@@ -62,36 +62,6 @@ stock SetCrashDetectLongCallTime(us_time) {
 	#emit sctrl 0xFE
 }
 
-stock DisableCrashDetectAddr0() {
-	#emit const.pri 0
-	#emit sctrl 0xFD
-}
-
-stock EnableCrashDetectAddr0() {
-	#emit const.pri 1
-	#emit sctrl 0xFD
-}
-
-stock bool:IsCrashDetectAddr0Enabled() {
-	// Is the check enabled?  0 if off or doesn't exist.
-	#emit const.pri 0
-	#emit lctrl 0xFD
-	#emit const.alt 1
-	#emit and
-	#emit retn
-	return false;
-}
-
-stock bool:HasCrashDetectAddr0() {
-	// Is the check possible?
-	#emit const.pri 0xFFFFFFFF // -1
-	#emit lctrl 0xFD           // 0 or 1
-	#emit const.alt 0
-	#emit sgeq                 // >= 0
-	#emit retn
-	return false;
-}
-
 stock DisableCrashDetectLongCall() {
 	#emit const.pri 0
 	#emit sctrl 0xFE
@@ -146,5 +116,35 @@ stock GetCrashDetectDefaultTime() {
 	#emit move.pri
 	#emit retn
 	return 0;
+}
+
+stock DisableCrashDetectAddr0() {
+	#emit const.pri 0
+	#emit sctrl 0xFD
+}
+
+stock EnableCrashDetectAddr0() {
+	#emit const.pri 1
+	#emit sctrl 0xFD
+}
+
+stock bool:IsCrashDetectAddr0Enabled() {
+	// Is the check enabled?  0 if off or doesn't exist.
+	#emit const.pri 0
+	#emit lctrl 0xFD
+	#emit const.alt 1
+	#emit and
+	#emit retn
+	return false;
+}
+
+stock bool:HasCrashDetectAddr0() {
+	// Is the check possible?
+	#emit const.pri 0xFFFFFFFF // -1
+	#emit lctrl 0xFD           // 0 or 1
+	#emit const.alt 0
+	#emit sgeq                 // >= 0
+	#emit retn
+	return false;
 }
 
