@@ -61,6 +61,16 @@ stock SetCrashDetectLongCallTime(us_time) {
 	#emit sctrl 0xFE
 }
 
+stock DisableCrashDetectAddr0() {
+	#emit const.pri 0
+	#emit sctrl 0xFD
+}
+
+stock EnableCrashDetectAddr0() {
+	#emit const.pri 1
+	#emit sctrl 0xFD
+}
+
 stock DisableCrashDetectLongCall() {
 	#emit const.pri 0
 	#emit sctrl 0xFE
@@ -84,7 +94,8 @@ stock RestartCrashDetectLongCall() {
 stock bool:IsCrashDetectLongCallEnabled() {
 	#emit zero.pri
 	#emit lctrl 0xFF
-	#emit shr.c.pri 1
+	#emit const.alt 1
+	#emit and
 	#emit retn
 	return false;
 }
@@ -92,6 +103,7 @@ stock bool:IsCrashDetectLongCallEnabled() {
 stock GetCrashDetectLongCallTime() {
 	#emit zero.pri
 	#emit lctrl 0xFE
+	#emit shr.c.pri 1
 	#emit retn
 	return 0;
 }
