@@ -2109,13 +2109,6 @@ static const void * const amx_opcodelist[] = {
     case 6:
       pri=(cell)((unsigned char *)cip-code);
       break;
-    case 0xFD:
-      /* control address_naught */
-      if (address_naught_ctl==NULL)
-        pri=-2;
-      else
-        pri=address_naught_ctl(amx,-1);
-      break;
     case 0xFE:
       if (long_call_ctl==NULL)
         pri=0;
@@ -2123,10 +2116,10 @@ static const void * const amx_opcodelist[] = {
         pri=long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_CURRENT);
       break;
     case 0xFF:
-      if (long_call_ctl==NULL)
-        pri=17;
+      if (ext_hooks==NULL)
+        pri=1|16|32|64;
       else
-        pri=1|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1);
+        pri=1|32|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1)|64|(address_naught_ctl(amx, -1)<<7);
       break;
     } /* switch */
     NEXT(cip);
@@ -2150,31 +2143,39 @@ static const void * const amx_opcodelist[] = {
     case 6:
       cip=(cell *)(code+(int)pri);
       break;
-    case 0xFD:
-      /* control address_naught */
-      if (address_naught_ctl!=NULL)
-        address_naught_ctl(amx,pri?1:0);
-      break;
     case 0xFE:
       /* set long_call_time */
-      if (long_call_ctl!=NULL) {
-        if (pri)
-          long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
-        else
-          long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
-      } /* if */
+      if (long_call_ctl!=NULL)
+        long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
       break;
     case 0xFF:
       if (long_call_ctl!=NULL) {
-        if (pri&2)
-          /* enable long_call_time check */
-          long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
-        if (pri&4)
-          /* reset long_call_time */
-          long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
-        if (pri&8)
-          /* restart long_call_time check */
-          long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+        if (pri&32) {
+          /* long_call_time control */
+          if (pri&2)
+            /* enable long_call_time check */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
+          else if (pri&4)
+            /* reset long_call_time */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
+          else if (pri&8)
+            /* restart long_call_time check */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+          else
+            /* disable long_call_time check */
+            long_call_ctl(amx, AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
+        }
+      } /* if */
+      if (address_naught_ctl!=NULL) {
+        if (pri&64) {
+          /* address_naught control */
+          if (pri&128)
+            /* enable long_call_time check */
+            address_naught_ctl(amx,1);
+          else
+            /* disable long_call_time check */
+            address_naught_ctl(amx,0);
+        }
       } /* if */
       break;
     } /* switch */
@@ -3167,13 +3168,6 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       case 6:
         pri=(cell)((unsigned char *)cip-code);
         break;
-      case 0xFD:
-        /* control address_naught */
-        if (address_naught_ctl==NULL)
-          pri=-2;
-        else
-          pri=address_naught_ctl(amx,-1);
-        break;
       case 0xFE:
         if (long_call_ctl==NULL)
           pri=0;
@@ -3181,10 +3175,10 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
           pri=long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_CURRENT);
         break;
       case 0xFF:
-        if (long_call_ctl==NULL)
-          pri=17;
+        if (ext_hooks==NULL)
+          pri=1|16|32|64;
         else
-          pri=1|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1);
+          pri=1|32|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1)|64|(address_naught_ctl(amx, -1)<<7);
         break;
       } /* switch */
       break;
@@ -3208,31 +3202,39 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       case 6:
         cip=(cell *)(code+(int)pri);
         break;
-      case 0xFD:
-        /* control address_naught */
-        if (address_naught_ctl!=NULL)
-          address_naught_ctl(amx,pri?1:0);
-        break;
       case 0xFE:
         /* set long_call_time */
-        if (long_call_ctl!=NULL) {
-          if (pri)
-            long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
-          else
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
-        } /* if */
+        if (long_call_ctl!=NULL)
+          long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
         break;
       case 0xFF:
         if (long_call_ctl!=NULL) {
-          if (pri&2)
-            /* enable long_call_time check */
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
-          if (pri&4)
-            /* reset long_call_time */
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
-          if (pri&8)
-            /* restart long_call_time check */
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+          if (pri&32) {
+            /* long_call_time control */
+            if (pri&2)
+              /* enable long_call_time check */
+              long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
+            else if (pri&4)
+              /* reset long_call_time */
+              long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
+            else if (pri&8)
+              /* restart long_call_time check */
+              long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+            else
+              /* disable long_call_time check */
+              long_call_ctl(amx, AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
+          }
+        } /* if */
+        if (address_naught_ctl!=NULL) {
+          if (pri&64) {
+            /* address_naught control */
+            if (pri&128)
+              /* enable long_call_time check */
+              address_naught_ctl(amx,1);
+            else
+              /* disable long_call_time check */
+              address_naught_ctl(amx,0);
+          }
         } /* if */
         break;
       } /* switch */
