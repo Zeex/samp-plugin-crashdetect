@@ -94,6 +94,77 @@ Available settings:
 
   Use `0` to disable this check.
 
+Address Naught
+--------------
+
+Often writing to address naught is a mistake, it indicates that some target address is unset,
+especially in larger modes.  `address_naught` mode detects all writes to this address and gives a
+new (to VM) error in that case - `AMX_ERR_ADDRESS_0`.  Note that this isn't always an error, it is a
+valid address and real data can be stored there, so if this detection is enabled the mode must
+ensure that nothing important will be written there (fixes.inc does this by defining and not using
+the anonymous automata).  This is also the reason why there is no global config option for this
+detection - it is by necessity done on a per-mode basis, is off by default, and can only be enabled
+by functions (technically by registers).
+
+Functions
+---------
+
+There are several functions defined in `crashdetect.inc` to access plugin information.  These are
+all just wrappers around direct register accesses, but provide a much nicer API.
+
+* `bool:IsCrashDetectPresent();` - Is the crashdetect plugin loaded?
+* `SetCrashDetectLongCallTime(us_time);` - Set the long call warning threshold.
+* `GetCrashDetectLongCallTime();` - Get the long call warning threshold.
+* `DisableCrashDetectLongCall();` - Disable the long call warning.
+* `EnableCrashDetectLongCall();` - Disable the long call warning.
+* `ResetCrashDetectLongCallTime();` - Reset the long call threshold to the default (from `server.cfg`).
+* `RestartCrashDetectLongCall();` - Restart the long call timer.
+* `bool:IsCrashDetectLongCallEnabled();` - Is long function call detection enabled?
+* `bool:HasCrashDetectLongCall();` - Does the current version of crashdetect support this feature?
+* `GetCrashDetectDefaultTime();` - Get the default long call time threshold.
+* `DisableCrashDetectAddr0();` - Disable address naught write detection in this mode.
+* `EnableCrashDetectAddr0();` - Enable address naught write detection in this mode.
+* `bool:IsCrashDetectAddr0Enabled();` - Is the error currently enabled?
+* `bool:HasCrashDetectAddr0();` - Does the current version of crashdetect support this feature?
+
+Registers
+---------
+
+The plugin adds two control registers accessed via `LCTRL` and `SCTRL` - `0xFF` for general flags
+and `0xFE` for long call time values:
+
+```pawn
+// Get the current long call time (even when it is disabled).
+#emit ZERO.pri          // Always set pri to 0 before `LCTRL` calls.
+#emit LCTRL        0xFE // Will set `pri` if the plugin is loaded.
+#emit STOR.pri     var  // Save the result.
+```
+
+```pawn
+// Enable address naught write detection.
+#emit CONST.pri    192  // 64 (address_naught control bit) | 128 (address_naught enable).
+#emit SCTRL        0xFF // Set the register.
+```
+
+The flags are:
+
+* `1` - Cashdetect present (read only).
+* `2` - long_call_time checks enabled (write ignored when `server.cfg` has `long_call_time 0`).
+* `4` - long_call_time reset to default time (write `1` only).
+* `8` - long_call_time restart check from now (write `1` only).
+* `16` - Error with the crashdetect user data.
+* `32` - long_call_time control bit.
+* `64` - address_naught control bit.
+* `128` - address_naught detection enabled.
+
+When read-only values are set, they are ignored.  When write-only bits are returned they are always
+`0`.  When write-1-only bits are `0` they are ignored, the `1` is a signal to trigger something.  To
+set most registers the relevant control bit must also be set.  So to enable address naught detection
+requires bit `6` (`64`) and bit `7` (`128`).  To disable it just requires bit `6`.  Note that while
+many of these bits would seem to be independent you cannot disable address naught detection, enable
+long call detection, and reset and restart the timer all at once with `0x6E`; only one command at
+once will work.
+
 Building from source code
 -------------------------
 
