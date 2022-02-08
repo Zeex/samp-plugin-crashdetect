@@ -84,7 +84,8 @@ CrashDetect::CrashDetect(AMX *amx)
     prev_debug_(nullptr),
     prev_callback_(nullptr),
     last_frame_(amx->stp),
-    block_exec_errors_(false)
+    block_exec_errors_(false),
+    address_naught_(false)
 {
 }
 
