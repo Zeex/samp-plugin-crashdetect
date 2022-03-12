@@ -3,7 +3,6 @@
 
 [![Version][version_badge]][version]
 [![Build Status][build_status]][build]
-[![Build Status - Windows][build_status_win]][build_win]
 
 CrashDetect helps you debug runtime errors and server crashes. When something
 goes wrong you will get a detailed error message with error description, stack
@@ -14,7 +13,7 @@ Installation
 ------------
 
 1. Download a binary package from the [Releases][download] page on Github or
-   build it yourself from source code (see 
+   build it yourself from source code (see
    [Building from source code](#building-from-source-code)).
 2. Extract and copy `crashdetect.so` or `crashdetect.dll` to `<sever>/plugins/`.
 3. Add `crashdetect` (Windows) or `crashdetect.so` (Linux) to the `plugins`
@@ -29,17 +28,17 @@ Usage
 
 Apart from installing the plugin you don't have to do anything further to
 start receiving errors reports. By default all errors will be saved in your
-`server_log.txt`, but this can be changed 
+`server_log.txt`, but this can be changed
 (see [Configuration](#configuration)).
 
 For better debugging experience, make sure that you
-[compile your script with debug info enabled][debug-info]. Doing this will let
-you see more information in stack traces such as function names, prameter names
+[compile your script with debug info enabled][debug_info]. Doing this will let
+you see more information in stack traces such as function names, parameter names
 and values, source file names and line numbers.
 
 Please be aware that when using this plugin your code WILL run slower due
 to the overhead associated with detecting errors and providing accurate
-error information (for example, some runtime optimizations are diasbled).
+error information (for example, some runtime optimizations are disabled).
 Usually this is fine during development, but it's not recommended to load
 CrashDetect on a production (live) server with many players.
 
@@ -98,8 +97,8 @@ Available settings:
 Building from source code
 -------------------------
 
-If you want to build CrashDetect from source code, e.g. to fix a bug and 
-submit a pull request, simply follow the steps below. You will need a C++ 
+If you want to build CrashDetect from source code, e.g. to fix a bug and
+submit a pull request, simply follow the steps below. You will need a C++
 compiler and CMake.
 
 ### Linux
@@ -163,9 +162,7 @@ Licensed under the 2-clause BSD license. See [LICENSE.txt](LICENSE.txt).
 [github]: https://github.com/Zeex/samp-plugin-crashdetect
 [version]: http://badge.fury.io/gh/Zeex%2Fsamp-plugin-crashdetect
 [version_badge]: https://badge.fury.io/gh/Zeex%2Fsamp-plugin-crashdetect.svg
-[build]: https://travis-ci.org/Zeex/samp-plugin-crashdetect
-[build_status]: https://travis-ci.org/Zeex/samp-plugin-crashdetect.svg?branch=master
-[build_win]: https://ci.appveyor.com/project/Zeex/samp-plugin-crashdetect/branch/master
-[build_status_win]: https://ci.appveyor.com/api/projects/status/nay4h3t5cu6469ic/branch/master?svg=true
+[build]: https://ci.appveyor.com/project/Zeex/samp-plugin-crashdetect/branch/master
+[build_status]: https://ci.appveyor.com/api/projects/status/nay4h3t5cu6469ic/branch/master?svg=true
 [download]: https://github.com/Zeex/samp-plugin-crashdetect/releases
-[debug-info]: https://github.com/Zeex/samp-plugin-crashdetect/wiki/Compiling-scripts-with-debug-info
+[debug_info]: https://github.com/Zeex/samp-plugin-crashdetect/wiki/Compiling-scripts-with-debug-info
