@@ -1,40 +1,81 @@
 version: '{build}'
 
+image:
+  - Ubuntu
+  - Visual Studio 2013
+
 configuration:
   - RelWithDebInfo
 
-install:
-  - appveyor DownloadFile https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-windows.zip
-  - 7z x pawnc-3.10.20150412-windows.zip
-  - set PATH=%PATH%;%CD%\pawnc-3.10.20150412-windows\bin
+for:
+  -
+    matrix:
+      only:
+        - image: Ubuntu
 
-  - appveyor DownloadFile https://github.com/Zeex/samp-plugin-runner/releases/download/v1.3/plugin-runner-1.3-win32.zip
-  - 7z x plugin-runner-1.3-win32.zip
-  - set PATH=%PATH%;%CD%\plugin-runner-1.3-win32
+    install:
+      - sudo apt-get update -qq
+      - sudo apt-get install -y linux-libc-dev:i386 gcc-4.8 gcc-4.8-multilib g++-4.8 g++-4.8-multilib cmake
 
-before_build:
-  - cmake . -G "Visual Studio 12 2013" -T v120_xp
+      - wget https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-linux.tar.gz
+      - sudo tar xvf pawnc-3.10.20150412-linux.tar.gz --strip-components=1 -C /usr/local
+      - sudo ldconfig
 
-build_script:
-  - cmake --build . --config %CONFIGURATION%
-  - cmake --build . --config %CONFIGURATION% --target package
+      - wget https://github.com/Zeex/samp-plugin-runner/releases/download/v1.3/plugin-runner-1.3-linux.tar.gz
+      - sudo tar xvf plugin-runner-1.3-linux.tar.gz --strip-components=1 -C /usr/local
 
-test_script:
-  - ctest --build-config %CONFIGURATION%
+    before_build:
+      - cmake . -DCMAKE_BUILD_TYPE=$CONFIGURATION -DCMAKE_C_COMPILER=gcc-4.8 -DCMAKE_CXX_COMPILER=g++-4.8
 
-artifacts:
-  - path: crashdetect-*-win32.zip
-    name: Binaries
+    build_script:
+      - make
+      - make package
 
-on_failure:
-  - type Testing\Temporary\LastTest.log
+    test_script:
+      - make test
+
+    artifacts:
+      - path: crashdetect-*-linux.tar.gz
+
+    on_failure:
+      - cat Testing/Temporary/LastTest.log
+
+  -
+    matrix:
+      only:
+        - image: Visual Studio 2013
+
+    install:
+      - appveyor DownloadFile https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-windows.zip
+      - 7z x pawnc-3.10.20150412-windows.zip
+      - set PATH=%PATH%;%CD%\pawnc-3.10.20150412-windows\bin
+
+      - appveyor DownloadFile https://github.com/Zeex/samp-plugin-runner/releases/download/v1.3/plugin-runner-1.3-win32.zip
+      - 7z x plugin-runner-1.3-win32.zip
+      - set PATH=%PATH%;%CD%\plugin-runner-1.3-win32
+
+    before_build:
+      - cmake . -G "Visual Studio 12 2013" -T v120_xp
+
+    build_script:
+      - cmake --build . --config %CONFIGURATION%
+      - cmake --build . --config %CONFIGURATION% --target package
+
+    test_script:
+      - ctest --build-config %CONFIGURATION%
+
+    artifacts:
+      - path: crashdetect-*-win32.zip
+
+    on_failure:
+      - type Testing\Temporary\LastTest.log
 
 deploy:
   description: '<Put release description here>'
   provider: GitHub
   auth_token:
     secure: mFnGriHw4x2Uq92vl19XDzO8tNJ2E1+D0OetIt4QjOVg+h396utFpLkY7nVa/G8k
-  artifact: /crashdetect-.*-win32\.zip/
+  artifact: /crashdetect-.*\.(tar\.gz|zip)/
   draft: true
   on:
     appveyor_repo_tag: true
