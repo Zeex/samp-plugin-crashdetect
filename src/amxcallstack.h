@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Zeex
+// Copyright (c) 2014-2020 Zeex
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
