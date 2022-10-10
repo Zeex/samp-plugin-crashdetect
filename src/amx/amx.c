@@ -31,6 +31,7 @@
  *   the pointer (because of possible crash)
  * - LCTRL 0xFF always sets PRI to 1
  * - Long call detection
+ * - Detection of writes to address 0 (a.k.a "address naught" detection)
  */
 
 #if BUILD_PLATFORM == WINDOWS && BUILD_TYPE == RELEASE && BUILD_COMPILER == MSVC && PAWN_CELL_SIZE == 64
@@ -1734,6 +1735,8 @@ int AMXAPI amx_SetExtHooks(AMX *amx, AMX_EXT_HOOKS *ext_hooks)
                           (amx)->hea=reset_hea;                      \
                           return v; }
 
+/* throw an error when writing to address naught is disabled */
+#define CHKNAUGHT()     if (address_naught_ctl!=NULL&&address_naught_ctl(amx,-1)!=0) ABORT(amx, AMX_ERR_ADDRESS_0)
 #define CHKMARGIN()     if (hea+STKMARGIN>stk) ABORT(amx, AMX_ERR_STACKERR)
 #define CHKSTACK()      if (stk>amx->stp) ABORT(amx, AMX_ERR_STACKLOW)
 #define CHKHEAP()       if (hea<amx->hlw) ABORT(amx, AMX_ERR_HEAPLOW)
@@ -1793,6 +1796,7 @@ static const void * const amx_opcodelist[] = {
   int num,i;
   AMX_EXT_HOOKS *ext_hooks=NULL;
   AMX_LCT_CTL long_call_ctl=NULL;
+  AMX_ADDR_0_CTL address_naught_ctl=NULL;
 
   /* HACK: return label table (for amx_BrowseRelocate) if amx structure
    * has the AMX_FLAG_BROWSE flag set.
@@ -1886,6 +1890,8 @@ static const void * const amx_opcodelist[] = {
   amx_GetExtHooks(amx,&ext_hooks);
   if (ext_hooks!=NULL)
     long_call_ctl=ext_hooks->long_call_ctl;
+  if (ext_hooks!=NULL)
+    address_naught_ctl=ext_hooks->address_naught_ctl;
 
   /* start running */
   NEXT(cip);
@@ -1967,44 +1973,62 @@ static const void * const amx_opcodelist[] = {
     NEXT(cip);
   op_stor_pri:
     GETPARAM(offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_stor_alt:
     GETPARAM(offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_stor_s_pri:
     GETPARAM(offs);
+    if ((int)frm+(int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)frm+(int)offs)=pri;
     NEXT(cip);
   op_stor_s_alt:
     GETPARAM(offs);
+    if ((int)frm+(int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)frm+(int)offs)=alt;
     NEXT(cip);
   op_sref_pri:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_sref_alt:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_sref_s_pri:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)frm+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=pri;
     NEXT(cip);
   op_sref_s_alt:
     GETPARAM(offs);
     offs=*(cell *)(data+(int)frm+(int)offs);
+    if ((int)offs==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)offs)=alt;
     NEXT(cip);
   op_stor_i:
     /* verify address */
     if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
       ABORT(amx,AMX_ERR_MEMACCESS);
+    if ((int)alt==0)
+      CHKNAUGHT();
     *(cell *)(data+(int)alt)=pri;
     NEXT(cip);
   op_strb_i:
@@ -2012,6 +2036,8 @@ static const void * const amx_opcodelist[] = {
     /* verify address */
     if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
       ABORT(amx,AMX_ERR_MEMACCESS);
+    if ((int)offs==0)
+      CHKNAUGHT();
     switch (offs) {
     case 1:
       *(data+(int)alt)=(unsigned char)pri;
@@ -2082,15 +2108,19 @@ static const void * const amx_opcodelist[] = {
       pri=frm;
       break;
     case 6:
-      pri=(cell)((unsigned char *)cip - code);
+      pri=(cell)((unsigned char *)cip-code);
       break;
     case 0xFE:
-      if (long_call_ctl != NULL)
-        pri = long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_CURRENT);
+      if (long_call_ctl==NULL)
+        pri=0;
+      else
+        pri=long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_CURRENT);
       break;
     case 0xFF:
-      if (long_call_ctl != NULL)
-        pri = 1 | (long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_ACTIVE) << 1);
+      if (ext_hooks==NULL)
+        pri=1|16|32|64;
+      else
+        pri=1|32|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1)|64|(address_naught_ctl(amx, -1)<<7);
       break;
     } /* switch */
     NEXT(cip);
@@ -2112,28 +2142,41 @@ static const void * const amx_opcodelist[] = {
       frm=pri;
       break;
     case 6:
-      cip=(cell *)(code + (int)pri);
+      cip=(cell *)(code+(int)pri);
       break;
     case 0xFE:
       /* set long_call_time */
-      if (long_call_ctl != NULL) {
-        if (pri)
-          long_call_ctl(amx, AMX_LCT_SET_TIME, pri);
-        else
-          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_DISABLE);
-      } /* if */
+      if (long_call_ctl!=NULL)
+        long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
       break;
     case 0xFF:
-      if (long_call_ctl != NULL) {
-        if (pri & 2)
-          /* enable long_call_time check */
-          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_ENABLE);
-        if (pri & 4)
-          /* reset long_call_time */
-          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_RESET);
-        if (pri & 8)
-          /* restart long_call_time check */
-          long_call_ctl(amx, AMX_LCT_OPTION, AMX_LCT_OPTION_RESTART);
+      if (long_call_ctl!=NULL) {
+        if (pri&32) {
+          /* long_call_time control */
+          if (pri&2)
+            /* enable long_call_time check */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
+          else if (pri&4)
+            /* reset long_call_time */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
+          else if (pri&8)
+            /* restart long_call_time check */
+            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+          else
+            /* disable long_call_time check */
+            long_call_ctl(amx, AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
+        }
+      } /* if */
+      if (address_naught_ctl!=NULL) {
+        if (pri&64) {
+          /* address_naught control */
+          if (pri&128)
+            /* enable long_call_time check */
+            address_naught_ctl(amx,1);
+          else
+            /* disable long_call_time check */
+            address_naught_ctl(amx,0);
+        }
       } /* if */
       break;
     } /* switch */
@@ -2751,6 +2794,7 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   #endif
   AMX_EXT_HOOKS *ext_hooks=NULL;
   AMX_LCT_CTL long_call_ctl=NULL;
+  AMX_ADDR_0_CTL address_naught_ctl=NULL;
 
   assert(amx!=NULL);
   #if defined ASM32 || defined JIT
@@ -2858,6 +2902,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   amx_GetExtHooks(amx,&ext_hooks);
   if (ext_hooks!=NULL)
     long_call_ctl=ext_hooks->long_call_ctl;
+  if (ext_hooks!=NULL)
+    address_naught_ctl=ext_hooks->address_naught_ctl;
 
   /* start running */
 #if defined ASM32 || defined JIT
@@ -2982,18 +3028,26 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       break;
     case OP_STOR_PRI:
       GETPARAM(offs);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_STOR_ALT:
       GETPARAM(offs);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_STOR_S_PRI:
       GETPARAM(offs);
+      if ((int)frm+(int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)frm+(int)offs)=pri;
       break;
     case OP_STOR_S_ALT:
       GETPARAM(offs);
+      if ((int)frm+(int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)frm+(int)offs)=alt;
       break;
     case OP_SREF_PRI:
@@ -3001,6 +3055,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->stk=stk;
       GETPARAM(offs);
       offs=*(cell *)(data+(int)offs);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_ALT:
@@ -3008,22 +3064,30 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       amx->stk = stk;
       GETPARAM(offs);
       offs=*(cell *)(data+(int)offs);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_SREF_S_PRI:
       GETPARAM(offs);
       offs=*(cell *)(data+(int)frm+(int)offs);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=pri;
       break;
     case OP_SREF_S_ALT:
       GETPARAM(offs);
       offs=*(cell *)(data+(int)frm+(int)offs);
+      if ((int)offs==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)offs)=alt;
       break;
     case OP_STOR_I:
       /* verify address */
       if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
+      if ((int)alt==0)
+        CHKNAUGHT();
       *(cell *)(data+(int)alt)=pri;
       break;
     case OP_STRB_I:
@@ -3031,6 +3095,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
       /* verify address */
       if (alt>=hea && alt<stk || (ucell)alt>=(ucell)amx->stp)
         ABORT(amx,AMX_ERR_MEMACCESS);
+      if ((int)alt==0)
+        CHKNAUGHT();
       switch (offs) {
       case 1:
         *(data+(int)alt)=(unsigned char)pri;
@@ -3101,15 +3167,19 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         pri=frm;
         break;
       case 6:
-        pri=(cell)((unsigned char *)cip - code);
+        pri=(cell)((unsigned char *)cip-code);
         break;
       case 0xFE:
-        if (long_call_ctl!=NULL)
+        if (long_call_ctl==NULL)
+          pri=0;
+        else
           pri=long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_CURRENT);
         break;
       case 0xFF:
-        if (long_call_ctl != NULL)
-          pri=1|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1);
+        if (ext_hooks==NULL)
+          pri=1|16|32|64;
+        else
+          pri=1|32|(long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ACTIVE)<<1)|64|(address_naught_ctl(amx, -1)<<7);
         break;
       } /* switch */
       break;
@@ -3131,29 +3201,41 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
         frm=pri;
         break;
       case 6:
-        cip=(cell *)(code + (int)pri);
+        cip=(cell *)(code+(int)pri);
         break;
-      case 0xFE: {
+      case 0xFE:
         /* set long_call_time */
-        if (long_call_ctl!=NULL) {
-          if (pri)
-            long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
-          else
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
-        } /* if */
+        if (long_call_ctl!=NULL)
+          long_call_ctl(amx,AMX_LCT_SET_TIME,pri);
         break;
-      }
       case 0xFF:
         if (long_call_ctl!=NULL) {
-          if (pri&2)
-            /* enable long_call_time check */
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
-          if (pri&4)
-            /* reset long_call_time */
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
-          if (pri&8)
-            /* restart long_call_time check */
-            long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+          if (pri&32) {
+            /* long_call_time control */
+            if (pri&2)
+              /* enable long_call_time check */
+              long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_ENABLE);
+            else if (pri&4)
+              /* reset long_call_time */
+              long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESET);
+            else if (pri&8)
+              /* restart long_call_time check */
+              long_call_ctl(amx,AMX_LCT_OPTION,AMX_LCT_OPTION_RESTART);
+            else
+              /* disable long_call_time check */
+              long_call_ctl(amx, AMX_LCT_OPTION,AMX_LCT_OPTION_DISABLE);
+          }
+        } /* if */
+        if (address_naught_ctl!=NULL) {
+          if (pri&64) {
+            /* address_naught control */
+            if (pri&128)
+              /* enable long_call_time check */
+              address_naught_ctl(amx,1);
+            else
+              /* disable long_call_time check */
+              address_naught_ctl(amx,0);
+          }
         } /* if */
         break;
       } /* switch */

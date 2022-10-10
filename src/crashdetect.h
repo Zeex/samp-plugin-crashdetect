@@ -53,6 +53,7 @@ class CrashDetect: public AMXHandler<CrashDetect> {
   int OnExec(cell *retval, int index);
   int OnExecError(int index, cell *retval, int error);
   int OnLongCallRequest(int option, int value);
+  int OnAddressNaughtRequest(int option);
 
  public:
   static void PluginLoad();
@@ -94,6 +95,7 @@ class CrashDetect: public AMXHandler<CrashDetect> {
   std::string amx_path_;
   std::string amx_name_;
   bool block_exec_errors_;
+  bool address_naught_;
 
  private:
   static AMXCallStack call_stack_;

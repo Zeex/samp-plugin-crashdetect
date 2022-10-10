@@ -114,6 +114,11 @@ int AMXAPI OnLongCallRequest(AMX *amx, int option, int value) {
   return handler->OnLongCallRequest(option, value);
 }
 
+int AMXAPI OnAddressNaughtRequest(AMX *amx, int option) {
+  CrashDetect *handler = CrashDetect::GetHandler(amx);
+  return handler->OnAddressNaughtRequest(option);
+}
+
 } // anonymous namespace
 
 PLUGIN_EXPORT unsigned int PLUGIN_CALL Supports() {
@@ -191,7 +196,8 @@ PLUGIN_EXPORT int PLUGIN_CALL AmxLoad(AMX *amx) {
 
   static AMX_EXT_HOOKS ext_hooks = {
     OnExecError,
-    OnLongCallRequest
+    OnLongCallRequest,
+    OnAddressNaughtRequest
   };
   amx_SetExtHooks(amx, &ext_hooks);
 

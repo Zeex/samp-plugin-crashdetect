@@ -84,7 +84,8 @@ CrashDetect::CrashDetect(AMX *amx)
     prev_debug_(nullptr),
     prev_callback_(nullptr),
     last_frame_(amx->stp),
-    block_exec_errors_(false)
+    block_exec_errors_(false),
+    address_naught_(false)
 {
 }
 
@@ -283,6 +284,20 @@ int CrashDetect::OnLongCallRequest(int option, int value) {
         CheckLongCallTime();
         break;
     }
+  }
+  return AMX_ERR_NONE;
+}
+
+int CrashDetect::OnAddressNaughtRequest(int option) {
+  switch (option) {
+    case -1:
+      return address_naught_;
+    case 0:
+      address_naught_ = false;
+      break;
+    case 1:
+      address_naught_ = true;
+      break;
   }
   return AMX_ERR_NONE;
 }
