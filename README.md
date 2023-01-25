@@ -157,7 +157,7 @@ for general flags and `0xFE` for long call time values:
 
 The flags are:
 
-* `1` - CashDetect is present (read only).
+* `1` - CrashDetect is present (read only).
 * `2` - long_call_time checks enabled (write ignored when `server.cfg` has
   `long_call_time 0`).
 * `4` - long_call_time reset to default time (write `1` only).

@@ -42,7 +42,7 @@ forward OnRuntimeError(code, &bool:suppress);
 stock bool:IsCrashDetectPresent() {
 	// 0xFF is roughly flags, but some are mutually exclusive:
 	//
-	//   1 - Cashdetect present (read only, write always 0).
+	//   1 - CrashDetect present (read only, write always 0).
 	//   2 - long_call_time checks enabled (write ignored when `server.cfg` has `long_call_time 0`).
 	//   4 - long_call_time reset to default time (write only, read always 0).
 	//   8 - long_call_time restart check from now (write only, read always 0).
