@@ -31,6 +31,9 @@
 #include "amx.h"
 #include "amxdbg.h"
 
+#ifndef UINT16_MAX
+  #define UINT16_MAX 0xffffu
+#endif
 
 int AMXAPI dbg_FreeInfo(AMX_DBG *amxdbg)
 {
@@ -59,6 +62,8 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp)
   int index, dim;
   AMX_DBG_LINE *line;
   AMX_DBG_SYMDIM *symdim;
+  unsigned char *linetbl_max_ptr;
+  ucell codesize;
 
   assert(fp != NULL);
   assert(amxdbg != NULL);
@@ -148,17 +153,26 @@ int AMXAPI dbg_LoadInfo(AMX_DBG *amxdbg, FILE *fp)
   ptr += dbghdr.lines * sizeof(AMX_DBG_LINE);
 
   /* detect dbghdr.lines overflow */
-  while ((line = (AMX_DBG_LINE *)ptr)
-         && (cell)line->address > (cell)(line - 1)->address) {
-    dbghdr.lines = -1;
+  linetbl_max_ptr = (unsigned char *)amxdbg->hdr + dbghdr.size
+    - sizeof(AMX_DBG_SYMBOL) * dbghdr.symbols
+    - sizeof(AMX_DBG_TAG) * dbghdr.tags
+    - sizeof(AMX_DBG_MACHINE) * dbghdr.automatons
+    - sizeof(AMX_DBG_STATE) * dbghdr.states;
+  codesize = amxhdr.dat - amxhdr.cod;
+  while (ptr < linetbl_max_ptr
+         && ptr + ((uint32_t)UINT16_MAX + 1) < linetbl_max_ptr
+         && (line = (AMX_DBG_LINE *)ptr)
+         && line->address > (line - 1)->address
+         && line->address < codesize) {
+    dbghdr.lines = UINT16_MAX;
     #if BYTE_ORDER==BIG_ENDIAN
-      for (index = 0; index <= dbghdr.lines; index++) {
+      for (index = 0; index < UINT16_MAX; index++) {
         amx_AlignCell(&linetbl[index].address);
         amx_Align32((uint32_t*)&linetbl[index].line);
         line++;
       } /* for */
     #endif
-    ptr += ((uint32_t)dbghdr.lines + 1) * sizeof(AMX_DBG_LINE);
+    ptr += ((uint32_t)UINT16_MAX + 1) * sizeof(AMX_DBG_LINE);
   } /* while */
 
   /* symbol table (plus index tags) */
