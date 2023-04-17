@@ -14,9 +14,6 @@ CMakeSettings.json
 *.swp
 *.kdev4
 
-# Build files
-build
-
 # Pawn compiler outputs
 *.asm
 *.amx
