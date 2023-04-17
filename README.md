@@ -207,8 +207,7 @@ yum install gcc gcc-c++ cmake28 make
 Now you're ready to build CrashDetect:
 
 ```
-cd crashdetect
-mkdir build && cd build
+cd crashdetect/build
 cmake ../ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
 make
 ```
@@ -219,8 +218,7 @@ You'll need to install CMake and Visual Studio (Express edition will suffice).
 After that, either run cmake from the command line:
 
 ```
-cd crashdetect
-mkdir build && cd build
+cd crashdetect/build
 path/to/cmake.exe ../ -DBUILD_TESTING=OFF
 ```
 
