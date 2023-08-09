@@ -119,7 +119,7 @@ provide a much nicer API.
 * `SetCrashDetectLongCallTime(us_time)` - Set the long call warning threshold.
 * `GetCrashDetectLongCallTime()` - Get the long call warning threshold.
 * `DisableCrashDetectLongCall()` - Disable the long call warning.
-* `EnableCrashDetectLongCall()` - Disable the long call warning.
+* `EnableCrashDetectLongCall()` - Enable the long call warning.
 * `ResetCrashDetectLongCallTime()` - Reset the long call threshold to the
    default (from `server.cfg`).
 * `RestartCrashDetectLongCall()` - Restart the long call timer.
