@@ -19,6 +19,7 @@ add_definitions(
   -DAMX_XXXUSERDATA
   -DAMX_ANSIONLY
   -DAMX_NODYNALOAD
+  -DsNAMEMAX=63
 )
 
 add_library(amx STATIC
