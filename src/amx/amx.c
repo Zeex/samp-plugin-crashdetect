@@ -78,25 +78,26 @@
 /* CheckLongCallTime uses the values in `amx`, but while we're in `Exec`
  * they aren't accurate.
  */
-#define CHECK_LONG_CALL_TIME()                \
-  do {                                        \
-    if (long_call_ctl==NULL)                  \
-      break;                                  \
-    static unsigned int long_call_delay=5000; \
-    if (--long_call_delay==0) {               \
-      cell tmp_frm=amx->frm;                  \
-      cell tmp_hea=amx->hea;                  \
-      cell tmp_stk=amx->stk;                  \
-      amx->frm=frm;                           \
-      amx->hea=hea;                           \
-      amx->stk=stk;                           \
-      long_call_ctl(amx,AMX_LCT_CHECK,0);     \
-      long_call_delay=5000;                   \
-      amx->frm=tmp_frm;                       \
-      amx->hea=tmp_hea;                       \
-      amx->stk=tmp_stk;                       \
-    }                                         \
-  } while (0)
+static unsigned int long_call_delay=0;
+static void checkLongCallTime(AMX *amx, AMX_LCT_CTL long_call_ctl, cell frm, cell hea, cell stk) {
+  if (long_call_delay>=5000) {
+    if (long_call_ctl!=NULL) {
+      cell tmp_frm=amx->frm;
+      cell tmp_hea=amx->hea;
+      cell tmp_stk=amx->stk;
+      amx->frm=frm;
+      amx->hea=hea;
+      amx->stk=stk;
+      long_call_ctl(amx,AMX_LCT_CHECK,0);
+      amx->frm=tmp_frm;
+      amx->hea=tmp_hea;
+      amx->stk=tmp_stk;
+    }
+    long_call_delay=0;
+  }
+}
+
+#define CHECK_LONG_CALL_TIME() (++long_call_delay)
 
 /* When one or more of the AMX_funcname macris are defined, we want
  * to compile only those functions. However, when none of these macros
@@ -2709,7 +2710,9 @@ static const void * const amx_opcodelist[] = {
   op_nop:
     NEXT(cip);
   op_break:
-      if (amx->debug!=NULL) {
+    if (amx->debug!=NULL) {
+      /* only checked at the ends of statements */
+      checkLongCallTime(amx, long_call_ctl, frm, hea, stk);
       /* store status */
       amx->frm=frm;
       amx->stk=stk;
@@ -3757,6 +3760,8 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
     case OP_BREAK:
       assert((amx->flags & AMX_FLAG_BROWSE)==0);
       if (amx->debug!=NULL) {
+        /* only checked at the ends of statements */
+        checkLongCallTime(amx, long_call_ctl, frm, hea, stk);
         /* store status */
         amx->frm=frm;
         amx->stk=stk;

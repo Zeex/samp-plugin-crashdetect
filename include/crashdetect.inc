@@ -27,15 +27,18 @@
 #endif
 #define CRASHDETECT_INC
 
-// Backwards compatibility; will be removed in the future.
-#define PrintAmxBacktrace PrintBacktrace
-#define GetAmxBacktrace GetBacktrace
-
 native PrintBacktrace();
 native PrintNativeBacktrace();
 
 native GetBacktrace(string[], size = sizeof(string));
 native GetNativeBacktrace(string[], size = sizeof(string));
+
+// Backwards compatibility; will be removed in the future.
+#pragma deprecated Use `PrintBacktrace`
+native PrintAmxBacktrace = PrintBacktrace;
+
+#pragma deprecated Use `GetBacktrace`
+native GetAmxBacktrace(string[], size = sizeof(string)) = GetBacktrace;
 
 forward OnRuntimeError(code, &bool:suppress);
 

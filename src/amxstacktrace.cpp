@@ -183,17 +183,20 @@ AMXStackTrace GetAMXStackTrace(AMXRef amx,
                                cell frm,
                                cell cip,
                                int max_depth) {
-  if (amx.CheckStack() && amx.GetStackSpaceLeft() >= 8) {
+  // Use a fake frame, hopefully without clobbering anything in silly code.
+  cell stk = amx.GetStk();
+  cell hlw = amx.GetHea();
+  if (amx.CheckStack() && amx.GetStackSpaceLeft() >= (2 * sizeof(cell))) {
+    amx.SetStk(hlw + (2 * sizeof(cell)));
     amx.PushStack(cip);
     amx.PushStack(frm);
-    amx.SetFrm(amx.GetStk());
+    amx.SetFrm(hlw);
   }
 
   AMXStackTrace trace(amx, amx.GetFrm(), max_depth);
 
   if (amx.CheckStack()) {
-    amx.PopStack();
-    amx.PopStack();
+    amx.SetStk(stk);
     amx.SetFrm(frm);
   }
 
