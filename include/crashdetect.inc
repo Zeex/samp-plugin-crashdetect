@@ -35,7 +35,7 @@ native GetNativeBacktrace(string[], size = sizeof(string));
 
 // Backwards compatibility; will be removed in the future.
 #pragma deprecated Use `PrintBacktrace`
-native PrintAmxBacktrace = PrintBacktrace;
+native PrintAmxBacktrace() = PrintBacktrace;
 
 #pragma deprecated Use `GetBacktrace`
 native GetAmxBacktrace(string[], size = sizeof(string)) = GetBacktrace;
