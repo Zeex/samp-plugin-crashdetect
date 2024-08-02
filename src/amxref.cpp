@@ -160,11 +160,11 @@ const char *AMXRef::GetString(uint32_t offset) const {
 }
 
 cell AMXRef::GetStackSpaceLeft() const {
-  return GetStk() - GetHlw();
+  return GetStk() - GetHea();
 }
 
 bool AMXRef::CheckStack() const {
-  return GetStk() >= GetHlw() && GetStk() <= GetStp();
+  return GetStk() >= GetHea() && GetStk() <= GetStp();
 }
 
 void AMXRef::PushStack(cell value) {

@@ -1,0 +1,69 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "*"
+      - "*/*"
+      - "**"
+  pull_request:
+    branches:
+      - "*"
+      - "*/*"
+      - "**"
+
+jobs:
+  build-windows-release:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          clean: true
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install CMake
+        uses: lukka/get-cmake@v.3.23.2
+
+      - name: Generate build files
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. -G "Visual Studio 16 2019" -A Win32
+          cmake --build . --config Release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: crashdetect-win-release
+          path: build/Release/crashdetect.dll
+
+  build-linux-release:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          clean: true
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install packages
+        run: sudo apt-get install g++-multilib
+
+      - name: Install CMake
+        uses: lukka/get-cmake@v.3.23.2
+
+      - name: Generate build files
+        run: mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: crashdetect-linux-release
+          path: build/crashdetect.so
