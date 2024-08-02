@@ -13,8 +13,11 @@ on:
       - "*/*"
       - "**"
 
+env:
+  CONFIGURATION: RelWithDebInfo
+
 jobs:
-  build-windows-release:
+  build-windows:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v3
@@ -23,24 +26,43 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Install CMake
-        uses: lukka/get-cmake@v.3.23.2
+      - name: Install packages
+        run: |
+          choco install wget 7zip cmake
+      - name: Install Pawn compiler
+        run: |
+          wget https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-windows.zip
+          7z x pawnc-3.10.20150412-windows.zip
+          Add-Content $env:GITHUB_PATH "$(pwd)\pawnc-3.10.20150412-windows\bin"
+      - name: Install Plugin Runner
+        run: |
+          wget https://github.com/Zeex/samp-plugin-runner/releases/download/v1.3/plugin-runner-1.3-win32.zip
+          7z x plugin-runner-1.3-win32.zip
+          Add-Content $env:GITHUB_PATH "$(pwd)\plugin-runner-1.3-win32"
 
       - name: Generate build files
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF .. -G "Visual Studio 16 2019" -A Win32
-          cmake --build . --config Release
+          cmake -DCMAKE_BUILD_TYPE=$env:CONFIGURATION .. -G "Visual Studio 16 2019" -A Win32 -T v141_xp
+      - name: Build
+        working-directory: build
+        run: |
+          cmake --build . --config $env:CONFIGURATION
+          cmake --build . --config $env:CONFIGURATION --target package
+      - name: Run tests
+        working-directory: build
+        run: |
+          ctest --build-config $env:CONFIGURATION
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: crashdetect-win-release
-          path: build/Release/crashdetect.dll
+          name: build-windows
+          path: build/crashdetect-*-win32.zip
 
-  build-linux-release:
-    runs-on: ubuntu-18.04
+  build-linux:
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -49,21 +71,34 @@ jobs:
           fetch-depth: 0
 
       - name: Install packages
-        run: sudo apt-get install g++-multilib
-
-      - name: Install CMake
-        uses: lukka/get-cmake@v.3.23.2
+        run: sudo apt-get install g++-multilib cmake
+      - name: Install Pawn compiler
+        run: |
+          wget https://github.com/Zeex/pawn/releases/download/20150412/pawnc-3.10.20150412-linux.tar.gz
+          sudo tar xvf pawnc-3.10.20150412-linux.tar.gz --strip-components=1 -C /usr/local
+          sudo ldconfig
+      - name: Install Plugin Runner
+        run: |
+          wget https://github.com/Zeex/samp-plugin-runner/releases/download/v1.3/plugin-runner-1.3-linux.tar.gz
+          sudo tar xvf plugin-runner-1.3-linux.tar.gz --strip-components=1 -C /usr/local
 
       - name: Generate build files
-        run: mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
-
-      - name: Build
         run: |
+          mkdir build
           cd build
-          cmake --build . --config Release
+          cmake .. -DCMAKE_BUILD_TYPE=$CONFIGURATION -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32
+      - name: Build
+        working-directory: build
+        run: |
+          make
+          make package
+      - name: Run tests
+        working-directory: build
+        run: |
+          make test
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: crashdetect-linux-release
-          path: build/crashdetect.so
+          name: build-linux
+          path: build/crashdetect-*-linux.tar.gz
