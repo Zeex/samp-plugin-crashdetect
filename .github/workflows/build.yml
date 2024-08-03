@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - "*"
-      - "*/*"
-      - "**"
+      - master
+    paths-ignore:
+      - README.md
+      - tools/*
   pull_request:
-    branches:
-      - "*"
-      - "*/*"
-      - "**"
+    paths-ignore:
+      - README.md
+      - tools/*
 
 env:
   CONFIGURATION: RelWithDebInfo
